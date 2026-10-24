@@ -12,6 +12,7 @@ import type * as activity from "../activity.js";
 import type * as cartesia from "../cartesia.js";
 import type * as cases from "../cases.js";
 import type * as dashboard from "../dashboard.js";
+import type * as files from "../files.js";
 import type * as flags from "../flags.js";
 import type * as http from "../http.js";
 import type * as patterns from "../patterns.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   cartesia: typeof cartesia;
   cases: typeof cases;
   dashboard: typeof dashboard;
+  files: typeof files;
   flags: typeof flags;
   http: typeof http;
   patterns: typeof patterns;

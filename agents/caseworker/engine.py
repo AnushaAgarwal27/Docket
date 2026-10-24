@@ -4,8 +4,11 @@ State changes happen in convex/cases.ts so every caller obeys the same state mac
 """
 
 from datetime import date, timedelta
+from pathlib import Path
 
 from agents.caseworker import cartesia, rehearsal
+from agents.caseworker.letter import letter_paragraphs, render_pdf
+from agents.convex_files import upload_and_attach
 from agents.store import dollars, log, mutation, query
 
 AGENT = "caseworker"
@@ -41,7 +44,24 @@ def open_refund_cases(profile_id: str) -> list[dict]:
             "amountCents": flag["amountCents"],
             "draft": draft_request(profile, paystubs, flag),
         })
+        attach_letter(profile, flag, paystubs)
     return awaiting_approval(profile_id)
+
+
+def attach_letter(profile: dict, flag: dict, paystubs: list[dict]) -> None:
+    """The refund request as a PDF on the flag's receipt, once per flag."""
+    receipt = query("files:forFlag", {"flagId": flag["_id"]})
+    if receipt is None or receipt["letters"]:
+        return
+    linked = [p for p in paystubs if p["_id"] in set(flag.get("paystubIds") or [])]
+    if not linked or "ssCents" not in flag or "medicareCents" not in flag:
+        log(AGENT, "letter_skipped", f"Flag {flag['_id']} has no linked paystubs or rule totals yet",
+            inputIds=[flag["_id"]])
+        return
+    source = query("sources:cite", {"sourceId": flag["sourceId"]}) or {"title": "IRS Publication 519"}
+    pdf = render_pdf(letter_paragraphs(profile, flag, linked, source["title"], date.today()))
+    upload_and_attach(Path(f"refund_request_{profile['name'].split()[0].lower()}.pdf"), "letter",
+                      agent=AGENT, data=pdf, flagId=flag["_id"])
 
 
 def awaiting_approval(profile_id: str) -> list[dict]:

@@ -31,6 +31,9 @@ export default defineSchema({
   flags: defineTable({
     profileId: v.id("profiles"), ruleId: v.string(), amountCents: v.number(),
     explanation: v.string(), quote: v.string(), sourceId: v.id("sources"), status: v.string(),
+    paystubIds: v.optional(v.array(v.id("paystubs"))), // added: the paystubs the rule hit on, for the receipt
+    ssCents: v.optional(v.number()), // added: the rule's own Social Security and Medicare totals,
+    medicareCents: v.optional(v.number()), // so letters never re-add paystubs
   }).index("by_profile", ["profileId"]),
   cases: defineTable({
     flagId: v.id("flags"), state: v.string(), amountCents: v.number(),
@@ -51,6 +54,15 @@ export default defineSchema({
     promisedBy: v.optional(v.string()), referenceNo: v.optional(v.string()),
     transcriptUrl: v.optional(v.string()), // added: plan lists "transcript link"
   }).index("by_case", ["caseId"]),
+  // Stored documents behind each finding: the paystub PDFs and the drafted letter (Convex file storage).
+  files: defineTable({
+    storageId: v.id("_storage"),
+    kind: v.union(v.literal("paystub"), v.literal("letter"), v.literal("form")),
+    filename: v.string(),
+    paystubId: v.optional(v.id("paystubs")),
+    flagId: v.optional(v.id("flags")),
+    createdAt: v.string(),
+  }).index("by_flag", ["flagId"]).index("by_paystub", ["paystubId"]),
   activity: defineTable({
     agent: v.string(), action: v.string(), detail: v.string(),
     sourceId: v.optional(v.id("sources")), at: v.string(),

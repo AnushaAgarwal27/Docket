@@ -62,6 +62,7 @@ def process_paystubs(store, profile_id: str, paystub_dir: Path, transcribe=trans
         if warnings:
             detail += f"; low confidence: {'; '.join(warnings)}"
         store.log(AGENT, "recorded_paystub", detail, output_ids=[stub_id] + ([deposit["_id"]] if deposit else []))
+        store.attach_paystub_pdf(pdf, stub_id)  # the original PDF, for the finding's receipt
     return created_ids
 
 

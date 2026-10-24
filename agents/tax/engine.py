@@ -34,6 +34,14 @@ def explain(rule_id: str, hit: dict) -> str:
     raise ValueError(f"no explanation template for {rule_id}")
 
 
+def paystub_ids(hit: dict, paystubs: list[dict]) -> list[str]:
+    """The paystubs a rule hit on, read from the rule's own result (pay periods, or the weeks over the limit)."""
+    starts = {start for start, _ in hit.get("periods", [])}
+    weeks = [w["weekStart"] for w in hit.get("weeks", [])]
+    return [p["_id"] for p in paystubs
+            if p["periodStart"] in starts or any(p["periodStart"] <= w <= p["periodEnd"] for w in weeks)]
+
+
 def run(profile_id: str, as_of: date | None = None, calendar: dict = SCHOOL_CALENDAR) -> list[dict]:
     """Returns the flags written this run, as stored rows. The calendar lets the rules skip breaks."""
     as_of = as_of or date.today()
@@ -67,6 +75,9 @@ def run(profile_id: str, as_of: date | None = None, calendar: dict = SCHOOL_CALE
             "quote": rule["quote"],
             "sourceId": source["_id"],
             "status": "open",
+            "paystubIds": paystub_ids(hit, paystubs),
+            # The rule's own totals, so letters quote them instead of re-adding paystubs.
+            **{k: hit[k] for k in ("ssCents", "medicareCents") if k in hit},
         })
         log(AGENT, "flag_written", f"{rule['id']}: {dollars(hit['amountCents'])}" if hit["amountCents"] else rule["id"],
             sourceId=source["_id"], inputIds=[profile_id], outputIds=[flag_id])

@@ -28,6 +28,9 @@ export const upsert = mutation({
     quote: v.string(),
     sourceId: v.id("sources"),
     status: v.string(),
+    paystubIds: v.optional(v.array(v.id("paystubs"))),
+    ssCents: v.optional(v.number()),
+    medicareCents: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db

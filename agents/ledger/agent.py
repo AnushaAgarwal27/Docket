@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from uagents import Agent, Context
 
 from agents import store
+from agents.convex_files import upload_and_attach
 from agents.messages import LocalFirstResolver, PaystubsRecorded, RefundLanded, address_of, local_endpoint
 from agents.ledger.service import match_refunds, process_paystubs, sync_bank
 from seed.nessie import Nessie
@@ -42,6 +43,9 @@ class ConvexLedgerStore:
 
     def insert_paystub(self, stub: dict) -> tuple[str, bool]:
         return store.mutation("paystubs:record", {k: v for k, v in stub.items() if v is not None}), True
+
+    def attach_paystub_pdf(self, pdf: Path, paystub_id: str) -> None:
+        upload_and_attach(pdf, "paystub", agent="ledger", paystubId=paystub_id)
 
     def open_cases(self, profile_id: str) -> list[dict]:
         return store.query("cases:listByProfile", {"profileId": profile_id})

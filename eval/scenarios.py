@@ -12,6 +12,7 @@ Scenarios (one per change):
   intent     indirect wording is understood; the reply carries the verified clause and the disclaimer
   season     "next season" answer uses her year count and last year's filings
   approve    an ambiguous "sure" does not approve; "yes" does
+  receipt    the refund finding has its paystub PDFs and the letter PDF in Convex file storage, both logged
   refund     payroll promises, the refund lands, and Priya is told without asking
   readme     Agentverse lists docket-coordinator with a readme
 """
@@ -35,7 +36,7 @@ from agents.store import mutation, query  # noqa: E402  (needs .env loaded)
 
 COORDINATOR = os.environ.get("COORDINATOR_ADDRESS", "agent1qwj0e7jf5gu6lw3tael5ld2v8xeg4jrzgs8wx7yg22a82du6dcqeqtr0686")
 PY = sys.executable
-ORDER = ["notice", "intent", "season", "approve", "refund", "readme"]
+ORDER = ["notice", "intent", "season", "approve", "receipt", "refund", "readme"]
 FICA_CLAUSE = "Social security and Medicare taxes are not withheld from pay for the work"
 DISCLAIMER_END = "confirm with your international student office."
 
@@ -139,6 +140,29 @@ async def scenario_approve(ctx: Context):
     yes = await say(ctx, "yes")
     check("approve", "reply **YES**" in vague and "Approved" in yes,
           "ambiguous wording asked for an explicit YES; YES approved")
+
+
+async def scenario_receipt(ctx: Context):
+    flags = await asyncio.to_thread(query, "flags:listByProfile", {"profileId": profile_id()})
+    fica = next((f for f in flags if f["ruleId"] == "FICA_EXEMPT_F1"), None)
+    if fica is None:
+        check("receipt", False, "no refund finding")
+        return
+    files = None
+    for _ in range(24):  # the letter is written when the case opens
+        files = await asyncio.to_thread(query, "files:forFlag", {"flagId": fica["_id"]})
+        if files and files["letters"] and len(files["paystubs"]) == 8:
+            break
+        await asyncio.sleep(5)
+    letter = files["letters"][0] if files and files["letters"] else None
+    pdf_ok = bool(letter and letter["url"]) and (await asyncio.to_thread(
+        lambda: requests.get(letter["url"], timeout=30).content[:4])) == b"%PDF"
+    logged = {(r["agent"], r["detail"].split()[0]) for r in await asyncio.to_thread(query, "activity:recent", {"limit": 400})
+              if r["action"] == "file_uploaded"}
+    ok = pdf_ok and len(files["paystubs"]) == 8 and {("ledger", "paystub"), ("caseworker", "letter")} <= logged
+    check("receipt", ok, f"{len(files['paystubs']) if files else 0} paystub PDFs and "
+          f"{'a downloadable letter PDF' if pdf_ok else 'no letter PDF'} on the finding; "
+          f"uploads logged by {sorted(a for a, _ in logged)}")
 
 
 async def scenario_refund(ctx: Context):

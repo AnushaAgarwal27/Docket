@@ -309,7 +309,7 @@ function Overview({ snap, stubs, feed, selected, onSelect, onTab, mode, wide, ti
               <button type="button" className="link" onClick={() => onSelect(overIdx)}>Inspect paystub {String(overIdx + 1).padStart(2, "0")} →</button>
             </section>
           )}
-          <Receipt snap={snap} stubs={stubs} onSelect={onSelect} />
+          <Receipt snap={snap} stubs={stubs} onSelect={onSelect} live={mode === "live"} />
         </div>
 
         <aside className="ov-side">
@@ -338,7 +338,7 @@ function Overview({ snap, stubs, feed, selected, onSelect, onTab, mode, wide, ti
 }
 
 // ---- Receipt: each verified flag as the paystub line beside the clause that makes it a problem ----
-function Receipt({ snap, stubs, onSelect }: { snap: Snapshot; stubs: Snapshot["paystubs"]; onSelect: (k: number) => void }) {
+function Receipt({ snap, stubs, onSelect, live }: { snap: Snapshot; stubs: Snapshot["paystubs"]; onSelect: (k: number) => void; live: boolean }) {
   const flags = snap.flags;
   if (!flags.length) return null;
   const ss = stubs.reduce((s, p) => s + p.ssCents, 0);
@@ -384,9 +384,36 @@ function Receipt({ snap, stubs, onSelect }: { snap: Snapshot; stubs: Snapshot["p
             <span className="muted num">{f.sourceFetchedAt ? `stored ${day(f.sourceFetchedAt.slice(0, 10))}, ${time(f.sourceFetchedAt)}` : ""}{f.sourceHash ? ` · hash ${f.sourceHash.slice(0, 8)}` : ""}</span>
           </div>
           <p className="fine">Matched word for word against the stored official text before this flag could be shown.</p>
+          {live && <ReceiptFiles flagId={f._id} />}
         </article>
       ))}
     </section>
+  );
+}
+
+// ---- Receipt documents: the stored paystub PDFs this flag came from, and the drafted letter (Convex file storage) ----
+function ReceiptFiles({ flagId }: { flagId: Id<"flags"> }) {
+  const files = useQuery(api.files.forFlag, { flagId });
+  if (!files) return null;
+  const { paystubs, letters } = files;
+  if (!paystubs.length && !letters.length) return null;
+  return (
+    <div className="rc-files">
+      {paystubs.length > 0 && (
+        <div className="rc-file-row">
+          <span className="muted">Paystub{paystubs.length > 1 ? "s" : ""}</span>
+          {paystubs.map((f) => f.url && (
+            <a key={f._id} href={f.url} target="_blank" rel="noreferrer" className="rc-file">{f.filename}</a>
+          ))}
+        </div>
+      )}
+      <div className="rc-file-row">
+        <span className="muted">Letter</span>
+        {letters.length
+          ? letters.map((f) => f.url && <a key={f._id} href={f.url} target="_blank" rel="noreferrer" className="rc-file">{f.filename}</a>)
+          : <span className="muted">not drafted yet</span>}
+      </div>
+    </div>
   );
 }
 

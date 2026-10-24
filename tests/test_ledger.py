@@ -37,6 +37,9 @@ class MemoryStore:
     def insert_paystub(self, stub):
         return self._insert("paystubs", {k: v for k, v in stub.items() if v is not None}), True
 
+    def attach_paystub_pdf(self, pdf, paystub_id):
+        self.rows.setdefault("files", []).append({"filename": pdf.name, "paystubId": paystub_id})
+
     def open_cases(self, profile_id):
         return [c for c in self.rows["cases"].values() if c["profileId"] == profile_id]
 
@@ -176,6 +179,8 @@ def test_process_paystubs_links_deposits_and_skips_known(tmp_path: Path):
     assert sum(s["ssCents"] + s["medicareCents"] for s in stubs) == 44064
     assert process_paystubs(store, "p1", tmp_path, transcribe=fake_transcribe) == []
     assert len(calls) == 8  # known files are not sent to Claude again
+    # each new paystub's PDF is attached to its own row, once
+    assert sorted((f["filename"], f["paystubId"]) for f in store.rows["files"]) == sorted(zip(sorted(by_file), ids))
 
 
 def test_unreadable_paystub_is_logged(tmp_path: Path):

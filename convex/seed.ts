@@ -4,12 +4,16 @@ import schema from "./schema";
 // Wipes demo state and re-creates the student. Synthetic data only.
 // Paystubs are not seeded here: the Ledger reads them from the PDFs in seed/paystubs/.
 // Sources are kept: they are fetched official text, not demo state.
-const DEMO_TABLES = ["calls", "cases", "flags", "paystubs", "transactions", "activity", "profiles"] as const;
+const DEMO_TABLES = ["files", "calls", "cases", "flags", "paystubs", "transactions", "activity", "profiles"] as const;
 
 export const resetDemo = mutation({
   // The profile comes from seed/demo_data.py, the single source of truth for Priya.
   args: { profile: schema.tables.profiles.validator },
   handler: async (ctx, { profile }) => {
+    // Stored PDFs go with their rows, so a reset leaves nothing orphaned in file storage.
+    for await (const file of ctx.db.query("files")) {
+      await ctx.storage.delete(file.storageId);
+    }
     for (const table of DEMO_TABLES) {
       for await (const row of ctx.db.query(table)) {
         await ctx.db.delete(table, row._id);
