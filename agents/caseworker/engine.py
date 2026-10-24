@@ -3,7 +3,9 @@
 State changes happen in convex/cases.ts so every caller obeys the same state machine.
 """
 
-from agents.caseworker import cartesia
+from datetime import date, timedelta
+
+from agents.caseworker import cartesia, rehearsal
 from agents.store import dollars, log, mutation, query
 
 AGENT = "caseworker"
@@ -50,6 +52,10 @@ def request_call(case: dict) -> None:
     """Place the payroll call for an approved case, once. Safe to call from several places."""
     if not mutation("cases:claimCall", {"caseId": case["_id"]}):
         return  # already claimed by another trigger, or no longer contacting payroll
+    if rehearsal.enabled():
+        fresh = query("cases:get", {"caseId": case["_id"]})  # carries callAttempts and the rehearsal setting
+        mutation("cases:recordCallStart", {"caseId": case["_id"], "callRequestId": rehearsal.start(fresh), "simulated": True})
+        return
     missing = cartesia.missing_settings()
     if missing:
         mutation("cases:recordCallStart", {"caseId": case["_id"], "error": f"Cartesia not configured: set {', '.join(missing)}"})
@@ -69,6 +75,54 @@ def place_pending_calls() -> int:
     pending = query("cases:awaitingCall")
     for case in pending:
         request_call(case)
+    return len(pending)
+
+
+def long_date(d: date) -> str:
+    return f"{d.strftime('%B')} {d.day}, {d.year}"
+
+
+def draft_written_request(case: dict, profile: dict, paystubs: list[dict], flag: dict, source_title: str,
+                          today: date | None = None) -> str:
+    """The letter after a first stall or refusal. Every number comes from the student file; no hours, no visa history."""
+    today = today or date.today()
+    ss = sum(p["ssCents"] for p in paystubs)
+    medicare = sum(p["medicareCents"] for p in paystubs)
+    first = min(p["periodStart"] for p in paystubs)
+    last = max(p["periodEnd"] for p in paystubs)
+    year = int(last[:4]) - int(profile["arrivalDate"][:4]) + 1
+    reply_by = today + timedelta(days=10)
+    name, employer = profile["name"], paystubs[0]["employer"]
+    return (
+        f"{long_date(today)}\n\n"
+        f"To: {employer} Payroll\n"
+        f"Re: Refund of Social Security and Medicare withheld in error, {name}\n\n"
+        f"Docket, an AI assistant acting for {name} with her permission, called payroll about this refund. "
+        f"Payroll did not agree to refund it on that call, so this letter puts the request in writing.\n\n"
+        f"{name} is a nonresident alien student in F-1 status, in calendar year {year} of 5 in the United States. "
+        f"Social Security ({dollars(ss)}) and Medicare ({dollars(medicare)}) were withheld from {len(paystubs)} "
+        f"paychecks for pay periods {first} to {last}, a total of {dollars(ss + medicare)}.\n\n"
+        f"{source_title} states: \"{flag['quote']}\"\n\n"
+        f"Please, by {long_date(reply_by)}, do one of the following:\n"
+        f"1. Refund {dollars(case['amountCents'])} and stop withholding Social Security and Medicare "
+        f"from her future paychecks; or\n"
+        f"2. If you will not refund it, give her a written statement saying so. She needs that statement to claim the "
+        f"refund from the IRS with Form 843 and Form 8316.\n\n"
+        f"Docket will follow up by phone on {case['nextFollowUp']}.\n\n"
+        f"Sent by {name}, prepared with Docket."
+    )
+
+
+def prepare_pending_letters() -> int:
+    """Writes the letter for every case that moved to written_request. Returns how many it wrote."""
+    pending = query("cases:awaitingLetter")
+    for case in pending:
+        profile = query("profiles:get", {"profileId": case["profileId"]})
+        paystubs = query("paystubs:listByProfile", {"profileId": case["profileId"]})
+        flag = next(f for f in query("flags:listByProfile", {"profileId": case["profileId"]}) if f["_id"] == case["flagId"])
+        source = query("sources:cite", {"sourceId": flag["sourceId"]}) or {"title": "IRS Publication 519"}
+        text = draft_written_request(case, profile, paystubs, flag, source["title"])
+        mutation("cases:recordWrittenRequest", {"caseId": case["_id"], "text": text})
     return len(pending)
 
 

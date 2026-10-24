@@ -10,6 +10,7 @@ export default defineSchema({
     school: v.string(), homeCountry: v.string(), homeCurrency: v.string(),
     workAuth: v.string(), phoneMasked: v.string(),
     filed8843Years: v.optional(v.array(v.number())), // added: needs_8843 needs a filing record
+    simulated: v.optional(v.boolean()), // added: synthetic cohort for the employer pattern view, never the demo student
   }),
   transactions: defineTable({
     profileId: v.id("profiles"), kind: v.string(), amountCents: v.number(),
@@ -38,6 +39,10 @@ export default defineSchema({
     callRequestedAt: v.optional(v.string()), // added: set once when the Caseworker claims the payroll call
     callRequestId: v.optional(v.string()), // added: Cartesia agent_call_id for that call
     callError: v.optional(v.string()), // added: why the call could not start, if it failed
+    callAttempts: v.optional(v.number()), // added: payroll calls placed so far (1 = first call)
+    payrollScript: v.optional(v.union(v.literal("cooperate"), v.literal("stall_once"), v.literal("refuse_once"))), // added: rehearsal setting
+    writtenRequest: v.optional(v.string()), // added: letter the Caseworker prepares after a stall or refusal
+    writtenRequestAt: v.optional(v.string()),
   }).index("by_state", ["state"]).index("by_flag", ["flagId"]).index("by_profile", ["profileId"]),
   calls: defineTable({
     caseId: v.id("cases"), answeredBy: v.string(), at: v.string(), summary: v.string(),

@@ -6,11 +6,12 @@ import { api, internal } from "./_generated/api";
 //   POST /cartesia/case-summary   body {case_id}                      -> plain-text facts for the call
 //   POST /cartesia/call-outcome   body {case_id, result, answered_by,  -> runs cases.logCallOutcome
 //                                       summary, promised_by?, reference_number?}
+//   result is one of promised, stalled, refused, needs_student
 // Both require "Authorization: Bearer <CARTESIA_TOOL_TOKEN>". Responses are short plain text because
 // Cartesia hands the body to the voice model as the tool result.
 
 const http = httpRouter();
-const RESULTS = ["promised", "refused", "needs_student"] as const;
+const RESULTS = ["promised", "stalled", "refused", "needs_student"] as const;
 type Result = (typeof RESULTS)[number];
 
 const text = (body: string, status = 200) =>
@@ -87,7 +88,8 @@ http.route({
     }
     const next =
       result === "promised" ? `Recorded: refund promised${promisedBy ? ` by ${promisedBy}` : ""}${referenceNo ? `, reference ${referenceNo}` : ""}.`
-      : result === "refused" ? "Recorded: payroll will not refund. The student will claim it from the IRS."
+      : result === "stalled" ? "Recorded: payroll has not committed to a date. A written request will follow."
+      : result === "refused" ? "Recorded: payroll will not refund. A written request or an IRS claim will follow."
       : "Recorded: payroll needs the student on the line. A three-way call will be scheduled.";
     return text(`${next} Thank them and end the call.`);
   }),

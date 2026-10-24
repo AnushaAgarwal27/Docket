@@ -3,7 +3,8 @@
     python -m seed.reset            # wipes Nessie too when NESSIE_API_KEY is set
     python -m seed.reset --dry-run  # print what would be created, no network
 
-With CONVEX_URL set, it also runs seed:resetDemo with Priya's profile, which keeps fetched sources.
+With CONVEX_URL set, it also runs seed:resetDemo with Priya's profile (keeping fetched sources), then
+adds the simulated cohort for the employer pattern view (seed/cohort.py; skip with --no-cohort).
 Paystubs come from the Ledger reading seed/paystubs/*.pdf, not from this script.
 """
 import argparse
@@ -23,6 +24,7 @@ def main() -> None:
     load_dotenv()
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-cohort", action="store_true", help="skip the simulated cohort for the employer pattern view")
     args = ap.parse_args()
 
     txns = demo_data.transactions()
@@ -45,6 +47,9 @@ def main() -> None:
         from convex import ConvexClient
         profile_id = ConvexClient(os.environ["CONVEX_URL"]).mutation("seed:resetDemo", {"profile": demo_data.PROFILE})
         print(f"Convex reset; Priya's profile id: {profile_id}")
+        if not args.no_cohort:
+            from seed.cohort import seed_cohort  # after Priya, so she stays the first profile
+            print(f"Simulated cohort: {seed_cohort()}")
 
 
 if __name__ == "__main__":

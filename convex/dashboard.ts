@@ -14,7 +14,14 @@ export const snapshot = query({
     const flagsWithSource = await Promise.all(
       flags.map(async (f) => {
         const source = await ctx.db.get(f.sourceId);
-        return { ...f, sourceTitle: source?.title ?? null, sourceUrl: source?.url ?? null };
+        return {
+          ...f,
+          sourceTitle: source?.title ?? null,
+          sourceUrl: source?.url ?? null,
+          // For the receipt: when the official text was stored and its hash, so a judge can see what was checked.
+          sourceFetchedAt: source?.fetchedAt ?? null,
+          sourceHash: source?.hash ?? null,
+        };
       }),
     );
     const cases = await ctx.db

@@ -31,8 +31,10 @@ export const caseSummary = internalQuery({
     const first = stubs.map((p) => p.periodStart).sort()[0];
     const last = stubs.map((p) => p.periodEnd).sort().at(-1)!;
     const year = Number(last.slice(0, 4)) - Number(profile.arrivalDate.slice(0, 4)) + 1;
+    const followUp = (c.callAttempts ?? 1) >= 2 && c.writtenRequestAt !== undefined;
     const text = [
       `Case ${c._id}. Current state: ${c.state.replace(/_/g, " ")}.`,
+      followUp ? `This is a follow-up call. A written request was prepared on ${longDate(c.writtenRequestAt!.slice(0, 10))} after the first call.` : "",
       `You are asking ${stubs[0].employer} payroll to refund ${usd(c.amountCents)} to ${profile.name}.`,
       `Social Security of ${usd(ss)} and Medicare of ${usd(medicare)} were withheld across ${stubs.length} paychecks, for pay periods from ${longDate(first)} to ${longDate(last)}.`,
       `${profile.name} is a nonresident alien student in ${profile.visa} status, in calendar year ${year} of 5 in the United States.`,
@@ -40,7 +42,7 @@ export const caseSummary = internalQuery({
       `Ask for two things: refund ${usd(c.amountCents)}, and stop withholding Social Security and Medicare from future paychecks.`,
       `Then ask for the date the refund will be issued and a reference number.`,
       `Do not discuss anything else about ${profile.name}. If payroll needs more information or needs to speak with her directly, record the outcome as needs_student.`,
-    ].join(" ");
+    ].filter(Boolean).join(" ");
     return { caseId: c._id, state: c.state, text };
   },
 });
