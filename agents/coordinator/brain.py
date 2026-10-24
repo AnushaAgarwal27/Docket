@@ -47,9 +47,10 @@ CONFIDENCE
 - low or unknown: ask, do not act
 
 TASKS
-A) Classify the student's message: check_pay | explain | approve |
-   decline | other. Handle indirect wording such as "am I paying tax I
-   shouldn't?" as check_pay.
+A) Classify the student's message: check_pay | explain | next_season |
+   approve | decline | other. Handle indirect wording such as "am I paying
+   tax I shouldn't?" as check_pay. Questions about what to file or do for the
+   coming tax season or next year are next_season.
 B) Write the explanation in English. Plain words, 6th-grade reading
    level, under 120 words, mention the exact dollar amounts from the facts.
 
@@ -59,7 +60,7 @@ key of the source excerpts, or null. Our code shows each verified source quote u
 so do not repeat the quotes in message_to_student: cite each one with source_quote_id instead. Do not ask the student to approve anything:
 our code adds the approval request."""
 
-Intent = Literal["check_pay", "explain", "approve", "decline", "other"]
+Intent = Literal["check_pay", "explain", "next_season", "approve", "decline", "other"]
 
 
 class Classification(BaseModel):

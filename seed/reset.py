@@ -20,6 +20,13 @@ from seed.nessie import Nessie, seed_priya
 IDS_FILE = Path(".nessie_ids.json")
 
 
+def student_profile() -> dict:
+    """Priya's profile plus the employer and the forms she filed per year (from filed8843Years)."""
+    p = demo_data.PROFILE
+    return {**p, "employer": demo_data.EMPLOYER,
+            "filings": [{"year": y, "form": "8843"} for y in p.get("filed8843Years", [])]}
+
+
 def main() -> None:
     load_dotenv()
     ap = argparse.ArgumentParser()
@@ -45,7 +52,7 @@ def main() -> None:
 
     if os.environ.get("CONVEX_URL"):
         from convex import ConvexClient
-        profile_id = ConvexClient(os.environ["CONVEX_URL"]).mutation("seed:resetDemo", {"profile": demo_data.PROFILE})
+        profile_id = ConvexClient(os.environ["CONVEX_URL"]).mutation("seed:resetDemo", {"profile": student_profile()})
         print(f"Convex reset; Priya's profile id: {profile_id}")
         if not args.no_cohort:
             from seed.cohort import seed_cohort  # after Priya, so she stays the first profile

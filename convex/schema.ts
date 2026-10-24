@@ -10,6 +10,8 @@ export default defineSchema({
     school: v.string(), homeCountry: v.string(), homeCurrency: v.string(),
     workAuth: v.string(), phoneMasked: v.string(),
     filed8843Years: v.optional(v.array(v.number())), // added: needs_8843 needs a filing record
+    employer: v.optional(v.string()), // added: the student's on-campus employer
+    filings: v.optional(v.array(v.object({ year: v.number(), form: v.string() }))), // added: forms filed per tax year
     simulated: v.optional(v.boolean()), // added: synthetic cohort for the employer pattern view, never the demo student
   }),
   transactions: defineTable({

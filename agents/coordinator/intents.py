@@ -11,14 +11,17 @@ the Coordinator only reads the student file and talks to Priya.
 import asyncio
 import json
 import re
+from datetime import date
 
 from uagents import Context
 
 from agents.coordinator import brain
+from agents.coordinator.season import next_season
 from agents.messages import (
     CaseDecision, CasesResult, DecisionResult, OpenCases, RulesResult, RunRules, address_of,
 )
 from agents.store import dollars, log, query
+from seed.demo_data import SCHOOL_CALENDAR
 
 AGENT = "coordinator"
 
@@ -46,8 +49,8 @@ CASE_STATUS = {
 
 def demo_profile() -> dict | None:
     # One student in the demo; real multi-student lookup comes with onboarding.
-    profiles = query("profiles:list")
-    return profiles[0] if profiles else None
+    # Simulated cohort profiles (seed/cohort.py) are never the student we talk to.
+    return next((p for p in query("profiles:list") if not p.get("simulated")), None)
 
 
 def source_block(quote: str, title: str, url: str) -> str:
@@ -214,4 +217,15 @@ async def answer(ctx: Context, text: str) -> str:
         return CONFIRM_APPROVAL  # only an explicit YES or NO acts
     if intent == "other":
         return HELP
+    if intent == "next_season":
+        return await asyncio.to_thread(season_reply)
     return await explain_with_claude(ctx, text, intent)
+
+
+def season_reply() -> str:
+    profile = demo_profile()
+    if profile is None:
+        return "I don't have a student file yet."
+    paystubs = query("paystubs:listByProfile", {"profileId": profile["_id"]})
+    log(AGENT, "next_season_explained", f"Next-season checklist for {profile['name']}", inputIds=[profile["_id"]])
+    return f"{next_season(profile, paystubs, SCHOOL_CALENDAR, date.today())}\n\n{NOT_ADVICE}"
