@@ -3,12 +3,14 @@
     python -m seed.reset            # needs NESSIE_API_KEY
     python -m seed.reset --dry-run  # print what would be created, no network
 
-Convex is wiped by Person 3's reset mutation; set CONVEX_URL to call it from here too.
+With CONVEX_URL set, it also runs seed:resetDemo (anusha branch), which keeps fetched sources.
 """
 import argparse
 import json
 import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 from seed import demo_data
 from seed.nessie import Nessie, seed_priya
@@ -17,6 +19,7 @@ IDS_FILE = Path(".nessie_ids.json")
 
 
 def main() -> None:
+    load_dotenv()
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
@@ -36,8 +39,8 @@ def main() -> None:
 
     if os.environ.get("CONVEX_URL"):
         from convex import ConvexClient
-        ConvexClient(os.environ["CONVEX_URL"]).mutation("admin:reset")
-        print("Convex reset")
+        profile_id = ConvexClient(os.environ["CONVEX_URL"]).mutation("seed:resetDemo")
+        print(f"Convex reset; Priya's profile id: {profile_id}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,57 @@
+{
+  "id": "21",
+  "group": "over_20",
+  "why": "30 hours in the weeks of 2025-12-22 and 2025-12-29: winter break, the limit does not apply",
+  "asOf": "2026-10-24",
+  "profile": {
+    "name": "Elif Yildiz",
+    "visa": "F-1",
+    "arrivalDate": "2024-08-15",
+    "school": "Golden Bear University",
+    "homeCountry": "Synthetic",
+    "homeCurrency": "USD",
+    "workAuth": "on-campus",
+    "phoneMasked": "(***) ***-0000",
+    "filed8843Years": [
+      2024,
+      2025
+    ]
+  },
+  "schoolCalendar": {
+    "school": "Golden Bear University",
+    "sessions": [
+      {
+        "name": "Fall 2025",
+        "start": "2025-08-27",
+        "end": "2025-12-19"
+      },
+      {
+        "name": "Spring 2026",
+        "start": "2026-01-12",
+        "end": "2026-05-15"
+      },
+      {
+        "name": "Fall 2026",
+        "start": "2026-08-26",
+        "end": "2026-12-18"
+      }
+    ]
+  },
+  "paystubs": [
+    {
+      "periodStart": "2025-12-22",
+      "periodEnd": "2026-01-04",
+      "employer": "University Dining Services",
+      "grossCents": 108000,
+      "hoursByWeek": [
+        30,
+        30
+      ],
+      "ssCents": 0,
+      "medicareCents": 0,
+      "netCents": 108000,
+      "sourceFile": "paystub_01.pdf"
+    }
+  ],
+  "expected": []
+}

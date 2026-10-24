@@ -1,0 +1,46 @@
+{
+  "id": "23",
+  "group": "no_income_8843",
+  "why": "F-1 with no US income, no 8843 on record for 2025 (due 2026-06-15)",
+  "asOf": "2026-03-15",
+  "profile": {
+    "name": "Chiara Bianchi",
+    "visa": "F-1",
+    "arrivalDate": "2024-08-15",
+    "school": "Golden Bear University",
+    "homeCountry": "Synthetic",
+    "homeCurrency": "USD",
+    "workAuth": "on-campus",
+    "phoneMasked": "(***) ***-0000",
+    "filed8843Years": [
+      2024
+    ]
+  },
+  "schoolCalendar": {
+    "school": "Golden Bear University",
+    "sessions": [
+      {
+        "name": "Fall 2025",
+        "start": "2025-08-27",
+        "end": "2025-12-19"
+      },
+      {
+        "name": "Spring 2026",
+        "start": "2026-01-12",
+        "end": "2026-05-15"
+      },
+      {
+        "name": "Fall 2026",
+        "start": "2026-08-26",
+        "end": "2026-12-18"
+      }
+    ]
+  },
+  "paystubs": [],
+  "expected": [
+    {
+      "ruleId": "FORM_8843_ANNUAL",
+      "amountCents": 0
+    }
+  ]
+}

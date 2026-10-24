@@ -19,8 +19,10 @@ DISCLAIMER = "Confirm with your school's international office."
 
 
 def load_rules(path: Path = RULES_PATH) -> list[dict]:
-    rules = yaml.safe_load(path.read_text())["rules"]
+    loaded = yaml.safe_load(path.read_text())
+    rules = loaded["rules"] if isinstance(loaded, dict) else loaded
     for r in rules:
+        r.setdefault("source_id", r["id"])
         if r["check"] not in CHECKS:
             raise ValueError(f"rule {r['id']} names unknown check {r['check']!r}")
     return rules
