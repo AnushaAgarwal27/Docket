@@ -12,3 +12,5 @@ seed/paystubs/*.pdf
 .pytest_cache/
 eval/results/
 agent1*_data.json
+sources/*.txt
+sources/*.sha256

@@ -3,6 +3,7 @@ uagents-core==0.4.12
 anthropic==2.3.0
 convex==0.8.1
 requests==2.34.2
+apify-client==1.12.2
 PyYAML==6.0.3
 python-dotenv==1.2.4
 reportlab==5.0.1
