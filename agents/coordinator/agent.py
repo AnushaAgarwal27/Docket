@@ -1,9 +1,10 @@
 """Coordinator: the only agent Priya talks to, through ASI:One.
 
-Hello-world step from the plan: chat protocol + mailbox, reachable in ASI:One.
-Run it, wait for "registered as mailbox agent", then use Chat with Agent in ASI:One.
+Run from the repo root: .venv/bin/python -m agents.coordinator.agent
+Wait for "registered as mailbox agent", then use Chat with Agent in ASI:One.
 """
 
+import asyncio
 import os
 import re
 from collections import defaultdict, deque
@@ -19,6 +20,8 @@ from uagents_core.contrib.protocols.chat import (
     TextContent,
     chat_protocol_spec,
 )
+
+from agents.coordinator.intents import answer
 
 load_dotenv()
 
@@ -50,10 +53,10 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
         if any(r in text for r in recent_replies[sender]) or text.startswith("[docket-coordinator]"):
             ctx.logger.info("echo ignored")
             continue
-        # TODO: route intents (check my pay, what's wrong?, yes contact payroll, price, Hindi).
-        answer = f"Docket here. You said: {text}"
-        recent_replies[sender].append(answer)
-        await ctx.send(sender, reply(answer))
+        # The Convex client is blocking; keep the agent's event loop free.
+        response = await asyncio.to_thread(answer, text)
+        recent_replies[sender].append(response)
+        await ctx.send(sender, reply(response))
 
 
 @chat.on_message(ChatAcknowledgement)

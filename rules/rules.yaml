@@ -1,17 +1,22 @@
-# Every rule points to a stored official source. Quotes must be copied word for word
-# from sources.text after the Apify fetch; the quote checker rejects anything else.
+# Every rule points to a stored official source. Quotes are copied word for word
+# from sources.text; the quote checker rejects anything else.
+# fetch_url is where the text is downloaded from when it differs from the public url.
 - id: FICA_EXEMPT_F1
   check: fica_exempt
-  source_url: https://www.irs.gov/publications/p519  # TODO: exact section anchor
-  quote: "TODO: exact sentence copied from the stored source"
+  source_url: https://www.irs.gov/publications/p519
+  source_title: "IRS Publication 519, U.S. Tax Guide for Aliens"
+  quote: "Social security and Medicare taxes are not withheld from pay for the work unless the student is considered a resident alien."
   action: open_refund_case
 - id: ONCAMPUS_20_HOURS
   check: over_20_hours_in_session
-  source_url: TODO  # 8 CFR 214.2(f)(9)(i) or Study in the States on-campus page
-  quote: "TODO: exact sentence"
+  source_url: https://www.ecfr.gov/current/title-8/section-214.2
+  fetch_url: https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-8?part=214&section=214.2
+  source_title: "8 CFR 214.2(f)(9)(i), on-campus employment"
+  quote: "Employment authorized under this paragraph (f)(9)(i) must not exceed 20 hours a week while school is in session"
   action: warn_student
 - id: FORM_8843_ANNUAL
   check: needs_8843
   source_url: https://www.irs.gov/forms-pubs/about-form-8843
-  quote: "TODO: exact sentence"
+  source_title: "IRS, About Form 8843"
+  quote: "If you are an alien individual, file Form 8843 to explain the basis of your claim that you can exclude days present in the United States for purposes of the substantial presence test"
   action: remind_with_deadline
