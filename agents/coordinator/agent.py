@@ -46,7 +46,8 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
         # ASI:One prefixes the text with "@agent1..." when the user mentions us.
         text = re.sub(r"@agent1\w+", "", item.text).strip()
         ctx.logger.info(f"from {sender[:16]}: {text!r}")
-        if text in recent_replies[sender]:
+        # Echoes can come back wrapped as "[docket-coordinator]: <our reply>".
+        if any(r in text for r in recent_replies[sender]) or text.startswith("[docket-coordinator]"):
             ctx.logger.info("echo ignored")
             continue
         # TODO: route intents (check my pay, what's wrong?, yes contact payroll, price, Hindi).
