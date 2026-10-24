@@ -9,6 +9,7 @@ from collections import defaultdict, deque
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from dotenv import load_dotenv
 from uagents import Agent, Context, Protocol
 from uagents_core.contrib.protocols.chat import (
     ChatAcknowledgement,
@@ -17,6 +18,8 @@ from uagents_core.contrib.protocols.chat import (
     TextContent,
     chat_protocol_spec,
 )
+
+load_dotenv()
 
 agent = Agent(name="docket-coordinator", seed=os.environ["COORDINATOR_SEED"], port=8001, mailbox=True)
 chat = Protocol(spec=chat_protocol_spec)
