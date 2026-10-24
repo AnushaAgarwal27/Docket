@@ -3,11 +3,12 @@
 Run from the repo root: .venv/bin/python -m agents.coordinator.agent
 Wait for "registered as mailbox agent", then use Chat with Agent in ASI:One.
 
-Besides answering, it messages Priya first when another agent reports news (a refund landed),
-using the ASI:One address she last chatted from.
+Besides answering, it messages Priya first when another agent reports news (Tax found issues on new
+paystubs, a refund landed), using the ASI:One address she last chatted from.
 """
 
 import asyncio
+import json
 import os
 import re
 from collections import defaultdict, deque
@@ -25,7 +26,7 @@ from uagents_core.contrib.protocols.chat import (
 )
 
 from agents.coordinator.intents import answer
-from agents.messages import PORTS, LocalFirstResolver, RefundLanded, address_of
+from agents.messages import PORTS, FindingsReady, LocalFirstResolver, RefundLanded, address_of
 from agents.store import dollars, log
 
 load_dotenv()
@@ -97,6 +98,24 @@ async def on_refund(ctx: Context, sender: str, msg: RefundLanded):
         f"It matches your refund case, so I've closed it.",
         "proactive_message_sent", f"Told Priya her {amount} refund landed (case {msg.case_id})",
         inputIds=[msg.case_id])
+
+
+@agent.on_message(FindingsReady)
+async def on_findings(ctx: Context, sender: str, msg: FindingsReady):
+    if sender != address_of("TAX"):
+        return
+    flags = json.loads(msg.flags_json)
+    if not flags:
+        text = f"I just read {msg.paystub_count} new paystubs. Nothing looks wrong."
+    else:
+        lines = [f"I just read {msg.paystub_count} new paystubs and noticed "
+                 f"{len(flags)} likely issue{'s' if len(flags) > 1 else ''}:"]
+        lines += [f"- {f['explanation']}" for f in flags]
+        lines.append("Say **check my pay** to see the official rule behind each one and what I can do about it.")
+        text = "\n".join(lines)
+    await tell_student(ctx, text, "proactive_message_sent",
+                       f"Told Priya about {len(flags)} issues found on {msg.paystub_count} new paystubs",
+                       inputIds=[msg.profile_id])
 
 
 agent.include(chat, publish_manifest=True)

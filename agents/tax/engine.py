@@ -38,6 +38,8 @@ def run(profile_id: str, as_of: date | None = None, calendar: dict = SCHOOL_CALE
     """Returns the flags written this run, as stored rows. The calendar lets the rules skip breaks."""
     as_of = as_of or date.today()
     profile = query("profiles:get", {"profileId": profile_id})
+    if profile is None:
+        return []  # the student file was reset
     paystubs = query("paystubs:listByProfile", {"profileId": profile_id})
     written = []
 

@@ -70,3 +70,16 @@ class RefundLanded(Model):
     case_id: str
     amount_cents: int  # the case amount, from Convex
     counterparty: str
+
+
+class PaystubsRecorded(Model):
+    """Ledger -> Tax: new paystubs are in the student file, so run the rules."""
+    profile_id: str
+    count: int
+
+
+class FindingsReady(Model):
+    """Tax -> Coordinator: the rules ran on their own (not because Priya asked)."""
+    profile_id: str
+    paystub_count: int
+    flags_json: str  # flags written this run
