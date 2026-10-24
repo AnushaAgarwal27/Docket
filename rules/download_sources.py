@@ -57,7 +57,8 @@ def main() -> int:
         pages, missing = collect(rules)
         by_id = {r["id"]: r for r in rules}
         for page in pages:
-            save(by_id[page.rule_id], page.text, f"Apify run {page.run_id}")
+            how = "direct HTTP (Apify returned no text)" if page.run_id == "http-fallback" else f"Apify run {page.run_id}"
+            save(by_id[page.rule_id], page.text, how)
         for rule_id in missing:
             print(f"FAIL     {rule_id}: page not in the Apify results")
         return 1 if missing else 0

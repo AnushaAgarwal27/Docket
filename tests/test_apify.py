@@ -39,13 +39,13 @@ def test_one_run_fetches_every_page_at_depth_zero_with_html():
 
 def test_html_goes_through_our_text_extraction_so_quotes_match():
     fake = FakeApify([page(FICA["source_url"], FICA["quote"])])
-    pages, missing = collect([FICA], client=fake)
+    pages, missing = collect([FICA], client=fake, fallback=None)
     assert fake.calls == ["apify/website-content-crawler"]
     assert pages[0].text == f"Intro. {FICA['quote']}" and pages[0].run_id == "run1" and missing == []
 
 
 def test_page_missing_from_results_is_reported():
-    pages, missing = collect(RULES, client=FakeApify([page(FICA["source_url"], FICA["quote"])]))
+    pages, missing = collect(RULES, client=FakeApify([page(FICA["source_url"], FICA["quote"])]), fallback=None)
     assert [p.rule_id for p in pages] == ["FICA_EXEMPT_F1"] and "FORM_8843_ANNUAL" in missing
 
 
@@ -86,3 +86,16 @@ def test_local_download_reports_new_same_changed(tmp_path, monkeypatch):
     monkeypatch.setattr(ds, "SOURCES_DIR", tmp_path)
     assert [ds.save(FICA, t, "test") for t in ("a", "a", "b")] == ["NEW", "SAME", "CHANGED"]
     assert (tmp_path / "FICA_EXEMPT_F1.txt").read_text() == "b"
+
+
+def test_redirect_that_adds_query_params_still_matches():
+    rule = next(r for r in RULES if r["id"] == "ONCAMPUS_20_HOURS")
+    redirected = rule["fetch_url"].replace("?part=214", "?chapter=I&subchapter=B&part=214&subpart=A")
+    pages, missing = collect([rule], client=FakeApify([page(redirected, rule["quote"])]), fallback=None)
+    assert missing == [] and rule["quote"] in pages[0].text
+
+
+def test_empty_apify_page_falls_back_to_direct_fetch():
+    empty = {"url": FICA["source_url"], "crawl": {"loadedUrl": FICA["source_url"]}, "html": "", "text": ""}
+    pages, missing = collect([FICA], client=FakeApify([empty]), fallback=lambda url: f"Fetched. {FICA['quote']}")
+    assert missing == [] and pages[0].run_id == "http-fallback"
