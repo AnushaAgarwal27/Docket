@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -29,19 +30,44 @@ export function LiveApp() {
   // The simulated cohort (employer pattern view) is never the student on screen.
   const profileId = profiles?.find((p) => !p.simulated)?._id;
   const snap = useQuery(api.dashboard.snapshot, profileId ? { profileId } : "skip");
-  const timeline = useQuery(api.timeline.forProfile, profileId ? { profileId, today: localToday() } : "skip");
-  const patterns = useQuery(api.patterns.byEmployer, {});
+  // Timeline and pattern load in guarded children: if the backend doesn't have those functions yet,
+  // only those two panels go missing instead of the whole page.
+  const [timeline, setTimeline] = useState<Timeline | null | undefined>(undefined);
+  const [patterns, setPatterns] = useState<Patterns | undefined>(undefined);
   const feed = useQuery(api.activity.recent, { limit: 400 }); // the Tracks tab counts actions per agent
   const approve = useMutation(api.cases.approve);
   const followUp = useMutation(api.cases.followUp);
   const setScript = useMutation(api.cases.setPayrollScript);
   const state = profiles === undefined ? undefined : profileId === undefined ? null : snap;
   return (
+    <>
+    <Guard>{profileId && <TimelineFeed profileId={profileId} onData={setTimeline} />}</Guard>
+    <Guard><PatternsFeed onData={setPatterns} /></Guard>
     <Dashboard mode="live" snap={state} feed={feed} timeline={timeline} patterns={patterns}
       onApprove={async (caseId) => { await approve({ caseId }); }}
       onFollowUp={async (caseId) => { await followUp({ caseId }); }}
       onSetScript={async (caseId, script) => { await setScript({ caseId, script }); }} />
+    </>
   );
+}
+
+class Guard extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(e: Error) { console.warn("Optional panel unavailable (is the backend deployed?):", e.message); }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+
+function TimelineFeed({ profileId, onData }: { profileId: Id<"profiles">; onData: (t: Timeline | null | undefined) => void }) {
+  const t = useQuery(api.timeline.forProfile, { profileId, today: localToday() });
+  useEffect(() => onData(t), [t, onData]);
+  return null;
+}
+
+function PatternsFeed({ onData }: { onData: (p: Patterns | undefined) => void }) {
+  const p = useQuery(api.patterns.byEmployer, {});
+  useEffect(() => onData(p), [p, onData]);
+  return null;
 }
 
 export function DemoApp() {
