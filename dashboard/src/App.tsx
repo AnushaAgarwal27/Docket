@@ -1,204 +1,528 @@
-import { useQuery } from "convex/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import type { Activity, Case, Snapshot } from "./data";
+import { AGENT_LABEL, RULE_LABEL, actionLabel, calendarYear, day, demoFeed, demoSnapshot, time, usd } from "./data";
+import { PaperTrail } from "./PaperTrail";
 
-// The live dashboard: every row the agents write to the shared student file shows up here.
-const STATES = ["open", "awaiting_approval", "contacting_employer", "awaiting_response", "refund_received", "closed"];
-const STATE_LABEL: Record<string, string> = {
-  open: "Opened",
-  awaiting_approval: "Awaiting approval",
-  contacting_employer: "Contacting payroll",
-  awaiting_response: "Awaiting refund",
-  refund_received: "Refund received",
-  closed: "Closed",
-  escalate_irs: "Escalated to IRS",
-};
-const RULE_LABEL: Record<string, string> = {
-  FICA_EXEMPT_F1: "Social Security & Medicare withheld",
-  ONCAMPUS_20_HOURS: "Over 20 hours in a week",
-  FORM_8843_ANNUAL: "Form 8843 due",
+// Live mode reads the shared student file through Anusha's one snapshot query and the activity feed.
+// Demo mode renders the same screen from labelled synthetic data, for rehearsals and the backup video.
+
+type Mode = "live" | "demo";
+type Tab = "overview" | "paystubs" | "cases" | "activity";
+type Actions = {
+  onApprove?: (caseId: Id<"cases">) => Promise<void>;
+  onSimulateRefund?: () => void;
+  onReset?: () => void;
 };
 
-const usd = (cents: number) =>
-  (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
-const time = (iso: string) =>
-  new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" });
-
-export function App() {
+export function LiveApp() {
   const profiles = useQuery(api.profiles.list);
   const profileId = profiles?.[0]?._id;
+  const snap = useQuery(api.dashboard.snapshot, profileId ? { profileId } : "skip");
+  const feed = useQuery(api.activity.recent, { limit: 80 });
+  const approve = useMutation(api.cases.approve);
+  const state = profiles === undefined ? undefined : profileId === undefined ? null : snap;
+  return <Dashboard mode="live" snap={state} feed={feed} onApprove={async (caseId) => { await approve({ caseId }); }} />;
+}
+
+export function DemoApp() {
+  const [snap, setSnap] = useState<Snapshot>(demoSnapshot);
+  const [feed, setFeed] = useState<Activity[]>(demoFeed);
+  const timers = useRef<number[]>([]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
+  const push = (agent: string, action: string, detail: string) =>
+    setFeed((f) => [{ _id: `demo_${Date.now()}_${f.length}` as Id<"activity">, _creationTime: Date.now(), agent, action, detail, at: new Date().toISOString() }, ...f]);
+  const patchCase = (fn: (c: Case) => Case) => setSnap((s) => ({ ...s, cases: s.cases.map(fn) }));
+  const inDays = (n: number) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+
+  const actions: Actions = {
+    onApprove: async () => {
+      patchCase((c) => ({ ...c, state: "contacting_employer" }));
+      push("coordinator", "approval_recorded", "Priya replied YES. Approval recorded; nothing was sent before this.");
+      push("caseworker", "case_contacting_employer", "Student approved; contacting payroll");
+      timers.current.push(window.setTimeout(() => {
+        const promised = inDays(14);
+        patchCase((c) => ({
+          ...c, state: "awaiting_response", nextFollowUp: promised,
+          calls: [{ _id: "demo_call" as Id<"calls">, _creationTime: Date.now(), caseId: c._id, answeredBy: "Payroll office", at: new Date().toISOString(),
+            summary: "Payroll confirmed the F-1 status on file, agreed to refund the Social Security and Medicare withheld, and will stop withholding on future pay.",
+            promisedBy: promised, referenceNo: "PR-88213" }],
+        }));
+        push("voice", "call_completed", "Called University Dining payroll as an AI assistant with Priya's permission. The 20-hour flag was not mentioned.");
+        push("caseworker", "case_awaiting_response", `Payroll promised a refund by ${promised}`);
+      }, 2600));
+    },
+    onSimulateRefund: () => {
+      const today = new Date().toISOString().slice(0, 10);
+      setSnap((s) => ({
+        ...s,
+        transactions: [{ _id: "demo_refund" as Id<"transactions">, _creationTime: Date.now(), profileId: s.profile._id, kind: "deposit", amountCents: 44064, date: today, counterparty: "University Dining Payroll", memo: "FICA refund", nessieId: "demo_refund" }, ...s.transactions],
+        flags: s.flags.map((f) => (f.ruleId === "FICA_EXEMPT_F1" ? { ...f, status: "resolved" } : f)),
+        cases: s.cases.map((c) => ({ ...c, state: "closed", outcome: "refunded" })),
+      }));
+      push("ledger", "refund_matched", "Deposit of $440.64 from University Dining Payroll, memo “FICA refund”, matches case within $1.");
+      push("caseworker", "case_refund_received", "Refund deposit matched");
+      push("caseworker", "case_closed", "Refund received; case closed");
+    },
+    onReset: () => {
+      timers.current.forEach(clearTimeout); timers.current = [];
+      setSnap(demoSnapshot()); setFeed(demoFeed());
+    },
+  };
+  return <Dashboard mode="demo" snap={snap} feed={feed} {...actions} />;
+}
+
+const TABS: [Tab, string][] = [["overview", "Overview"], ["paystubs", "Paystubs"], ["cases", "Cases"], ["activity", "Activity"]];
+
+function useWide(px: number) {
+  const q = `(min-width: ${px}px)`;
+  const [wide, setWide] = useState(() => matchMedia(q).matches);
+  useEffect(() => {
+    const m = matchMedia(q);
+    const on = () => setWide(m.matches);
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, [q]);
+  return wide;
+}
+
+function Dashboard({ mode, snap, feed, ...actions }: { mode: Mode; snap: Snapshot | null | undefined; feed: Activity[] | undefined } & Actions) {
+  const initial = (location.hash.slice(1) as Tab) || "overview";
+  const [tab, setTab] = useState<Tab>(TABS.some(([t]) => t === initial) ? initial : "overview");
+  const [sel, setSel] = useState<number | null>(null);
+  const wide = useWide(1000);
+  useEffect(() => { history.replaceState(null, "", tab === "overview" ? location.pathname + location.search : `#${tab}`); }, [tab]);
+
+  const go = (t: Tab) => { setTab(t); window.scrollTo({ top: 0 }); };
+  const stubs = useMemo(() => (snap ? [...snap.paystubs].sort((a, b) => a.periodStart.localeCompare(b.periodStart)) : []), [snap]);
+  const selected = sel ?? stubs.length - 1;
+  const inspect = (k: number) => {
+    setSel(k);
+    if (tab !== "overview" && tab !== "paystubs") setTab("overview");
+    requestAnimationFrame(() => document.getElementById("paper-trail")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
   return (
-    <div className="page">
-      <header className="top">
-        <div className="brand">
-          <span className="logo">D</span>
-          <span>Docket</span>
+    <div className="app">
+      <header className="nav">
+        <div className="nav-in">
+          <div className="brand"><Mark /><span>docket</span></div>
+          <nav className="tabs" aria-label="Sections">
+            {TABS.map(([t, label]) => (
+              <button key={t} type="button" className={tab === t ? "on" : ""} aria-current={tab === t ? "page" : undefined} onClick={() => go(t)}>
+                <Icon name={t} />{label}
+              </button>
+            ))}
+          </nav>
         </div>
-        <span className="live"><span className="dot" />Live</span>
       </header>
-      {profiles === undefined ? (
-        <p className="muted">Loading…</p>
-      ) : profileId === undefined ? (
-        <p className="muted">No student yet. Run <code>python -m seed.reset</code>.</p>
-      ) : (
-        <Student profileId={profileId} />
-      )}
+
+      <div className="page">
+        <div className="crumbs">
+          <span>Workspace <span className="sep">/</span> <b>{TABS.find(([t]) => t === tab)![1]}</b></span>
+          <span className="crumb-r">
+            {mode === "live" ? <span className="pill live"><i />Live · shared student file</span> : <span className="pill demo"><i />Demo data, synthetic</span>}
+            <span className="avatar" title={snap?.profile.name}>{snap ? initials(snap.profile.name) : "··"}</span>
+          </span>
+        </div>
+
+        {snap === undefined && <Loading />}
+        {snap === null && (
+          <div className="empty-state">
+            <h1>No student file yet.</h1>
+            <p className="muted">Seed Priya with <code>python -m seed.reset</code>, then say “check my pay” in ASI:One. This page fills in as each agent writes.</p>
+          </div>
+        )}
+        {snap && tab === "overview" && <Overview snap={snap} stubs={stubs} feed={feed} selected={selected} onSelect={inspect} onTab={go} mode={mode} wide={wide} {...actions} />}
+        {snap && tab === "paystubs" && <PaystubsView snap={snap} stubs={stubs} selected={selected} onSelect={inspect} wide={wide} />}
+        {snap && tab === "cases" && <CasesView snap={snap} mode={mode} {...actions} />}
+        {snap && tab === "activity" && <DocketView feed={feed} />}
+
+        <footer className="foot">
+          <span>{mode === "demo" ? "Demo mode: synthetic data, simulated calls and deposits. Nothing leaves this page." : "Live: every row comes from the shared Convex student file."}</span>
+          <span>Docket · a caseworker for F-1 students</span>
+        </footer>
+      </div>
     </div>
   );
 }
 
-function Student({ profileId }: { profileId: Id<"profiles"> }) {
-  const data = useQuery(api.dashboard.snapshot, { profileId });
-  if (data === undefined) return <p className="muted">Loading…</p>;
-  if (data === null) return <p className="muted">Student not found.</p>;
-  const { profile, flags, cases, paystubs, transactions } = data;
-
-  const withheld = paystubs.reduce((s, p) => s + p.ssCents + p.medicareCents, 0);
-  const gross = paystubs.reduce((s, p) => s + p.grossCents, 0);
-  const refunded = cases.filter((c) => c.outcome === "refunded").reduce((s, c) => s + c.amountCents, 0);
-  const openCases = cases.filter((c) => c.state !== "closed").length;
+function Overview({ snap, stubs, feed, selected, onSelect, onTab, mode, wide, ...actions }: {
+  snap: Snapshot; stubs: Snapshot["paystubs"]; feed: Activity[] | undefined; selected: number; onSelect: (k: number) => void; onTab: (t: Tab) => void; mode: Mode; wide: boolean;
+} & Actions) {
+  const { profile, flags, cases } = snap;
+  const fica = flags.find((f) => f.ruleId === "FICA_EXEMPT_F1");
+  const refundCase = cases.find((c) => c.flagId === fica?._id) ?? cases[0];
+  const closed = refundCase?.state === "closed" && refundCase.outcome === "refunded";
+  const withheld = stubs.reduce((s, p) => s + p.ssCents + p.medicareCents, 0);
+  const net = stubs.reduce((s, p) => s + p.netCents, 0);
+  const openItems = flags.filter((f) => f.status !== "resolved");
+  const overIdx = stubs.findIndex((p) => p.hoursByWeek.some((h) => h > 20));
+  const hoursFlag = flags.find((f) => f.ruleId === "ONCAMPUS_20_HOURS");
+  const matched = stubs.filter((p) => snap.transactions.some((t) => t.kind === "deposit" && t.amountCents === p.netCents)).length;
+  const term = stubs.length ? termName(stubs[0].periodStart) : "No paystubs yet";
+  const employer = stubs[0]?.employer ?? "No employer on file";
+  let cum = 0;
+  const bars = stubs.map((p) => (cum += p.ssCents + p.medicareCents));
 
   return (
     <>
-      <section className="profile">
+      <section className="hero">
         <div>
-          <h1>{profile.name}</h1>
-          <p className="muted">
-            {profile.visa} · {profile.school} · from {profile.homeCountry} · arrived {profile.arrivalDate}
-          </p>
+          <h1>Your money, in focus.</h1>
+          <p className="muted">{profile.name} · {profile.visa}, calendar year {calendarYear(profile.arrivalDate, new Date().getFullYear())} of 5 · {term} · {employer}</p>
         </div>
-        <span className="chip">{profile.workAuth}</span>
+        {mode === "demo" && actions.onReset && <button type="button" className="btn ghost" onClick={actions.onReset}>↺ Reset demo</button>}
       </section>
 
-      <section className="tiles">
-        <Tile label="Paystubs read" value={String(paystubs.length)} sub={`${usd(gross)} gross`} />
-        <Tile label="Withheld in error" value={usd(withheld)} sub="Social Security + Medicare" accent="warn" />
-        <Tile label="Open cases" value={String(openCases)} sub={`${flags.length} flags`} />
-        <Tile label="Recovered" value={usd(refunded)} sub="refund deposits matched" accent="good" />
+      <section className="kpis">
+        <div className="kpi">
+          <span className="kpi-l">{closed ? "Recovered" : "Potential refund"}</span>
+          <div className="kpi-row">
+            <span className={`kpi-v num ${closed ? "okc" : ""}`}>{usd(fica?.amountCents ?? withheld)}</span>
+            <Spark values={bars} done={closed} />
+          </div>
+          <span className="kpi-s">Across {stubs.length} paychecks · {closed ? "back in Priya’s account" : refundCase ? stateLabel(refundCase.state).toLowerCase() : "not reviewed yet"}</span>
+        </div>
+        <div className="kpi">
+          <span className="kpi-l">Net pay recorded</span>
+          <span className="kpi-v num">{usd(net)}</span>
+          <span className="kpi-s">{matched} of {stubs.length} paystubs matched to a bank deposit</span>
+        </div>
+        <div className="kpi">
+          <span className="kpi-l">Items to review</span>
+          <span className="kpi-v num">{openItems.length}</span>
+          <span className="kpi-s">{openItems.length ? openItems.map((f) => shortRule(f.ruleId)).join(" + ") : "Nothing open"}</span>
+        </div>
       </section>
 
-      <div className="grid">
-        <div className="col">
-          <h2>Flags</h2>
-          {flags.length === 0 && <p className="empty">No flags yet. Say “check my pay” in ASI:One.</p>}
-          {flags.map((f) => (
-            <article className="card" key={f._id}>
-              <div className="row">
-                <h3>{RULE_LABEL[f.ruleId] ?? f.ruleId}</h3>
-                {f.amountCents > 0 && <span className="amount">{usd(f.amountCents)}</span>}
-              </div>
-              <p>{f.explanation}</p>
-              <blockquote>
-                “{f.quote}”
-                {f.sourceUrl && (
-                  <a href={f.sourceUrl} target="_blank" rel="noreferrer">{f.sourceTitle ?? f.sourceUrl}</a>
-                )}
-              </blockquote>
-              <span className={`status s-${f.status}`}>{f.status.replace(/_/g, " ")}</span>
-            </article>
-          ))}
-
-          <h2>Cases</h2>
-          {cases.length === 0 && <p className="empty">No cases open.</p>}
-          {cases.map((c) => (
-            <article className="card" key={c._id}>
-              <div className="row">
-                <h3>Refund case</h3>
-                <span className="amount">{usd(c.amountCents)}</span>
-              </div>
-              <Stepper state={c.state} />
-              <p className="muted small">Next follow-up {c.nextFollowUp}</p>
-              {c.state === "escalate_irs" && c.outcome && <p className="note">{c.outcome}</p>}
-              {c.calls.map((call) => (
-                <div className="call" key={call._id}>
-                  <div className="row">
-                    <strong>Call · {call.answeredBy}</strong>
-                    <span className="muted small">{time(call.at)}</span>
-                  </div>
-                  <p>{call.summary}</p>
-                  <p className="muted small">
-                    {call.promisedBy && <>Promised by {call.promisedBy}. </>}
-                    {call.referenceNo && <>Ref {call.referenceNo}. </>}
-                    {call.transcriptUrl && <a href={call.transcriptUrl} target="_blank" rel="noreferrer">Transcript</a>}
-                  </p>
-                </div>
-              ))}
-              {c.draft && (
-                <details>
-                  <summary>Request sent to payroll</summary>
-                  <pre>{c.draft}</pre>
-                </details>
-              )}
-            </article>
-          ))}
-
-          <h2>Money</h2>
-          {transactions.length === 0 ? (
-            <p className="empty">No bank activity yet. The Ledger fills this from Nessie.</p>
-          ) : (
-            <table>
-              <tbody>
-                {transactions.map((t) => (
-                  <tr key={t._id}>
-                    <td className="muted">{t.date}</td>
-                    <td>{t.counterparty}</td>
-                    <td className={t.amountCents >= 0 ? "pos" : "neg"}>{usd(t.amountCents)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="ov-grid">
+        <div className="ov-main">
+          {refundCase ? <CaseReview c={refundCase} mode={mode} {...actions} /> : (
+            <section className="panel pad"><h2>No case yet</h2><p className="muted">When a rule finds money owed, the Caseworker opens a case here with a drafted request for Priya to approve.</p></section>
+          )}
+          {overIdx >= 0 && hoursFlag && (
+            <section className="callout">
+              <div className="callout-t"><span className="sq" />One week needs a closer look</div>
+              <p>Paystub {String(overIdx + 1).padStart(2, "0")} shows {Math.max(...stubs[overIdx].hoursByWeek)} hours in one week while school was in session. This stays private to Priya and is never shared with payroll.</p>
+              <button type="button" className="link" onClick={() => onSelect(overIdx)}>Inspect paystub {String(overIdx + 1).padStart(2, "0")} →</button>
+            </section>
           )}
         </div>
 
-        <aside className="col">
-          <h2>Activity</h2>
-          <Feed />
+        <aside className="ov-side">
+          <section className="panel">
+            <div className="panel-h">
+              <h2>Recent paystubs</h2>
+              <button type="button" className="link" onClick={() => onTab("paystubs")}>View all {stubs.length} →</button>
+            </div>
+            <StubList stubs={stubs} selected={selected} onSelect={onSelect} limit={4} pinned={overIdx} />
+          </section>
+          <section className="panel">
+            <div className="panel-h">
+              <h2>Case activity</h2>
+              <button type="button" className="link" onClick={() => onTab("activity")}>Full docket →</button>
+            </div>
+            <Docket feed={feed} limit={5} />
+          </section>
         </aside>
       </div>
+
+      {stubs[selected] && <PaperTrail snap={snap} stub={stubs[selected]} index={selected} wide={wide} />}
     </>
   );
 }
 
-function Tile({ label, value, sub, accent }: { label: string; value: string; sub: string; accent?: "warn" | "good" }) {
+const FLOW = ["identified", "approved", "contacted", "refunded"] as const;
+const FLOW_LABEL = { identified: "Identified", approved: "Approved", contacted: "Contacted", refunded: "Refunded" };
+function flowIndex(state: string) {
+  // How many of the four steps are complete.
+  return ({ open: 1, awaiting_approval: 1, contacting_employer: 2, awaiting_response: 3, escalate_irs: 3, refund_received: 4, closed: 4 } as Record<string, number>)[state] ?? 0;
+}
+function stateLabel(s: string) {
+  return ({ open: "Opened", awaiting_approval: "Needs approval", contacting_employer: "Contacting payroll", awaiting_response: "Waiting on payroll", refund_received: "Refund received", closed: "Closed", escalate_irs: "Escalated to IRS" } as Record<string, string>)[s] ?? s;
+}
+
+function CaseReview({ c, mode, onApprove, onSimulateRefund }: { c: Case; mode: Mode } & Actions) {
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const done = flowIndex(c.state);
+  const refunded = c.outcome === "refunded";
+  const call = c.calls[0];
+  const approve = async () => {
+    if (!onApprove) return;
+    setBusy(true); setErr(null);
+    try { await onApprove(c._id); setConfirm(false); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Approval did not go through. Try again."); }
+    finally { setBusy(false); }
+  };
+  const tone = refunded ? "ok" : c.state === "awaiting_approval" ? "ev" : c.state === "escalate_irs" ? "risk" : "ac";
+
   return (
-    <div className={`tile ${accent ?? ""}`}>
-      <span className="label">{label}</span>
-      <span className="value">{value}</span>
-      <span className="muted small">{sub}</span>
+    <section className="panel case">
+      <div className="case-h">
+        <span className="case-ic"><Icon name="cases" /></span>
+        <div>
+          <h2>Payroll refund review</h2>
+          <p className="muted">Case {caseNo(c._id)} · {refunded ? "closed with a refund" : `next follow-up ${day(c.nextFollowUp)}`}</p>
+        </div>
+        <span className={`chip ${tone}`}>{refunded ? "Refunded" : stateLabel(c.state)}</span>
+      </div>
+
+      <div className="case-amt">
+        <div>
+          <span className="kpi-l">{refunded ? "Refunded" : "Potential refund amount"}</span>
+          <span className={`big num ${refunded ? "okc" : ""}`}>{usd(c.amountCents)}</span>
+        </div>
+        <button type="button" className="link" onClick={() => document.getElementById("paper-trail")?.scrollIntoView({ behavior: "smooth" })}>View evidence ↗</button>
+      </div>
+
+      <ol className="flow" aria-label="Case progress">
+        {FLOW.map((k, n) => (
+          <li key={k} className={n < done ? "done" : n === done && !refunded ? "now" : ""}>
+            <span className="bar" />
+            <span className="fl num">{String(n + 1).padStart(2, "0")} · {FLOW_LABEL[k]}</span>
+          </li>
+        ))}
+      </ol>
+
+      {c.draft && (
+        <div className="draft">
+          <span className="draft-t">{c.state === "awaiting_approval" ? "Prepared for your review" : "Request approved by Priya"}</span>
+          <p>{c.draft}</p>
+        </div>
+      )}
+
+      {c.state === "awaiting_approval" && !confirm && (
+        <div className="act">
+          <button type="button" className="btn" onClick={() => setConfirm(true)}>Review &amp; approve request →</button>
+          <span className="muted">Nothing has been sent</span>
+        </div>
+      )}
+      {c.state === "awaiting_approval" && confirm && (
+        <div className="confirm">
+          <p><b>Approve and contact payroll?</b> Docket will call University Dining payroll about {usd(c.amountCents)}. The agent says it is an AI assistant acting with your permission, shares only this request, and never mentions the hours flag.</p>
+          <div className="act">
+            <button type="button" className="btn" onClick={approve} disabled={busy}>{busy ? "Approving…" : "Approve and contact payroll"}</button>
+            <button type="button" className="btn ghost" onClick={() => setConfirm(false)} disabled={busy}>Not now</button>
+          </div>
+          {mode === "live" && <p className="note">This runs the same approval as replying YES in ASI:One.</p>}
+          {err && <p className="err">{err}</p>}
+        </div>
+      )}
+      {c.state === "contacting_employer" && <div className="status"><span className="spin" />Calling payroll now. The call log appears here when it ends.</div>}
+      {call && (
+        <div className="call">
+          <div className="call-h"><b>Call · {call.answeredBy}</b><span className="muted num">{time(call.at)}</span></div>
+          <p>{call.summary}</p>
+          <p className="muted num">{call.promisedBy && <>Promised by {day(call.promisedBy)}. </>}{call.referenceNo && <>Ref {call.referenceNo}.</>}</p>
+        </div>
+      )}
+      {c.state === "awaiting_response" && mode === "demo" && onSimulateRefund && (
+        <div className="act"><button type="button" className="btn ghost" onClick={onSimulateRefund}>Simulate the refund deposit</button><span className="muted">Stands in for two weeks passing</span></div>
+      )}
+      {c.state === "escalate_irs" && c.outcome && <p className="note">{c.outcome}</p>}
+      {refunded && <div className="status okc">The {usd(c.amountCents)} deposit was matched to this case, and the case is closed.</div>}
+      <p className="fine">You see exactly what is shared before anything is sent. Likely, not certain: confirm with your international office.</p>
+    </section>
+  );
+}
+
+function StubList({ stubs, selected, onSelect, limit, pinned }: { stubs: Snapshot["paystubs"]; selected: number; onSelect: (k: number) => void; limit?: number; pinned?: number }) {
+  let idx = stubs.map((_, k) => k).reverse();
+  if (limit) {
+    idx = idx.slice(0, limit);
+    if (pinned !== undefined && pinned >= 0 && !idx.includes(pinned)) idx = [...idx.slice(0, limit - 1), pinned];
+  }
+  if (!stubs.length) return <p className="muted pad">No paystubs yet. The Ledger reads them when Priya asks “check my pay”.</p>;
+  return (
+    <div className="stubs" role="list">
+      <div className="stub head"><span>Document</span><span>Net pay</span><span>Withheld</span></div>
+      {idx.map((k) => {
+        const p = stubs[k];
+        const over = p.hoursByWeek.some((h) => h > 20);
+        return (
+          <button key={p._id} type="button" role="listitem" className={`stub ${k === selected ? "on" : ""}`} onClick={() => onSelect(k)}>
+            <span><b>Paystub {String(k + 1).padStart(2, "0")}</b><small>{day(p.periodStart)} – {day(p.periodEnd)}{over ? " · hours flag" : ""}</small></span>
+            <span className="num">{usd(p.netCents)}</span>
+            <span className="num evc">{usd(p.ssCents + p.medicareCents)}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function Stepper({ state }: { state: string }) {
-  if (state === "escalate_irs") return <span className="status s-escalate_irs">Escalated to IRS</span>;
-  const at = STATES.indexOf(state);
+function Docket({ feed, limit }: { feed: Activity[] | undefined; limit?: number }) {
+  if (feed === undefined) return <p className="muted pad">Loading…</p>;
+  if (!feed.length) return <p className="muted pad">Quiet. Every agent writes an entry for each action, and for each action it decides not to take.</p>;
+  // Entries are numbered in the order they were filed, like a court docket.
+  const numbered = [...feed].sort((a, b) => a.at.localeCompare(b.at)).map((r, k) => ({ r, n: k + 1 })).reverse();
+  const rows = limit ? numbered.slice(0, limit) : numbered;
   return (
-    <ol className="stepper">
-      {STATES.slice(1).map((s, i) => (
-        <li key={s} className={i + 1 < at ? "done" : i + 1 === at ? "now" : ""}>
-          {STATE_LABEL[s]}
+    <ol className="docket">
+      {rows.map(({ r, n }) => (
+        <li key={r._id} className={`entry a-${r.agent} k-${r.action}`}>
+          <span className="no num">{n}</span>
+          <div>
+            <div className="e-t">{actionLabel(r.action)}</div>
+            <div className="e-m"><span className="ag">{AGENT_LABEL[r.agent] ?? r.agent}</span><span className="num">{time(r.at)}</span></div>
+            <p className="e-d">{r.detail}</p>
+          </div>
         </li>
       ))}
     </ol>
   );
 }
 
-function Feed() {
-  const rows = useQuery(api.activity.recent, { limit: 60 });
-  if (rows === undefined) return <p className="muted">Loading…</p>;
-  if (rows.length === 0) return <p className="empty">Quiet. Agents write here on every action.</p>;
+function DocketView({ feed }: { feed: Activity[] | undefined }) {
+  const [who, setWho] = useState<string>("all");
+  const agents = useMemo(() => Array.from(new Set((feed ?? []).map((r) => r.agent))), [feed]);
+  const shown = (feed ?? []).filter((r) => who === "all" || r.agent === who);
   return (
-    <ul className="feed">
-      {rows.map((r) => (
-        <li key={r._id}>
-          <div className="row">
-            <span className={`agent a-${r.agent}`}>{r.agent}</span>
-            <span className="muted small mono">{time(r.at)}</span>
-          </div>
-          <span className="action mono">{r.action}</span>
-          <p>{r.detail}</p>
-        </li>
-      ))}
-    </ul>
+    <>
+      <section className="hero"><div><h1>The docket.</h1><p className="muted">Every action every agent took on Priya’s file, including the ones it decided not to take.</p></div></section>
+      <div className="filters" role="group" aria-label="Filter by agent">
+        {["all", ...agents].map((a) => (
+          <button key={a} type="button" className={who === a ? "on" : ""} onClick={() => setWho(a)}>{a === "all" ? "All agents" : AGENT_LABEL[a] ?? a}<span className="num">{a === "all" ? feed?.length ?? 0 : feed?.filter((r) => r.agent === a).length}</span></button>
+        ))}
+      </div>
+      <section className="panel"><Docket feed={feed === undefined ? undefined : shown} /></section>
+    </>
   );
+}
+
+function PaystubsView({ snap, stubs, selected, onSelect, wide }: { snap: Snapshot; stubs: Snapshot["paystubs"]; selected: number; onSelect: (k: number) => void; wide: boolean }) {
+  const weeks = stubs.flatMap((p, k) => p.hoursByWeek.map((h, w) => ({ h, k, start: new Date(new Date(p.periodStart + "T12:00:00").getTime() + 7 * w * 86400000) })));
+  const W = 760, H = 170, L = 28, R = 8, T = 16, B = 26, pw = W - L - R, ph = H - T - B, max = 28, slot = pw / Math.max(1, weeks.length);
+  const y = (v: number) => T + ph - (v / max) * ph;
+  const tot = (f: (p: Snapshot["paystubs"][number]) => number) => usd(stubs.reduce((s, p) => s + f(p), 0));
+  return (
+    <>
+      <section className="hero"><div><h1>Every paystub, checked.</h1><p className="muted">Transcribed by Claude, then every number recomputed in code before any rule runs.</p></div></section>
+      {weeks.length > 0 && (
+        <section className="panel pad">
+          <div className="panel-h flat"><h2>Hours by week</h2><span className="muted">The dashed line is the 20-hour limit while school is in session</span></div>
+          <svg className="hours" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Hours worked each week, with the 20-hour limit">
+            <line className="g" x1={L} x2={W - R} y1={y(0)} y2={y(0)} />
+            <text className="ax" x={L - 6} y={y(0) + 4} textAnchor="end">0</text>
+            <text className="ax" x={L - 6} y={y(20) + 4} textAnchor="end">20</text>
+            {weeks.map((w, n) => (
+              <g key={n} className={`wk ${w.k === selected ? "sel" : ""}`} onClick={() => onSelect(w.k)}>
+                <rect className={w.h > 20 ? "over" : ""} x={L + n * slot + slot * 0.2} y={y(w.h)} width={slot * 0.6} height={y(0) - y(w.h)} rx={2} />
+                {w.h > 20 && <text className="ax risk" x={L + n * slot + slot / 2} y={y(w.h) - 6} textAnchor="middle">{w.h} h</text>}
+              </g>
+            ))}
+            <line className="limit" x1={L} x2={W - R} y1={y(20)} y2={y(20)} />
+            <text className="ax" x={L} y={H - 8}>{day(weeks[0].start.toISOString().slice(0, 10))}</text>
+            <text className="ax" x={W - R} y={H - 8} textAnchor="end">{day(weeks[weeks.length - 1].start.toISOString().slice(0, 10))}</text>
+          </svg>
+        </section>
+      )}
+      <section className="panel">
+        <div className="tbl">
+          <table>
+            <thead><tr><th>Paystub</th><th>Pay period</th><th>Hours</th><th>Gross</th><th>Social Security</th><th>Medicare</th><th>Net</th></tr></thead>
+            <tbody>
+              {stubs.map((p, k) => (
+                <tr key={p._id} className={k === selected ? "on" : ""} onClick={() => onSelect(k)}>
+                  <td><button type="button" className="link" onClick={() => onSelect(k)}>{String(k + 1).padStart(2, "0")}</button></td>
+                  <td>{day(p.periodStart)} – {day(p.periodEnd)}</td>
+                  <td className="num">{p.hoursByWeek.map((h, i) => <span key={i} className={h > 20 ? "riskc" : ""}>{i ? " + " : ""}{h}</span>)}</td>
+                  <td className="num">{usd(p.grossCents)}</td><td className="num evc">{usd(p.ssCents)}</td><td className="num evc">{usd(p.medicareCents)}</td><td className="num">{usd(p.netCents)}</td>
+                </tr>
+              ))}
+              {stubs.length > 0 && <tr className="total"><td>{stubs.length}</td><td>Total</td><td className="num">{stubs.reduce((s, p) => s + p.hoursByWeek.reduce((a, b) => a + b, 0), 0)}</td><td className="num">{tot((p) => p.grossCents)}</td><td className="num">{tot((p) => p.ssCents)}</td><td className="num">{tot((p) => p.medicareCents)}</td><td className="num">{tot((p) => p.netCents)}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {stubs[selected] && <PaperTrail snap={snap} stub={stubs[selected]} index={selected} wide={wide} />}
+    </>
+  );
+}
+
+const CASE_FLOW = ["open", "awaiting_approval", "contacting_employer", "awaiting_response", "refund_received", "closed"];
+function CasesView({ snap, mode, ...actions }: { snap: Snapshot; mode: Mode } & Actions) {
+  return (
+    <>
+      <section className="hero"><div><h1>Cases and flags.</h1><p className="muted">A case opens only from a flag whose quote matched the official source word for word.</p></div></section>
+      <div className="cases-grid">
+        <div className="col">
+          {snap.cases.length === 0 && <section className="panel pad"><p className="muted">No cases yet.</p></section>}
+          {snap.cases.map((c) => (
+            <div key={c._id} className="col">
+              <CaseReview c={c} mode={mode} {...actions} />
+              <section className="panel pad">
+                <h2>State machine</h2>
+                <ol className="states">
+                  {CASE_FLOW.map((s, n) => {
+                    const at = CASE_FLOW.indexOf(c.state);
+                    return <li key={s} className={c.state === "closed" || n < at ? "done" : n === at ? "now" : ""}>{stateLabel(s === "awaiting_approval" ? s : s)}</li>;
+                  })}
+                  <li className={`branch ${c.state === "escalate_irs" ? "now" : ""}`}>If payroll refuses: escalate to the IRS with Forms 843 and 8316</li>
+                </ol>
+              </section>
+            </div>
+          ))}
+        </div>
+        <div className="col">
+          {snap.flags.map((f) => (
+            <section className="panel pad flag" key={f._id}>
+              <div className="flag-h"><h2>{RULE_LABEL[f.ruleId] ?? f.ruleId}</h2>{f.amountCents > 0 && <span className="num big-s">{usd(f.amountCents)}</span>}</div>
+              <p>{f.explanation}</p>
+              <blockquote>“{f.quote}”</blockquote>
+              <div className="rule-src">{f.sourceUrl ? <a href={f.sourceUrl} target="_blank" rel="noreferrer">{f.sourceTitle ?? f.sourceUrl}</a> : f.sourceTitle}</div>
+              <span className={`chip ${f.status === "resolved" ? "ok" : f.ruleId === "ONCAMPUS_20_HOURS" ? "risk" : "ev"}`}>{f.status.replace(/_/g, " ")}</span>
+            </section>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Spark({ values, done }: { values: number[]; done: boolean }) {
+  const max = Math.max(1, ...values);
+  return (
+    <svg className={`spark ${done ? "done" : ""}`} viewBox={`0 0 ${values.length * 7} 24`} aria-hidden="true">
+      {values.map((v, k) => <rect key={k} x={k * 7} y={24 - (v / max) * 24} width={4.5} height={(v / max) * 24} rx={1} />)}
+    </svg>
+  );
+}
+
+function Loading() {
+  return <div className="loading"><span className="spin" />Opening Priya’s student file…</div>;
+}
+
+function Mark() {
+  return (
+    <svg className="mark" viewBox="0 0 28 28" aria-hidden="true">
+      <rect x="1" y="1" width="26" height="26" rx="7" className="m-bg" />
+      <path d="M9 7.5h6.5a5.5 5.5 0 0 1 0 11H9z" className="m-d" />
+      <path d="M8 21.5h12" className="m-l" />
+    </svg>
+  );
+}
+
+function Icon({ name }: { name: Tab }) {
+  const d = {
+    overview: "M3 3h4.5v4.5H3zM9.5 3H14v4.5H9.5zM3 9.5h4.5V14H3zM9.5 9.5H14V14H9.5z",
+    paystubs: "M4 2.5h6l3 3V14H4zM10 2.5v3h3M6 8.5h5M6 11h5",
+    cases: "M2.5 5h12v8.5h-12zM6 5V3.5h5V5M2.5 8.5h12",
+    activity: "M2 9h3l2-5 3 9 2-4h3",
+  }[name];
+  return <svg className="ic" viewBox="0 0 17 17" aria-hidden="true"><path d={d} /></svg>;
+}
+
+const initials = (n: string) => n.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+const caseNo = (id: string) => "DKT-" + (id.startsWith("demo") ? "0042" : id.replace(/[^0-9a-z]/gi, "").slice(-4).toUpperCase());
+const shortRule = (r: string) => ({ FICA_EXEMPT_F1: "Withholding", ONCAMPUS_20_HOURS: "work-hours flag", FORM_8843_ANNUAL: "Form 8843" } as Record<string, string>)[r] ?? r;
+function termName(iso: string) {
+  const m = Number(iso.slice(5, 7)), y = iso.slice(0, 4);
+  return `${m <= 5 ? "Spring" : m <= 7 ? "Summer" : "Fall"} ${y}`;
 }
