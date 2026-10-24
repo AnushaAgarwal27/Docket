@@ -9,6 +9,9 @@ export type Flag = Snapshot["flags"][number];
 export type Case = Snapshot["cases"][number];
 export type Paystub = Snapshot["paystubs"][number];
 export type Activity = Doc<"activity">;
+export type Timeline = NonNullable<FunctionReturnType<typeof api.timeline.forProfile>>;
+export type Patterns = FunctionReturnType<typeof api.patterns.byEmployer>;
+export type PayrollScript = "cooperate" | "stall_once" | "refuse_once";
 
 export const usd = (cents: number) =>
   (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -54,6 +57,9 @@ export const ACTION_LABEL: Record<string, string> = {
   source_fetched: "Official source fetched",
   call_requested: "Call requested",
   call_placed: "Calling payroll",
+  case_written_request: "Written request needed",
+  written_request_prepared: "Written request prepared",
+  simulated_cohort: "Simulated students added",
   call_failed: "Call could not start",
   refund_matched: "Refund deposit matched",
   case_open: "Case opened",
@@ -108,6 +114,19 @@ export const DRAFT =
   "Medicare ($83.52) were withheld across her 8 paychecks from Jan 12 to May 3, 2026. Nonresident F-1 students are " +
   "generally exempt from both. Could you refund $440.64 and update her tax status so future pay isn't withheld?";
 
+// Demo copy of the Caseworker's letter (agents/caseworker/engine.py draft_written_request).
+export function demoLetter(nextFollowUp: string): string {
+  const today = new Date();
+  const long = (d: Date) => d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return `${long(today)}\n\nTo: University Dining Services Payroll\nRe: Refund of Social Security and Medicare withheld in error, Priya Sharma\n\n` +
+    "Docket, an AI assistant acting for Priya Sharma with her permission, called payroll about this refund. Payroll did not agree to refund it on that call, so this letter puts the request in writing.\n\n" +
+    "Priya Sharma is a nonresident alien student in F-1 status, in calendar year 3 of 5 in the United States. Social Security ($357.12) and Medicare ($83.52) were withheld from 8 paychecks for pay periods 2026-01-12 to 2026-05-03, a total of $440.64.\n\n" +
+    "IRS Publication 519, U.S. Tax Guide for Aliens states: \"Social security and Medicare taxes are not withheld from pay for the work unless the student is considered a resident alien.\"\n\n" +
+    `Please, by ${long(new Date(today.getTime() + 10 * 86400000))}, do one of the following:\n1. Refund $440.64 and stop withholding Social Security and Medicare from her future paychecks; or\n` +
+    "2. If you will not refund it, give her a written statement saying so. She needs that statement to claim the refund from the IRS with Form 843 and Form 8316.\n\n" +
+    `Docket will follow up by phone on ${nextFollowUp}.\n\nSent by Priya Sharma, prepared with Docket.`;
+}
+
 export function demoSnapshot(): Snapshot {
   const paystubs = stubs();
   const transactions = paystubs.map((p, k) => ({
@@ -128,6 +147,7 @@ export function demoSnapshot(): Snapshot {
         quote: "Social security and Medicare taxes are not withheld from pay for the work unless the student is considered a resident alien.",
         sourceId: FICA_SOURCE, status: "case_opened",
         sourceTitle: "IRS Publication 519, U.S. Tax Guide for Aliens", sourceUrl: "https://www.irs.gov/publications/p519",
+        sourceFetchedAt: ago(90), sourceHash: "demo",
       },
       {
         _id: id<"flags">("demo_flag_hours"), _creationTime: NOW, profileId: PROFILE_ID, ruleId: "ONCAMPUS_20_HOURS", amountCents: 0,
@@ -135,6 +155,7 @@ export function demoSnapshot(): Snapshot {
         quote: "Employment authorized under this paragraph (f)(9)(i) must not exceed 20 hours a week while school is in session",
         sourceId: HOURS_SOURCE, status: "open",
         sourceTitle: "8 CFR 214.2(f)(9)(i), on-campus employment", sourceUrl: "https://www.ecfr.gov/current/title-8/section-214.2",
+        sourceFetchedAt: ago(90), sourceHash: "demo",
       },
     ],
     cases: [{

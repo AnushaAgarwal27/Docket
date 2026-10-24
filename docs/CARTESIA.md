@@ -10,7 +10,9 @@ approve ──> case: contacting_employer
              │  tool get_case_summary  ──> POST <convex site>/cartesia/case-summary   (facts computed in code)
              │  tool log_call_outcome  ──> POST <convex site>/cartesia/call-outcome   (runs cases:logCallOutcome)
              ▼
-        case: awaiting_response (promised) | escalate_irs (refused) | awaiting_response + 3-way call (needs_student)
+        case: awaiting_response (promised) | awaiting_response + 3-way call (needs_student)
+              | written_request (first stall or refusal: letter, then "Follow up by phone" places call 2)
+              | escalate_irs (stall or refusal again after the letter)
 ```
 
 Code: `agents/caseworker/cartesia.py` (starts the call), `agents/caseworker/engine.py` (`request_call`, `place_pending_calls`),
@@ -45,6 +47,7 @@ You are Docket's payroll assistant, calling {{employer}} payroll on behalf of {{
 - Share nothing else about {{student_name}}: no work hours, visa history, bank details, or ID numbers. If asked, say she will follow up directly.
 - If payroll needs to speak with her or needs documents, do not argue; record needs_student.
 - If payroll says no, stay polite, ask whether they can put that in writing, and record refused.
+- If payroll will not commit to a date, record stalled. Do not push.
 - Before ending, always call log_call_outcome. Give promised_by as YYYY-MM-DD.
 - Then thank them and end the call. Keep every reply to one or two short sentences.
 ```
@@ -56,7 +59,7 @@ Create both as webhook tools and attach them to the agent. Auth: **Bearer**, tok
 |---|---|---|
 | Description | Get the facts of this refund request: amount, pay periods, the rule, and what to ask for. Call once, right after payroll answers. | Record what payroll agreed to. Call once, before ending the call. |
 | Method, URL | POST `https://basic-magpie-317.convex.site/cartesia/case-summary` | POST `https://basic-magpie-317.convex.site/cartesia/call-outcome` |
-| Body | `case_id` ← dynamic variable `case_id` | `case_id` ← dynamic variable `case_id`; `result` (string, model): one of `promised`, `refused`, `needs_student`; `answered_by` (string, model): name or role of the person; `summary` (string, model): one sentence on what payroll said; `promised_by` (string, model, optional): refund date as YYYY-MM-DD; `reference_number` (string, model, optional) |
+| Body | `case_id` ← dynamic variable `case_id` | `case_id` ← dynamic variable `case_id`; `result` (string, model, enum): `promised`, `stalled`, `refused`, `needs_student`; `answered_by` (string, model): name or role of the person; `summary` (string, model): one sentence on what payroll said; `promised_by` (string, model, optional): refund date as YYYY-MM-DD; `reference_number` (string, model, optional) |
 | Pre-tool speech | off | auto |
 | Execution | immediate | immediate |
 | Timeout | 10 s | 10 s |
@@ -71,6 +74,12 @@ PAYROLL_PHONE=+1XXXXXXXXXX      # the teammate playing payroll, E.164
 # CARTESIA_VERSION=2026-08-14   # change only if Cartesia's API version for /agents/calls differs
 ```
 Restart the Caseworker (`python -m agents.caseworker.agent`, or `scripts/run_agents.sh`).
+
+## Rehearse without a phone
+Set `CARTESIA_SIMULATE=1` and `CARTESIA_TOOL_TOKEN` in `.env` and restart the Caseworker. Approvals then run a stand-in call that
+plays the agent's two tools against Convex and follows the case's **Rehearsal setting** (dashboard): cooperates, stalls once or
+refuses once on the first call, then agrees on the follow-up. Activity rows say "Rehearsal: simulated payroll call". Unset it
+for the real call. With a real call, the rehearsal setting is only an instruction for the teammate playing payroll.
 
 ## Test it
 1. Playground: in the Cartesia dashboard, set the sample dynamic variable `case_id` to a real case id (copy it from the Convex dashboard, `cases` table) and talk to the agent. Both tools should return text, and the case should move to `awaiting_response`.

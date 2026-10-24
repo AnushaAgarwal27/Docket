@@ -2,59 +2,106 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import type { Activity, Case, Snapshot } from "./data";
-import { AGENT_LABEL, RULE_LABEL, actionLabel, calendarYear, day, demoFeed, demoSnapshot, time, usd } from "./data";
+import type { Activity, Case, Patterns, PayrollScript, Snapshot, Timeline } from "./data";
+import { AGENT_LABEL, MEDICARE_BP, RULE_LABEL, SS_BP, actionLabel, calendarYear, day, demoFeed, demoLetter, demoSnapshot, pct, time, usd } from "./data";
 import { PaperTrail } from "./PaperTrail";
 
-// Live mode reads the shared student file through Anusha's one snapshot query and the activity feed.
-// Demo mode renders the same screen from labelled synthetic data, for rehearsals and the backup video.
+// Live mode reads the shared student file from Convex: Anusha's snapshot query, the activity feed,
+// the timeline and the employer pattern. Demo mode (?demo) renders from labelled synthetic data, as an
+// offline backup for rehearsals and the video; the timeline and pattern panels are live only.
 
 type Mode = "live" | "demo";
 type Tab = "overview" | "paystubs" | "cases" | "activity";
 type Actions = {
   onApprove?: (caseId: Id<"cases">) => Promise<void>;
+  onFollowUp?: (caseId: Id<"cases">) => Promise<void>;
+  onSetScript?: (caseId: Id<"cases">, script: PayrollScript) => Promise<void>;
   onSimulateRefund?: () => void;
   onReset?: () => void;
 };
+type Extra = { timeline?: Timeline | null; patterns?: Patterns };
+
+const localToday = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in the viewer's time zone
 
 export function LiveApp() {
   const profiles = useQuery(api.profiles.list);
-  const profileId = profiles?.[0]?._id;
+  // The simulated cohort (employer pattern view) is never the student on screen.
+  const profileId = profiles?.find((p) => !p.simulated)?._id;
   const snap = useQuery(api.dashboard.snapshot, profileId ? { profileId } : "skip");
+  const timeline = useQuery(api.timeline.forProfile, profileId ? { profileId, today: localToday() } : "skip");
+  const patterns = useQuery(api.patterns.byEmployer, {});
   const feed = useQuery(api.activity.recent, { limit: 80 });
   const approve = useMutation(api.cases.approve);
+  const followUp = useMutation(api.cases.followUp);
+  const setScript = useMutation(api.cases.setPayrollScript);
   const state = profiles === undefined ? undefined : profileId === undefined ? null : snap;
-  return <Dashboard mode="live" snap={state} feed={feed} onApprove={async (caseId) => { await approve({ caseId }); }} />;
+  return (
+    <Dashboard mode="live" snap={state} feed={feed} timeline={timeline} patterns={patterns}
+      onApprove={async (caseId) => { await approve({ caseId }); }}
+      onFollowUp={async (caseId) => { await followUp({ caseId }); }}
+      onSetScript={async (caseId, script) => { await setScript({ caseId, script }); }} />
+  );
 }
 
 export function DemoApp() {
   const [snap, setSnap] = useState<Snapshot>(demoSnapshot);
   const [feed, setFeed] = useState<Activity[]>(demoFeed);
   const timers = useRef<number[]>([]);
+  const snapRef = useRef(snap);
+  snapRef.current = snap;
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  const push = (agent: string, action: string, detail: string) =>
-    setFeed((f) => [{ _id: `demo_${Date.now()}_${f.length}` as Id<"activity">, _creationTime: Date.now(), agent, action, detail, at: new Date().toISOString() }, ...f]);
+  const clock = useRef(0); // strictly increasing times, so rows logged in the same millisecond keep their order
+  const push = (agent: string, action: string, detail: string) => {
+    clock.current = Math.max(Date.now(), clock.current + 1);
+    const at = clock.current;
+    setFeed((f) => [{ _id: `demo_${at}_${f.length}` as Id<"activity">, _creationTime: at, agent, action, detail, at: new Date(at).toISOString() }, ...f]);
+  };
   const patchCase = (fn: (c: Case) => Case) => setSnap((s) => ({ ...s, cases: s.cases.map(fn) }));
   const inDays = (n: number) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+
+  // One simulated payroll call, following the case's rehearsal setting on the first attempt.
+  const runCall = (attempt: number) => {
+    push("voice", "call_placed", "Calling payroll (demo). The agent says it is an AI assistant acting with Priya's permission.");
+    timers.current.push(window.setTimeout(() => {
+      {
+        const s = snapRef.current;
+        const c0 = s.cases[0];
+        const script = c0.payrollScript ?? "cooperate";
+        const result = attempt > 1 || script === "cooperate" ? "promised" : script === "stall_once" ? "stalled" : "refused";
+        const promised = inDays(14);
+        const call = {
+          _id: `demo_call_${attempt}` as Id<"calls">, _creationTime: Date.now(), caseId: c0._id, answeredBy: "Payroll office", at: new Date().toISOString(),
+          summary: result === "promised" ? "Confirmed the F-1 status on file; will refund the Social Security and Medicare withheld and stop withholding."
+            : result === "stalled" ? "Said they would look into it but would not give a date." : "Said they cannot refund taxes already reported.",
+          ...(result === "promised" ? { promisedBy: promised, referenceNo: "PR-88213" } : {}),
+        };
+        const next: Case = result === "promised"
+          ? { ...c0, state: "awaiting_response", nextFollowUp: promised, calls: [call, ...c0.calls] }
+          : { ...c0, state: "written_request", nextFollowUp: inDays(3), writtenRequest: demoLetter(inDays(3)), writtenRequestAt: new Date().toISOString(), calls: [call, ...c0.calls] };
+        setSnap({ ...s, cases: [{ ...next, callAttempts: attempt }] });
+        if (result === "promised") push("caseworker", "case_awaiting_response", `Payroll promised a refund by ${promised}`);
+        else {
+          push("caseworker", "case_written_request", `Payroll ${result === "stalled" ? "would not commit to a date" : "refused"} on call 1; putting the request in writing`);
+          push("caseworker", "written_request_prepared", "Written request prepared for Priya to send; phone follow-up in 3 days");
+        }
+      }
+    }, 2600));
+  };
 
   const actions: Actions = {
     onApprove: async () => {
       patchCase((c) => ({ ...c, state: "contacting_employer" }));
       push("coordinator", "approval_recorded", "Priya replied YES. Approval recorded; nothing was sent before this.");
       push("caseworker", "case_contacting_employer", "Student approved; contacting payroll");
-      timers.current.push(window.setTimeout(() => {
-        const promised = inDays(14);
-        patchCase((c) => ({
-          ...c, state: "awaiting_response", nextFollowUp: promised,
-          calls: [{ _id: "demo_call" as Id<"calls">, _creationTime: Date.now(), caseId: c._id, answeredBy: "Payroll office", at: new Date().toISOString(),
-            summary: "Payroll confirmed the F-1 status on file, agreed to refund the Social Security and Medicare withheld, and will stop withholding on future pay.",
-            promisedBy: promised, referenceNo: "PR-88213" }],
-        }));
-        push("voice", "call_completed", "Called University Dining payroll as an AI assistant with Priya's permission. The 20-hour flag was not mentioned.");
-        push("caseworker", "case_awaiting_response", `Payroll promised a refund by ${promised}`);
-      }, 2600));
+      runCall(1);
     },
+    onFollowUp: async () => {
+      patchCase((c) => ({ ...c, state: "contacting_employer" }));
+      push("caseworker", "case_contacting_employer", "Following up by phone on the written request");
+      runCall(2);
+    },
+    onSetScript: async (_caseId, script) => patchCase((c) => ({ ...c, payrollScript: script })),
     onSimulateRefund: () => {
       const today = new Date().toISOString().slice(0, 10);
       setSnap((s) => ({
@@ -89,7 +136,7 @@ function useWide(px: number) {
   return wide;
 }
 
-function Dashboard({ mode, snap, feed, ...actions }: { mode: Mode; snap: Snapshot | null | undefined; feed: Activity[] | undefined } & Actions) {
+function Dashboard({ mode, snap, feed, timeline, patterns, ...actions }: { mode: Mode; snap: Snapshot | null | undefined; feed: Activity[] | undefined } & Extra & Actions) {
   const initial = (location.hash.slice(1) as Tab) || "overview";
   const [tab, setTab] = useState<Tab>(TABS.some(([t]) => t === initial) ? initial : "overview");
   const [sel, setSel] = useState<number | null>(null);
@@ -136,7 +183,7 @@ function Dashboard({ mode, snap, feed, ...actions }: { mode: Mode; snap: Snapsho
             <p className="muted">Seed Priya with <code>python -m seed.reset</code>, then say “check my pay” in ASI:One. This page fills in as each agent writes.</p>
           </div>
         )}
-        {snap && tab === "overview" && <Overview snap={snap} stubs={stubs} feed={feed} selected={selected} onSelect={inspect} onTab={go} mode={mode} wide={wide} {...actions} />}
+        {snap && tab === "overview" && <Overview snap={snap} stubs={stubs} feed={feed} selected={selected} onSelect={inspect} onTab={go} mode={mode} wide={wide} timeline={timeline} patterns={patterns} {...actions} />}
         {snap && tab === "paystubs" && <PaystubsView snap={snap} stubs={stubs} selected={selected} onSelect={inspect} wide={wide} />}
         {snap && tab === "cases" && <CasesView snap={snap} mode={mode} {...actions} />}
         {snap && tab === "activity" && <DocketView feed={feed} />}
@@ -150,9 +197,9 @@ function Dashboard({ mode, snap, feed, ...actions }: { mode: Mode; snap: Snapsho
   );
 }
 
-function Overview({ snap, stubs, feed, selected, onSelect, onTab, mode, wide, ...actions }: {
+function Overview({ snap, stubs, feed, selected, onSelect, onTab, mode, wide, timeline, patterns, ...actions }: {
   snap: Snapshot; stubs: Snapshot["paystubs"]; feed: Activity[] | undefined; selected: number; onSelect: (k: number) => void; onTab: (t: Tab) => void; mode: Mode; wide: boolean;
-} & Actions) {
+} & Extra & Actions) {
   const { profile, flags, cases } = snap;
   const fica = flags.find((f) => f.ruleId === "FICA_EXEMPT_F1");
   const refundCase = cases.find((c) => c.flagId === fica?._id) ?? cases[0];
@@ -211,6 +258,7 @@ function Overview({ snap, stubs, feed, selected, onSelect, onTab, mode, wide, ..
               <button type="button" className="link" onClick={() => onSelect(overIdx)}>Inspect paystub {String(overIdx + 1).padStart(2, "0")} →</button>
             </section>
           )}
+          <Receipt snap={snap} stubs={stubs} onSelect={onSelect} />
         </div>
 
         <aside className="ov-side">
@@ -228,11 +276,137 @@ function Overview({ snap, stubs, feed, selected, onSelect, onTab, mode, wide, ..
             </div>
             <Docket feed={feed} limit={5} />
           </section>
+          {patterns && <EmployerPatterns patterns={patterns} studentEmployer={stubs[0]?.employer} />}
         </aside>
       </div>
 
+      {timeline && <TimelinePanel timeline={timeline} name={profile.name} />}
       {stubs[selected] && <PaperTrail snap={snap} stub={stubs[selected]} index={selected} wide={wide} />}
     </>
+  );
+}
+
+// ---- Receipt: each verified flag as the paystub line beside the clause that makes it a problem ----
+function Receipt({ snap, stubs, onSelect }: { snap: Snapshot; stubs: Snapshot["paystubs"]; onSelect: (k: number) => void }) {
+  const flags = snap.flags;
+  if (!flags.length) return null;
+  const ss = stubs.reduce((s, p) => s + p.ssCents, 0);
+  const med = stubs.reduce((s, p) => s + p.medicareCents, 0);
+  const lines = (ruleId: string): { label: string; value: string; stub?: number }[] => {
+    if (ruleId === "FICA_EXEMPT_F1") {
+      const okSS = stubs.every((p) => p.ssCents === pct(p.grossCents, SS_BP));
+      const okMed = stubs.every((p) => p.medicareCents === pct(p.grossCents, MEDICARE_BP));
+      return [
+        { label: `Social Security, ${stubs.length} paystubs${okSS ? " · 6.20% of gross, checked" : ""}`, value: usd(ss), stub: stubs.length - 1 },
+        { label: `Medicare, ${stubs.length} paystubs${okMed ? " · 1.45% of gross, checked" : ""}`, value: usd(med), stub: stubs.length - 1 },
+      ];
+    }
+    if (ruleId === "ONCAMPUS_20_HOURS") {
+      return stubs.flatMap((p, k) => p.hoursByWeek.flatMap((h, w) => (h > 20 ? [{
+        label: `Paystub ${String(k + 1).padStart(2, "0")} · week of ${day(new Date(new Date(p.periodStart + "T12:00:00").getTime() + 7 * w * 86400000).toISOString().slice(0, 10))}`,
+        value: `${h.toFixed(2)} hours`, stub: k,
+      }] : [])));
+    }
+    return [{ label: "Form 8843 on record", value: "none" }];
+  };
+  return (
+    <section className="panel receipt" aria-label="Receipt">
+      <div className="panel-h">
+        <div><h2>Receipt</h2><p className="muted">What Docket checked, and the exact words it checked against.</p></div>
+      </div>
+      {flags.map((f) => (
+        <article key={f._id} className={`rc ${f.ruleId === "ONCAMPUS_20_HOURS" ? "risk" : ""}`}>
+          <div className="rc-h">
+            <span className="rc-t">{RULE_LABEL[f.ruleId] ?? f.ruleId}</span>
+            <span className="chip ok">✓ Verified</span>
+          </div>
+          <div className="rc-lines">
+            {lines(f.ruleId).map((l, i) => (
+              <button key={i} type="button" className="rc-line" onClick={() => l.stub !== undefined && onSelect(l.stub)} disabled={l.stub === undefined}>
+                <span>{l.label}</span><span className="num">{l.value}</span>
+              </button>
+            ))}
+          </div>
+          <blockquote className="rc-q">“{f.quote}”</blockquote>
+          <div className="rc-src">
+            {f.sourceUrl ? <a href={f.sourceUrl} target="_blank" rel="noreferrer">{f.sourceTitle ?? f.sourceUrl}</a> : <span>{f.sourceTitle}</span>}
+            <span className="muted num">{f.sourceFetchedAt ? `stored ${day(f.sourceFetchedAt.slice(0, 10))}, ${time(f.sourceFetchedAt)}` : ""}{f.sourceHash ? ` · hash ${f.sourceHash.slice(0, 8)}` : ""}</span>
+          </div>
+          <p className="fine">Matched word for word against the stored official text before this flag could be shown.</p>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+// ---- Employer pattern: same error across several students at one employer (simulated cohort) ----
+function EmployerPatterns({ patterns, studentEmployer }: { patterns: Patterns; studentEmployer?: string }) {
+  const rows = patterns.employers.filter((r) => r.students > 0);
+  if (!rows.length) return null;
+  const simulated = rows.reduce((s, r) => s + r.simulated, 0);
+  return (
+    <section className="panel patterns" aria-label="Employer pattern">
+      <div className="panel-h">
+        <div><h2>Same employer, same error</h2><p className="muted">Students flagged for Social Security and Medicare withholding.</p></div>
+        {patterns.anySimulated && <span className="chip ev">Simulated data</span>}
+      </div>
+      <ul className="pt-list">
+        {rows.map((r) => (
+          <li key={r.employer} className={r.pattern ? "hot" : ""}>
+            <div className="pt-row">
+              <span className="pt-name">{r.employer}{r.employer === studentEmployer ? <small> · Priya’s employer</small> : null}</span>
+              <span className="num pt-count">{r.flagged} of {r.students}</span>
+            </div>
+            <div className="pt-bar"><i style={{ width: `${(100 * r.flagged) / r.students}%` }} /></div>
+            <div className="pt-sub num">{usd(r.withheldCents)} withheld across flagged students</div>
+            {r.pattern && <p className="pt-note">{r.flagged} students, same error: likely a payroll setup problem, not a one-off. Worth raising with the international office.</p>}
+          </li>
+        ))}
+      </ul>
+      <p className="fine pad-x">Highlighted at {patterns.minForPattern} or more flagged students. {simulated ? `${simulated} of the students are simulated; ` : ""}every count comes from the same rules engine and quote checker as Priya’s flags.</p>
+    </section>
+  );
+}
+
+// ---- Timeline: the student's years on F-1, and what comes next ----
+function TimelinePanel({ timeline, name }: { timeline: Timeline; name: string }) {
+  const years = new Map<string, Timeline["events"]>();
+  for (const e of timeline.events) {
+    const y = e.date.slice(0, 4);
+    years.set(y, [...(years.get(y) ?? []), e]);
+  }
+  const first = name.split(" ")[0];
+  return (
+    <section className="panel timeline" aria-label="Timeline">
+      <div className="panel-h">
+        <div><h2>{first}’s timeline</h2><p className="muted">Calendar year {timeline.calendarYear} of 5 on F-1. Built from the student file, plus what comes next.</p></div>
+      </div>
+      <div className="tl-next">
+        <span className="tl-next-l">Next season</span>
+        <b>{timeline.nextSeason.title}</b>
+        <p>{timeline.nextSeason.detail}</p>
+      </div>
+      <div className="tl-years">
+        {[...years.entries()].map(([y, events]) => {
+          const todayAt = events.findIndex((e) => e.upcoming);
+          return (
+            <div key={y} className="tl-year">
+              <div className="tl-y num">{y}</div>
+              <ol>
+                {events.map((e, i) => (
+                  <li key={i} className={`tl-e t-${e.tone} ${e.upcoming ? "up" : ""} ${i === todayAt && events.some((x) => !x.upcoming) ? "after-today" : ""}`}>
+                    <span className="tl-d num">{day(e.date.slice(0, 10))}</span>
+                    <span className="tl-t">{e.title}</span>
+                    <span className="tl-x">{e.detail}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          );
+        })}
+      </div>
+      <p className="fine pad-x">Deadlines are likely dates (weekend shifts not applied). Confirm with your international office.</p>
+    </section>
   );
 }
 
@@ -240,25 +414,38 @@ const FLOW = ["identified", "approved", "contacted", "refunded"] as const;
 const FLOW_LABEL = { identified: "Identified", approved: "Approved", contacted: "Contacted", refunded: "Refunded" };
 function flowIndex(state: string) {
   // How many of the four steps are complete.
-  return ({ open: 1, awaiting_approval: 1, contacting_employer: 2, awaiting_response: 3, escalate_irs: 3, refund_received: 4, closed: 4 } as Record<string, number>)[state] ?? 0;
+  return ({ open: 1, awaiting_approval: 1, contacting_employer: 2, written_request: 2, awaiting_response: 3, escalate_irs: 3, refund_received: 4, closed: 4 } as Record<string, number>)[state] ?? 0;
 }
 function stateLabel(s: string) {
-  return ({ open: "Opened", awaiting_approval: "Needs approval", contacting_employer: "Contacting payroll", awaiting_response: "Waiting on payroll", refund_received: "Refund received", closed: "Closed", escalate_irs: "Escalated to IRS" } as Record<string, string>)[s] ?? s;
+  return ({ open: "Opened", awaiting_approval: "Needs approval", contacting_employer: "Contacting payroll", written_request: "Written request", awaiting_response: "Waiting on payroll", refund_received: "Refund received", closed: "Closed", escalate_irs: "Escalated to IRS" } as Record<string, string>)[s] ?? s;
 }
 
-function CaseReview({ c, mode, onApprove, onSimulateRefund }: { c: Case; mode: Mode } & Actions) {
+const SCRIPTS: [PayrollScript, string, string][] = [
+  ["cooperate", "Cooperates", "promises a refund date on the first call"],
+  ["stall_once", "Stalls once", "won’t commit to a date on the first call, then agrees on the follow-up"],
+  ["refuse_once", "Refuses once", "says no on the first call, then agrees on the follow-up"],
+];
+
+function CaseReview({ c, mode, onApprove, onFollowUp, onSetScript, onSimulateRefund }: { c: Case; mode: Mode } & Actions) {
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const done = flowIndex(c.state);
   const refunded = c.outcome === "refunded";
-  const call = c.calls[0];
-  const approve = async () => {
-    if (!onApprove) return;
+  const run = async (fn?: () => Promise<void>) => {
+    if (!fn) return;
     setBusy(true); setErr(null);
-    try { await onApprove(c._id); setConfirm(false); }
-    catch (e) { setErr(e instanceof Error ? e.message : "Approval did not go through. Try again."); }
+    try { await fn(); setConfirm(false); }
+    catch (e) { setErr(e instanceof Error ? e.message.split("\n")[0] : "That did not go through. Try again."); }
     finally { setBusy(false); }
+  };
+  const approve = () => run(onApprove && (() => onApprove(c._id)));
+  const script = c.payrollScript ?? "cooperate";
+  const showScript = onSetScript && !["closed", "escalate_irs", "awaiting_response", "refund_received"].includes(c.state) && (c.callAttempts ?? 0) < 2;
+  const copyLetter = async () => {
+    try { await navigator.clipboard.writeText(c.writtenRequest ?? ""); setCopied(true); window.setTimeout(() => setCopied(false), 2000); }
+    catch { setErr("Copy did not work here; select the letter text instead."); }
   };
   const tone = refunded ? "ok" : c.state === "awaiting_approval" ? "ev" : c.state === "escalate_irs" ? "risk" : "ac";
 
@@ -317,11 +504,39 @@ function CaseReview({ c, mode, onApprove, onSimulateRefund }: { c: Case; mode: M
       {c.state === "contacting_employer" && (c.callError
         ? <div className="status riskc">The call could not start: {c.callError}</div>
         : <div className="status"><span className="spin" />{c.callRequestId ? "On the phone with payroll now. The call log appears here when it ends." : "Placing the call to payroll…"}</div>)}
-      {call && (
-        <div className="call">
-          <div className="call-h"><b>Call · {call.answeredBy}</b><span className="muted num">{time(call.at)}</span></div>
+      {c.calls.map((call, i) => (
+        <div className="call" key={call._id}>
+          <div className="call-h"><b>Call {c.calls.length - i} · {call.answeredBy}</b><span className="muted num">{time(call.at)}</span></div>
           <p>{call.summary}</p>
-          <p className="muted num">{call.promisedBy && <>Promised by {day(call.promisedBy)}. </>}{call.referenceNo && <>Ref {call.referenceNo}.</>}</p>
+          {(call.promisedBy || call.referenceNo) && <p className="muted num">{call.promisedBy && <>Promised by {day(call.promisedBy)}. </>}{call.referenceNo && <>Ref {call.referenceNo}.</>}</p>}
+        </div>
+      ))}
+      {c.state === "written_request" && (
+        <div className="letter">
+          <div className="letter-h">
+            <span className="draft-t">Written request to payroll</span>
+            <span className="muted">{c.writtenRequest ? "Prepared for Priya to send from her own email" : "The Caseworker is writing it…"}</span>
+          </div>
+          {c.writtenRequest && <p className="letter-body">{c.writtenRequest}</p>}
+          {c.writtenRequest && (
+            <div className="act">
+              <button type="button" className="btn" onClick={() => run(onFollowUp && (() => onFollowUp(c._id)))} disabled={busy || !onFollowUp}>{busy ? "Calling…" : "Follow up by phone now"}</button>
+              <button type="button" className="btn ghost" onClick={copyLetter}>{copied ? "Copied" : "Copy letter"}</button>
+              <span className="muted">Scheduled follow-up: {day(c.nextFollowUp)}</span>
+            </div>
+          )}
+          {err && <p className="err">{err}</p>}
+        </div>
+      )}
+      {showScript && (
+        <div className="script" role="group" aria-label="Rehearsal setting">
+          <div className="script-h"><span className="draft-t">Rehearsal setting</span><span className="muted">What the teammate playing payroll does. It never changes what the voice agent says.</span></div>
+          <div className="seg script-seg">
+            {SCRIPTS.map(([k, label]) => (
+              <button key={k} type="button" className={script === k ? "on" : ""} aria-pressed={script === k} onClick={() => run(() => onSetScript!(c._id, k))}>{label}</button>
+            ))}
+          </div>
+          <p className="note">Payroll {SCRIPTS.find(([k]) => k === script)![2]}.</p>
         </div>
       )}
       {c.state === "awaiting_response" && mode === "demo" && onSimulateRefund && (
@@ -463,10 +678,11 @@ function CasesView({ snap, mode, ...actions }: { snap: Snapshot; mode: Mode } & 
                 <h2>State machine</h2>
                 <ol className="states">
                   {CASE_FLOW.map((s, n) => {
-                    const at = CASE_FLOW.indexOf(c.state);
+                    const at = CASE_FLOW.indexOf(c.state === "written_request" ? "contacting_employer" : c.state === "escalate_irs" ? "awaiting_response" : c.state);
                     return <li key={s} className={c.state === "closed" || n < at ? "done" : n === at ? "now" : ""}>{stateLabel(s === "awaiting_approval" ? s : s)}</li>;
                   })}
-                  <li className={`branch ${c.state === "escalate_irs" ? "now" : ""}`}>If payroll refuses: escalate to the IRS with Forms 843 and 8316</li>
+                  <li className={`branch ${c.state === "written_request" ? "now" : ""}`}>If payroll stalls or refuses on the first call: a written request, then a follow-up call</li>
+                  <li className={`branch ${c.state === "escalate_irs" ? "now" : ""}`}>If payroll still won’t refund: escalate to the IRS with Forms 843 and 8316</li>
                 </ol>
               </section>
             </div>
