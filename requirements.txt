@@ -1,0 +1,5 @@
+uagents
+anthropic
+convex
+requests
+pyyaml

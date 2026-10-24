@@ -1,0 +1,17 @@
+# Every rule points to a stored official source. Quotes must be copied word for word
+# from sources.text after the Apify fetch; the quote checker rejects anything else.
+- id: FICA_EXEMPT_F1
+  check: fica_exempt
+  source_url: https://www.irs.gov/publications/p519  # TODO: exact section anchor
+  quote: "TODO: exact sentence copied from the stored source"
+  action: open_refund_case
+- id: ONCAMPUS_20_HOURS
+  check: over_20_hours_in_session
+  source_url: TODO  # 8 CFR 214.2(f)(9)(i) or Study in the States on-campus page
+  quote: "TODO: exact sentence"
+  action: warn_student
+- id: FORM_8843_ANNUAL
+  check: needs_8843
+  source_url: https://www.irs.gov/forms-pubs/about-form-8843
+  quote: "TODO: exact sentence"
+  action: remind_with_deadline
