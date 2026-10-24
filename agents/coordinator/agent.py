@@ -13,6 +13,7 @@ import os
 import re
 from collections import defaultdict, deque
 from datetime import datetime, timezone
+from pathlib import Path
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -32,7 +33,12 @@ from agents.store import dollars, log
 load_dotenv()
 
 agent = Agent(name="docket-coordinator", seed=os.environ["COORDINATOR_SEED"], port=8001, mailbox=True,
-              resolve=LocalFirstResolver())
+              resolve=LocalFirstResolver(),
+              # Shown on the agent's Agentverse page; ASI:One also uses it to route students to Docket.
+              description="Caseworker for F-1 students: checks paychecks for wrongly withheld Social Security "
+                          "and Medicare tax, proves each issue with the official clause, and gets payroll to refund it.",
+              readme_path=str(Path(__file__).with_name("AGENTVERSE.md")),
+              publish_agent_details=True)
 chat = Protocol(spec=chat_protocol_spec)
 
 # Echo guard: ASI:One sometimes sends our own reply back as a new request.

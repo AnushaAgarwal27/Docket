@@ -63,6 +63,8 @@ def test_high_and_medium_confidence_can_act():
     assert unsure(reply("ok", findings)) == []
 
 
-def test_needs_human_always_hands_off():
-    r = Reply(intent="check_pay", needs_human=True, message_to_student="ok", findings=[])
-    assert [f.basis for f in unsure(r)] == ["facts are missing or conflict"]
+def test_needs_human_alone_does_not_hand_off():
+    # Claude sets needs_human whenever the student should confirm with the office; only confidence decides.
+    r = Reply(intent="check_pay", needs_human=True, message_to_student="ok",
+              findings=[Finding(rule="FICA_EXEMPT_F1", part=None, confidence="high", basis="b", source_quote_id=None)])
+    assert unsure(r) == []

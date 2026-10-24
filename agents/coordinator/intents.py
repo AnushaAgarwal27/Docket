@@ -171,10 +171,9 @@ async def explain_with_claude(ctx: Context, text: str, intent: str) -> str:
     if reply is None:
         return COULD_NOT_CHECK
     unsure = brain.unsure(reply)
-    if unsure:
-        return await asyncio.to_thread(hand_off, reply, unsure, data)
-    extra = []
-    if intent == "check_pay":
+    hold_refund = any(u.rule == "FICA_EXEMPT_F1" for u in unsure)
+    extra = [await asyncio.to_thread(hand_off, unsure, data, hold_refund)] if unsure else []
+    if intent == "check_pay" and not hold_refund:
         await asyncio.to_thread(reopen_reviewed, data["profile"]["_id"])
         cases = await ask(ctx, "CASEWORKER", OpenCases(profile_id=data["profile"]["_id"]), CasesResult)
         pending = json.loads(cases.awaiting_json) if cases else []
@@ -191,20 +190,21 @@ def reopen_reviewed(profile_id: str) -> None:
             log(AGENT, "review_cleared", f"{flag['ruleId']} confident again; back to open", inputIds=[flag["_id"]])
 
 
-def hand_off(reply: brain.Reply, unsure: list[brain.Finding], data: dict) -> str:
-    """Low or unknown confidence: hold the refund flag back from the Caseworker and point Priya to a person."""
-    for f in data["flags"]:
-        if f["ruleId"] == "FICA_EXEMPT_F1" and any(u.rule in ("FICA_EXEMPT_F1", "") for u in unsure):
-            flag = next((x for x in query("flags:listByProfile", {"profileId": data["profile"]["_id"]})
-                         if x["ruleId"] == f["ruleId"]), None)
-            if flag and flag["status"] == "open":
+def hand_off(unsure: list[brain.Finding], data: dict, hold_refund: bool) -> str:
+    """Low or unknown confidence: point Priya to a person, and if the refund finding is unsure,
+    hold its flag back from the Caseworker so no case is opened."""
+    if hold_refund:
+        for flag in query("flags:listByProfile", {"profileId": data["profile"]["_id"]}):
+            if flag["ruleId"] == "FICA_EXEMPT_F1" and flag["status"] == "open":
                 mutation("flags:setStatus", {"flagId": flag["_id"], "status": "needs_review"})
     reasons = "; ".join(dict.fromkeys(u.basis for u in unsure))
-    log(AGENT, "handoff", f"Not confident enough to act ({reasons}); no case opened", inputIds=[data["profile"]["_id"]])
-    handoff = (f"I'm not sure enough to contact payroll for you: {reasons}. "
-               "Please check with your international student office or your payroll office first. "
-               "Once they confirm, say **check my pay** and I'll take it from there.")
-    return compose(reply, data["flags"], [handoff])
+    log(AGENT, "handoff", f"Low/unknown confidence ({reasons}); "
+        f"{'refund case held' if hold_refund else 'refund case not affected'}", inputIds=[data["profile"]["_id"]])
+    if hold_refund:
+        return (f"I'm not sure enough to contact payroll for you: {reasons}. Please check with your international "
+                "student office or your payroll office first. Once they confirm, say **check my pay** and I'll "
+                "take it from there.")
+    return f"I'm not sure about this part, so please ask your international student office: {reasons}."
 
 
 async def respond_to_approval(ctx: Context, approved: bool) -> str:

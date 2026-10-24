@@ -129,11 +129,7 @@ def write_reply(text: str, facts: dict, excerpts: dict[str, dict]) -> Reply:
 # ---------- Code checks on what Claude wrote ----------
 
 def unsure(reply: Reply) -> list[Finding]:
-    """Findings that must go to a person instead of a case: low or unknown confidence, or the whole
-    reply flagged needs_human (missing or conflicting facts)."""
-    if reply.needs_human:
-        return list(reply.findings) or [Finding(rule="", part=None, confidence="unknown",
-                                                basis="facts are missing or conflict", source_quote_id=None)]
+    """Findings with low or unknown confidence: these go to a person, never to a case."""
     return [f for f in reply.findings if f.confidence in ("low", "unknown")]
 
 

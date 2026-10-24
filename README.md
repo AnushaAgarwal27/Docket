@@ -234,6 +234,14 @@ Without ASI:One, the same conversation over the real chat protocol:
 .venv/bin/python -m scripts.chat_test "check my pay" "what's wrong?" "yes, contact payroll"
 ```
 
+Live scenario checks against the running agents (resets the demo first): agents noticing new paystubs on
+their own, indirect wording, the next-season answer, explicit approval, the proactive refund message, and
+the Agentverse readme:
+
+```bash
+.venv/bin/python -m eval.scenarios
+```
+
 ## Sponsor tools
 
 <!-- One section per sponsor: exactly what the tool does in the product. -->
