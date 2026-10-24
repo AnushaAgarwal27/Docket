@@ -1,4 +1,4 @@
-"""The answer key in eval/profiles was written by hand; the rules engine must agree with all 31."""
+"""The answer key in eval/profiles was written by hand; the rules engine must agree with all 34."""
 import json
 from datetime import date
 from pathlib import Path
@@ -14,7 +14,7 @@ def test_set_has_the_planned_mix():
     groups = [json.loads(p.read_text())["group"] for p in PROFILES]
     assert {g: groups.count(g) for g in set(groups)} == {
         "exempt_withheld": 8, "sixth_year_plus": 4, "clean": 4, "over_20": 5, "no_income_8843": 4,
-        "j1_scholar": 2, "contractor": 1, "mismatch": 1, "wrong_form": 1, "unknown_visa": 1}
+        "j1_scholar": 2, "contractor": 1, "mismatch": 1, "wrong_form": 1, "unknown_visa": 1, "opt": 3}
 
 
 def test_three_students_share_one_employer():

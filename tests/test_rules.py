@@ -144,3 +144,28 @@ def test_nonresident_software_or_resident_student_does_not_warn():
     resident = {**d.PROFILE, "taxSoftware": "TurboTax", "arrivalDate": "2019-08-15"}
     assert isinstance(decide_resident_tax_software(resident, [], CAL, AS_OF), NoFlag)
     assert isinstance(decide_resident_tax_software(d.PROFILE, [], CAL, AS_OF), NoFlag)
+
+
+from rules.rules import decide_opt_unemployment
+
+OPT = {"type": "post_completion", "eadStart": "2026-06-15", "eadEnd": "2027-06-14"}
+
+
+def test_opt_counts_days_without_a_job_and_projects_the_limit_date():
+    profile = {**d.PROFILE, "opt": {**OPT, "employment": [{"start": "2026-07-01", "end": "2026-08-15"}]}}
+    hit = decide_opt_unemployment(profile, [], CAL, AS_OF).detail
+    assert (hit["daysUsed"], hit["daysLeft"], hit["limitReachedOn"], hit["employedNow"]) == (86, 4, "2026-10-28", False)
+
+
+def test_opt_employed_now_has_no_limit_date():
+    profile = {**d.PROFILE, "opt": {**OPT, "employment": [{"start": "2026-09-01", "end": None}]}}
+    hit = decide_opt_unemployment(profile, [], CAL, AS_OF).detail
+    assert hit["daysUsed"] == 78 and hit["employedNow"] and "limitReachedOn" not in hit
+
+
+def test_opt_not_covered_cases_say_why():
+    for opt, reason in (({**OPT, "type": "stem"}, "not covered yet"), ({**OPT, "eadStart": None}, "date unknown"),
+                        ({**OPT, "eadStart": "2027-01-01"}, "OPT starts 2027-01-01")):
+        result = decide_opt_unemployment({**d.PROFILE, "opt": opt}, [], CAL, AS_OF)
+        assert isinstance(result, NoFlag) and reason in result.reason
+    assert decide_opt_unemployment(d.PROFILE, [], CAL, AS_OF).reason == "not on OPT"

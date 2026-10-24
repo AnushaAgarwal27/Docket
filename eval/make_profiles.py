@@ -1,4 +1,4 @@
-"""Writes the 31 synthetic eval profiles to eval/profiles/*.json.
+"""Writes the 34 synthetic eval profiles to eval/profiles/*.json.
 
 Each file has the student's facts and the answer key. Answers are written here by hand from the
 rules (not by running the engine); tests/test_eval_profiles.py checks the engine agrees.
@@ -17,7 +17,8 @@ NAMES = ["Aarav Mehta", "Mei Lin", "Oluwaseun Adeyemi", "Sofia Rossi", "Hiroshi 
          "Lucas Silva", "Ananya Iyer", "Chen Wei", "Yusuf Demir", "Nadia Petrova", "Kwame Mensah",
          "Isabela Costa", "Jae-won Park", "Amira Haddad", "Diego Herrera", "Leila Rahimi", "Tomas Novak",
          "Zara Ahmed", "Minh Nguyen", "Elif Yildiz", "Rahul Verma", "Chiara Bianchi", "Daniel Osei", "Sara Haile",
-         "Arjun Nair", "Ingrid Larsen", "Kofi Boateng", "Valentina Cruz", "Hana Sato", "Omar Farouk"]
+         "Arjun Nair", "Ingrid Larsen", "Kofi Boateng", "Valentina Cruz", "Hana Sato", "Omar Farouk",
+         "Priyanka Rao", "Lars Eriksen", "Ama Owusu"]
 
 DINING = {"name": "Golden Bear Dining Services", "type": "university"}  # shared by three students
 CONTRACTOR = {"name": "Bear Hospitality LLC", "type": "contractor"}
@@ -160,9 +161,27 @@ case("unknown_visa", "visa not recorded, FICA withheld: can't count exempt years
      reasons={"FICA_EXEMPT_F1": "visa unknown", "FORM_8843_ANNUAL": "visa unknown"})
 
 
+# 3 graduates on post-completion OPT: unemployment days against the 90-day limit, warning from 60.
+OPT = {"type": "post_completion", "eadStart": "2026-06-15", "eadEnd": "2027-06-14"}
+for i, (jobs, why, expected, reason) in enumerate([
+        ([{"start": "2026-07-01", "end": None, "employer": "Golden Bear Analytics"}],
+         "OPT since 2026-06-15, job from 2026-07-01: 16 of 90 unemployment days", [], "16 of 90"),
+        ([{"start": "2026-07-01", "end": "2026-08-15", "employer": "Golden Bear Analytics"}],
+         "OPT job ended 2026-08-15: 86 of 90 unemployment days, 4 left",
+         [{"ruleId": "OPT_UNEMPLOYMENT", "amountCents": 0}], None),
+        ([], "OPT since 2026-06-15 with no job: 132 days, over the 90-day limit",
+         [{"ruleId": "OPT_UNEMPLOYMENT", "amountCents": 0}], None)]):
+    prof = profile(NAMES[31 + i], "2022-08-18")
+    prof["opt"] = {**OPT, "employment": jobs}
+    case("opt", why, prof, [], expected,
+         detail={"OPT_UNEMPLOYMENT": [{"daysUsed": 86, "daysLeft": 4, "limitReachedOn": "2026-10-28"},
+                                      {"daysUsed": 132, "overLimit": True}][i - 1]} if expected else None,
+         reasons={"OPT_UNEMPLOYMENT": reason} if reason else None)
+
+
 def main():
     OUT.mkdir(exist_ok=True)
-    assert len(CASES) == 31, len(CASES)
+    assert len(CASES) == 34, len(CASES)
     for old in OUT.glob("*.json"):
         old.unlink()
     for i, c in enumerate(CASES, 1):

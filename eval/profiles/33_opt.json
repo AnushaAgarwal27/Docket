@@ -1,0 +1,72 @@
+{
+  "id": "33",
+  "group": "opt",
+  "why": "OPT job ended 2026-08-15: 86 of 90 unemployment days, 4 left",
+  "asOf": "2026-10-24",
+  "profile": {
+    "name": "Lars Eriksen",
+    "visa": "F-1",
+    "arrivalDate": "2022-08-18",
+    "school": "Golden Bear University",
+    "homeCountry": "Synthetic",
+    "homeCurrency": "USD",
+    "workAuth": "on-campus",
+    "phoneMasked": "(***) ***-0000",
+    "filed8843Years": [
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "employer": {
+      "name": "Golden Bear University Library",
+      "type": "university"
+    },
+    "opt": {
+      "type": "post_completion",
+      "eadStart": "2026-06-15",
+      "eadEnd": "2027-06-14",
+      "employment": [
+        {
+          "start": "2026-07-01",
+          "end": "2026-08-15",
+          "employer": "Golden Bear Analytics"
+        }
+      ]
+    }
+  },
+  "schoolCalendar": {
+    "school": "Golden Bear University",
+    "sessions": [
+      {
+        "name": "Fall 2025",
+        "start": "2025-08-27",
+        "end": "2025-12-19"
+      },
+      {
+        "name": "Spring 2026",
+        "start": "2026-01-12",
+        "end": "2026-05-15"
+      },
+      {
+        "name": "Fall 2026",
+        "start": "2026-08-26",
+        "end": "2026-12-18"
+      }
+    ]
+  },
+  "paystubs": [],
+  "expected": [
+    {
+      "ruleId": "OPT_UNEMPLOYMENT",
+      "amountCents": 0
+    }
+  ],
+  "expectedDetail": {
+    "OPT_UNEMPLOYMENT": {
+      "daysUsed": 86,
+      "daysLeft": 4,
+      "limitReachedOn": "2026-10-28"
+    }
+  }
+}

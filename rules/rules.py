@@ -23,6 +23,9 @@ EXEMPT_YEARS = {("F-1", None): 5, ("J-1", "student"): 5, ("J-1", "scholar"): 2}
 F1_NRA_EXEMPT = "f1_nra_exempt"  # nonresident alien on F/J status: IRC 3121(b)(19)
 STUDENT_EXCEPTION = "student_exception"  # enrolled student working for their own school: IRC 3121(b)(10)
 
+OPT_UNEMPLOYMENT_LIMIT = 90  # post-completion OPT, 8 CFR 214.2(f)(10)(ii)(E)
+OPT_WARN_AT = 60  # warn with 30 days left
+
 # Consumer software that only prepares the resident return (Form 1040).
 RESIDENT_TAX_SOFTWARE = {"turbotax", "h&r block", "taxact", "freetaxusa", "cash app taxes", "taxslayer",
                          "credit karma tax", "jackson hewitt"}
@@ -240,11 +243,57 @@ def decide_resident_tax_software(profile: dict, paystubs: list[dict], calendar: 
                 "expectedForm": "1040-NR"})
 
 
+def _days(start: date, end: date) -> set[date]:
+    return {start + timedelta(days=i) for i in range((end - start).days + 1)}
+
+
+def decide_opt_unemployment(profile: dict, paystubs: list[dict], calendar: dict, as_of: date) -> Hit | NoFlag:
+    """Post-completion OPT: days since the EAD start date with no reported job, against the
+    90-day limit. Warns from 60 days. Counts from the student's reported jobs, not pay, since
+    status depends on being employed. STEM OPT (150 days) is not covered yet.
+    """
+    opt = profile.get("opt")
+    if not opt:
+        return NoFlag("not on OPT")
+    if opt.get("type") != "post_completion":
+        return NoFlag(f"OPT type {opt.get('type') or 'unknown'} is not covered yet; only post-completion OPT")
+    try:
+        start = date.fromisoformat(opt["eadStart"])
+        end = min(as_of, date.fromisoformat(opt["eadEnd"]))
+    except (KeyError, TypeError, ValueError):
+        return NoFlag("OPT start or end date unknown")
+    if as_of < start:
+        return NoFlag(f"OPT starts {start.isoformat()}")
+    worked: set[date] = set()
+    for job in opt.get("employment", []):
+        job_end = date.fromisoformat(job["end"]) if job.get("end") else end
+        worked |= _days(max(start, date.fromisoformat(job["start"])), min(end, job_end))
+    used = len(_days(start, end) - worked)
+    left = OPT_UNEMPLOYMENT_LIMIT - used
+    if used < OPT_WARN_AT:
+        return NoFlag(f"{used} of {OPT_UNEMPLOYMENT_LIMIT} unemployment days used on OPT")
+    employed_now = end in worked
+    detail = {
+        "amountCents": 0,
+        "severity": "warning",
+        "daysUsed": used,
+        "limit": OPT_UNEMPLOYMENT_LIMIT,
+        "daysLeft": max(left, 0),
+        "overLimit": used > OPT_UNEMPLOYMENT_LIMIT,
+        "employedNow": employed_now,
+        "countedThrough": end.isoformat(),
+    }
+    if not employed_now and left > 0:
+        detail["limitReachedOn"] = (end + timedelta(days=left)).isoformat()
+    return Hit(detail)
+
+
 DECISIONS = {
     "fica_exempt": decide_fica_exempt,
     "over_20_hours_in_session": decide_over_20_hours,
     "needs_8843": decide_needs_8843,
     "resident_tax_software": decide_resident_tax_software,
+    "opt_unemployment": decide_opt_unemployment,
 }
 
 
@@ -260,5 +309,6 @@ fica_exempt = _yes_no(decide_fica_exempt)
 over_20_hours_in_session = _yes_no(decide_over_20_hours)
 needs_8843 = _yes_no(decide_needs_8843)
 resident_tax_software = _yes_no(decide_resident_tax_software)
+opt_unemployment = _yes_no(decide_opt_unemployment)
 
 CHECKS = {name: _yes_no(decide) for name, decide in DECISIONS.items()}
