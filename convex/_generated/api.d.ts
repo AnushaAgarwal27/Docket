@@ -10,6 +10,7 @@
 
 import type * as activity from "../activity.js";
 import type * as cases from "../cases.js";
+import type * as dashboard from "../dashboard.js";
 import type * as flags from "../flags.js";
 import type * as paystubs from "../paystubs.js";
 import type * as profiles from "../profiles.js";
@@ -25,6 +26,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   activity: typeof activity;
   cases: typeof cases;
+  dashboard: typeof dashboard;
   flags: typeof flags;
   paystubs: typeof paystubs;
   profiles: typeof profiles;

@@ -221,6 +221,7 @@ npx convex dev         # deploys convex/ and keeps it in sync; leave running
 .venv/bin/python -m seed.fetch_sources   # official IRS / eCFR text into `sources` (once)
 .venv/bin/python -m seed.reset           # wipe demo state, re-seed Priya (before every rehearsal)
 ./scripts/run_agents.sh                  # Tax, Caseworker and Coordinator agents
+npm run dashboard                        # live dashboard at http://localhost:5173
 ```
 
 Then in ASI:One, open **docket-coordinator** (or start the message with its `@agent1...` handle;
