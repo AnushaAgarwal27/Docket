@@ -1,0 +1,145 @@
+{
+  "id": "07",
+  "group": "exempt_withheld",
+  "why": "F-1, 2026 is calendar year 2 of 5, FICA withheld",
+  "asOf": "2026-10-24",
+  "profile": {
+    "name": "Lucas Silva",
+    "visa": "F-1",
+    "arrivalDate": "2025-01-08",
+    "school": "Golden Bear University",
+    "homeCountry": "Synthetic",
+    "homeCurrency": "USD",
+    "workAuth": "on-campus",
+    "phoneMasked": "(***) ***-0000",
+    "filed8843Years": [
+      2025
+    ]
+  },
+  "schoolCalendar": {
+    "school": "Golden Bear University",
+    "sessions": [
+      {
+        "name": "Fall 2025",
+        "start": "2025-08-27",
+        "end": "2025-12-19"
+      },
+      {
+        "name": "Spring 2026",
+        "start": "2026-01-12",
+        "end": "2026-05-15"
+      },
+      {
+        "name": "Fall 2026",
+        "start": "2026-08-26",
+        "end": "2026-12-18"
+      }
+    ]
+  },
+  "paystubs": [
+    {
+      "periodStart": "2026-01-12",
+      "periodEnd": "2026-01-25",
+      "employer": "University Dining Services",
+      "grossCents": 70000,
+      "hoursByWeek": [
+        20,
+        20
+      ],
+      "ssCents": 4340,
+      "medicareCents": 1015,
+      "netCents": 64645,
+      "sourceFile": "paystub_01.pdf"
+    },
+    {
+      "periodStart": "2026-01-26",
+      "periodEnd": "2026-02-08",
+      "employer": "University Dining Services",
+      "grossCents": 70000,
+      "hoursByWeek": [
+        20,
+        20
+      ],
+      "ssCents": 4340,
+      "medicareCents": 1015,
+      "netCents": 64645,
+      "sourceFile": "paystub_02.pdf"
+    },
+    {
+      "periodStart": "2026-02-09",
+      "periodEnd": "2026-02-22",
+      "employer": "University Dining Services",
+      "grossCents": 70000,
+      "hoursByWeek": [
+        20,
+        20
+      ],
+      "ssCents": 4340,
+      "medicareCents": 1015,
+      "netCents": 64645,
+      "sourceFile": "paystub_03.pdf"
+    },
+    {
+      "periodStart": "2026-02-23",
+      "periodEnd": "2026-03-08",
+      "employer": "University Dining Services",
+      "grossCents": 70000,
+      "hoursByWeek": [
+        20,
+        20
+      ],
+      "ssCents": 4340,
+      "medicareCents": 1015,
+      "netCents": 64645,
+      "sourceFile": "paystub_04.pdf"
+    },
+    {
+      "periodStart": "2026-03-09",
+      "periodEnd": "2026-03-22",
+      "employer": "University Dining Services",
+      "grossCents": 70000,
+      "hoursByWeek": [
+        20,
+        20
+      ],
+      "ssCents": 4340,
+      "medicareCents": 1015,
+      "netCents": 64645,
+      "sourceFile": "paystub_05.pdf"
+    },
+    {
+      "periodStart": "2026-03-23",
+      "periodEnd": "2026-04-05",
+      "employer": "University Dining Services",
+      "grossCents": 70000,
+      "hoursByWeek": [
+        20,
+        20
+      ],
+      "ssCents": 4340,
+      "medicareCents": 1015,
+      "netCents": 64645,
+      "sourceFile": "paystub_06.pdf"
+    },
+    {
+      "periodStart": "2026-04-06",
+      "periodEnd": "2026-04-19",
+      "employer": "University Dining Services",
+      "grossCents": 70000,
+      "hoursByWeek": [
+        20,
+        20
+      ],
+      "ssCents": 4340,
+      "medicareCents": 1015,
+      "netCents": 64645,
+      "sourceFile": "paystub_07.pdf"
+    }
+  ],
+  "expected": [
+    {
+      "ruleId": "FICA_EXEMPT_F1",
+      "amountCents": 37485
+    }
+  ]
+}
