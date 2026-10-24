@@ -20,6 +20,7 @@ WEEKLY_HOUR_LIMIT = 20
 # substantial presence test). Counted from the arrival year only: earlier US visits are not
 # recorded, so a returning J-1 scholar may be over-counted as exempt.
 EXEMPT_YEARS = {("F-1", None): 5, ("J-1", "student"): 5, ("J-1", "scholar"): 2}
+EXEMPT_CALENDAR_YEARS = EXEMPT_YEARS[("F-1", None)]  # the F-1 student count, for callers that predate J-1
 F1_NRA_EXEMPT = "f1_nra_exempt"  # nonresident alien on F/J status: IRC 3121(b)(19)
 STUDENT_EXCEPTION = "student_exception"  # enrolled student working for their own school: IRC 3121(b)(10)
 

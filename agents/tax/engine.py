@@ -24,13 +24,24 @@ def explain(rule_id: str, hit: dict) -> str:
     if rule_id == "FICA_EXEMPT_F1":
         years = " and ".join(str(n) for n in hit["calendarYears"])
         return (f"You are likely exempt from Social Security and Medicare tax (calendar year {years} "
-                f"of 5 on F-1), but {dollars(hit['amountCents'])} was withheld. You can likely get it refunded. {DISCLAIMER}")
+                f"of {hit.get('exemptYears', 5)} on {hit.get('status', 'F-1')}), but {dollars(hit['amountCents'])} was withheld. "
+                f"You can likely get it refunded. {DISCLAIMER}")
     if rule_id == "ONCAMPUS_20_HOURS":
         weeks = "; ".join(f"{w['hours']} hours the week of {w['weekStart']} ({w['session']})" for w in hit["weeks"])
         return f"You likely worked {weeks}, over the 20-hour weekly limit while school is in session. {DISCLAIMER}"
     if rule_id == "FORM_8843_ANNUAL":
         return (f"You likely need to file Form 8843 for {hit['taxYear']}, due {hit['deadline']}, "
                 f"even with no income. {DISCLAIMER}")
+    if rule_id == "WRONG_TAX_FORM":
+        return (f"You likely filed your {hit['taxYear']} return with {hit['software']}, which prepares the resident "
+                f"Form 1040. As a nonresident you likely need Form {hit['expectedForm']} instead. {DISCLAIMER}")
+    if rule_id == "OPT_UNEMPLOYMENT":
+        if hit["overLimit"]:
+            return (f"You have likely used {hit['daysUsed']} days of unemployment on OPT, over the {hit['limit']}-day "
+                    f"limit, which can affect your F-1 status. {DISCLAIMER}")
+        until = f" If you stay unemployed, you reach the limit on {hit['limitReachedOn']}." if "limitReachedOn" in hit else ""
+        return (f"You have likely used {hit['daysUsed']} of {hit['limit']} unemployment days on OPT, "
+                f"{hit['daysLeft']} left.{until} {DISCLAIMER}")
     raise ValueError(f"no explanation template for {rule_id}")
 
 
