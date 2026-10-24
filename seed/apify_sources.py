@@ -43,7 +43,8 @@ def sync(rules: list[dict], pages, convex) -> list[str]:
             status = "NEW" if before is None else "SAME"
         convex.mutation("activity:log", {
             "agent": AGENT, "action": "source_fetched", "sourceId": source_id,
-            "detail": f"{rule['source_title']}: {len(page.text):,} chars via Apify run {page.run_id}; {quote}",
+            "detail": f"{rule['source_title']}: {len(page.text):,} chars via "
+                      f"{page.via if page.run_id == 'http-fallback' else f'Apify {page.via} run {page.run_id}'}; {quote}",
         })
         lines.append(f"{status:<8} {rule['id']}: {len(page.text):,} chars, {quote}")
     return lines

@@ -99,3 +99,34 @@ def test_empty_apify_page_falls_back_to_direct_fetch():
     empty = {"url": FICA["source_url"], "crawl": {"loadedUrl": FICA["source_url"]}, "html": "", "text": ""}
     pages, missing = collect([FICA], client=FakeApify([empty]), fallback=lambda url: f"Fetched. {FICA['quote']}")
     assert missing == [] and pages[0].run_id == "http-fallback"
+
+
+class TwoActorApify(FakeApify):
+    """Website Content Crawler returns nothing for a page; Cheerio Scraper returns its raw body."""
+
+    def __init__(self, by_actor):
+        super().__init__([])
+        self.by_actor = by_actor
+
+    def actor(self, name):
+        self.calls.append(name)
+        self.items = self.by_actor[name]
+        return self
+
+    def call(self, run_input):
+        self.run_input = run_input
+        return {"id": f"run{len(self.calls)}", "status": "SUCCEEDED", "defaultDatasetId": "ds"}
+
+
+def test_page_the_crawler_skips_comes_through_cheerio_scraper():
+    rule = next(r for r in RULES if r["id"] == "ONCAMPUS_20_HOURS")
+    redirected = rule["fetch_url"].replace("?part=214", "?chapter=I&subchapter=B&part=214&subpart=A")
+    raw = {"url": rule["fetch_url"], "loadedUrl": redirected, "html": f"<div><p>{rule['quote']}</p></div>"}
+    fake = TwoActorApify({"apify/website-content-crawler": [page(FICA["source_url"], FICA["quote"])],
+                          "apify/cheerio-scraper": [raw]})
+    pages, missing = collect([FICA, rule], client=fake, fallback=None)
+    assert fake.calls == ["apify/website-content-crawler", "apify/cheerio-scraper"]
+    assert fake.run_input["startUrls"] == [{"url": rule["fetch_url"]}]
+    assert [(p.rule_id, p.via) for p in pages] == [("FICA_EXEMPT_F1", "Website Content Crawler"),
+                                                   ("ONCAMPUS_20_HOURS", "Cheerio Scraper")]
+    assert missing == [] and pages[1].text == rule["quote"]
