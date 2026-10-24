@@ -5,13 +5,14 @@ import type { Id } from "../../convex/_generated/dataModel";
 import type { Activity, Case, Patterns, PayrollScript, Snapshot, Timeline } from "./data";
 import { AGENT_LABEL, MEDICARE_BP, RULE_LABEL, SS_BP, actionLabel, calendarYear, day, demoFeed, demoLetter, demoSnapshot, pct, time, usd } from "./data";
 import { PaperTrail } from "./PaperTrail";
+import { TracksView } from "./Tracks";
 
 // Live mode reads the shared student file from Convex: Anusha's snapshot query, the activity feed,
 // the timeline and the employer pattern. Demo mode (?demo) renders from labelled synthetic data, as an
 // offline backup for rehearsals and the video; the timeline and pattern panels are live only.
 
 type Mode = "live" | "demo";
-type Tab = "overview" | "paystubs" | "cases" | "activity";
+type Tab = "overview" | "paystubs" | "cases" | "activity" | "tracks";
 type Actions = {
   onApprove?: (caseId: Id<"cases">) => Promise<void>;
   onFollowUp?: (caseId: Id<"cases">) => Promise<void>;
@@ -30,7 +31,7 @@ export function LiveApp() {
   const snap = useQuery(api.dashboard.snapshot, profileId ? { profileId } : "skip");
   const timeline = useQuery(api.timeline.forProfile, profileId ? { profileId, today: localToday() } : "skip");
   const patterns = useQuery(api.patterns.byEmployer, {});
-  const feed = useQuery(api.activity.recent, { limit: 80 });
+  const feed = useQuery(api.activity.recent, { limit: 400 }); // the Tracks tab counts actions per agent
   const approve = useMutation(api.cases.approve);
   const followUp = useMutation(api.cases.followUp);
   const setScript = useMutation(api.cases.setPayrollScript);
@@ -122,7 +123,7 @@ export function DemoApp() {
   return <Dashboard mode="demo" snap={snap} feed={feed} {...actions} />;
 }
 
-const TABS: [Tab, string][] = [["overview", "Overview"], ["paystubs", "Paystubs"], ["cases", "Cases"], ["activity", "Activity"]];
+const TABS: [Tab, string][] = [["overview", "Overview"], ["paystubs", "Paystubs"], ["cases", "Cases"], ["activity", "Activity"], ["tracks", "Tracks"]];
 
 function useWide(px: number) {
   const q = `(min-width: ${px}px)`;
@@ -187,6 +188,7 @@ function Dashboard({ mode, snap, feed, timeline, patterns, ...actions }: { mode:
         {snap && tab === "paystubs" && <PaystubsView snap={snap} stubs={stubs} selected={selected} onSelect={inspect} wide={wide} />}
         {snap && tab === "cases" && <CasesView snap={snap} mode={mode} {...actions} />}
         {snap && tab === "activity" && <DocketView feed={feed} />}
+        {snap && tab === "tracks" && <TracksView snap={snap} feed={feed} patterns={patterns} mode={mode} onTab={go} />}
 
         <footer className="foot">
           <span>{mode === "demo" ? "Demo mode: synthetic data, simulated calls and deposits. Nothing leaves this page." : "Live: every row comes from the shared Convex student file."}</span>
@@ -733,6 +735,7 @@ function Icon({ name }: { name: Tab }) {
     paystubs: "M4 2.5h6l3 3V14H4zM10 2.5v3h3M6 8.5h5M6 11h5",
     cases: "M2.5 5h12v8.5h-12zM6 5V3.5h5V5M2.5 8.5h12",
     activity: "M2 9h3l2-5 3 9 2-4h3",
+    tracks: "M3 4h11M3 8.5h11M3 13h11M5.5 2.5v3M11 7v3M7.5 11.5v3",
   }[name];
   return <svg className="ic" viewBox="0 0 17 17" aria-hidden="true"><path d={d} /></svg>;
 }
