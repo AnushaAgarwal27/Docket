@@ -3,6 +3,7 @@
 State changes happen in convex/cases.ts so every caller obeys the same state machine.
 """
 
+from agents.caseworker import cartesia
 from agents.store import dollars, log, mutation, query
 
 AGENT = "caseworker"
@@ -46,10 +47,29 @@ def awaiting_approval(profile_id: str) -> list[dict]:
 
 
 def request_call(case: dict) -> None:
-    # Person 3 replaces this with the Cartesia Managed Agent outbound call; its
-    # log_call_outcome webhook then calls cases:logCallOutcome.
-    log(AGENT, "call_requested", f"Payroll call requested for case {case['_id']} ({dollars(case['amountCents'])}); "
-        "Cartesia not wired yet", inputIds=[case["_id"]])
+    """Place the payroll call for an approved case, once. Safe to call from several places."""
+    if not mutation("cases:claimCall", {"caseId": case["_id"]}):
+        return  # already claimed by another trigger, or no longer contacting payroll
+    missing = cartesia.missing_settings()
+    if missing:
+        mutation("cases:recordCallStart", {"caseId": case["_id"], "error": f"Cartesia not configured: set {', '.join(missing)}"})
+        return
+    profile = query("profiles:get", {"profileId": case["profileId"]})
+    paystubs = query("paystubs:listByProfile", {"profileId": case["profileId"]})
+    try:
+        call_id = cartesia.place_call(case, profile, paystubs)
+    except cartesia.CallError as e:
+        mutation("cases:recordCallStart", {"caseId": case["_id"], "error": str(e)})
+        return
+    mutation("cases:recordCallStart", {"caseId": case["_id"], "callRequestId": call_id})
+
+
+def place_pending_calls() -> int:
+    """Calls every approved case nobody has called yet (covers dashboard approvals). Returns how many it tried."""
+    pending = query("cases:awaitingCall")
+    for case in pending:
+        request_call(case)
+    return len(pending)
 
 
 def approve(case: dict) -> None:

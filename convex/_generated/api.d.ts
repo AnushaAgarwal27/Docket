@@ -9,9 +9,11 @@
  */
 
 import type * as activity from "../activity.js";
+import type * as cartesia from "../cartesia.js";
 import type * as cases from "../cases.js";
 import type * as dashboard from "../dashboard.js";
 import type * as flags from "../flags.js";
+import type * as http from "../http.js";
 import type * as paystubs from "../paystubs.js";
 import type * as profiles from "../profiles.js";
 import type * as seed from "../seed.js";
@@ -26,9 +28,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   activity: typeof activity;
+  cartesia: typeof cartesia;
   cases: typeof cases;
   dashboard: typeof dashboard;
   flags: typeof flags;
+  http: typeof http;
   paystubs: typeof paystubs;
   profiles: typeof profiles;
   seed: typeof seed;

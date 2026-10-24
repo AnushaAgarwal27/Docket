@@ -35,6 +35,9 @@ export default defineSchema({
     profileId: v.optional(v.id("profiles")), // added: Ledger refund matching looks up open cases per student
     deadline: v.optional(v.string()), // added: plan lists "deadlines" for cases
     draft: v.optional(v.string()), // added: request text Priya approves before any call
+    callRequestedAt: v.optional(v.string()), // added: set once when the Caseworker claims the payroll call
+    callRequestId: v.optional(v.string()), // added: Cartesia agent_call_id for that call
+    callError: v.optional(v.string()), // added: why the call could not start, if it failed
   }).index("by_state", ["state"]).index("by_flag", ["flagId"]).index("by_profile", ["profileId"]),
   calls: defineTable({
     caseId: v.id("cases"), answeredBy: v.string(), at: v.string(), summary: v.string(),

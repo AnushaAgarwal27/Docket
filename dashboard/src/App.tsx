@@ -314,7 +314,9 @@ function CaseReview({ c, mode, onApprove, onSimulateRefund }: { c: Case; mode: M
           {err && <p className="err">{err}</p>}
         </div>
       )}
-      {c.state === "contacting_employer" && <div className="status"><span className="spin" />Calling payroll now. The call log appears here when it ends.</div>}
+      {c.state === "contacting_employer" && (c.callError
+        ? <div className="status riskc">The call could not start: {c.callError}</div>
+        : <div className="status"><span className="spin" />{c.callRequestId ? "On the phone with payroll now. The call log appears here when it ends." : "Placing the call to payroll…"}</div>)}
       {call && (
         <div className="call">
           <div className="call-h"><b>Call · {call.answeredBy}</b><span className="muted num">{time(call.at)}</span></div>

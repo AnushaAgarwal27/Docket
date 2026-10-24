@@ -14,8 +14,11 @@ export const usd = (cents: number) =>
   (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 export const time = (iso: string) =>
   new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-export const day = (isoDate: string) =>
-  new Date(isoDate + (isoDate.length === 10 ? "T12:00:00" : "")).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+export const day = (isoDate: string) => {
+  // Dates written by the voice agent may not be ISO; show those as given instead of "Invalid Date".
+  if (!/^\d{4}-\d{2}-\d{2}/.test(isoDate)) return isoDate;
+  return new Date(isoDate + (isoDate.length === 10 ? "T12:00:00" : "")).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
 
 export const SS_BP = 620; // 6.20%
 export const MEDICARE_BP = 145; // 1.45%
@@ -50,6 +53,8 @@ export const ACTION_LABEL: Record<string, string> = {
   quote_accepted: "Quote verified",
   source_fetched: "Official source fetched",
   call_requested: "Call requested",
+  call_placed: "Calling payroll",
+  call_failed: "Call could not start",
   refund_matched: "Refund deposit matched",
   case_open: "Case opened",
   case_awaiting_approval: "Waiting for approval",

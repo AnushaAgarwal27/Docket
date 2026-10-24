@@ -41,5 +41,15 @@ async def decide(ctx: Context, sender: str, msg: CaseDecision):
         await ctx.send(sender, DecisionResult(acted=False, error=str(e)))
 
 
+@agent.on_interval(period=float(os.environ.get("CASEWORKER_POLL_SECONDS", "5")))
+async def call_approved_cases(ctx: Context):
+    """Approvals can also come from the dashboard, which never messages this agent; pick those up here."""
+    try:
+        if await asyncio.to_thread(engine.place_pending_calls):
+            ctx.logger.info("placed payroll call(s) for approved cases")
+    except Exception:
+        ctx.logger.exception("placing pending calls failed")
+
+
 if __name__ == "__main__":
     agent.run()

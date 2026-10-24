@@ -144,3 +144,43 @@ export const refundReceived = mutation({
     await transition(ctx, caseId, "closed", "Refund received; case closed", { outcome: "refunded" });
   },
 });
+
+// ---- Payroll call through Cartesia (agents/caseworker/cartesia.py) ----
+// Any approval (ASI:One reply or the dashboard button) moves a case to contacting_employer.
+// The Caseworker claims each such case exactly once, so one approval places exactly one call.
+
+export const awaitingCall = query({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db
+      .query("cases")
+      .withIndex("by_state", (q) => q.eq("state", "contacting_employer"))
+      .take(20);
+    return rows.filter((c) => c.callRequestedAt === undefined);
+  },
+});
+
+// Returns true only for the first caller; everyone else sees the claim and skips the call.
+export const claimCall = mutation({
+  args: { caseId: v.id("cases") },
+  handler: async (ctx, { caseId }) => {
+    const c = await ctx.db.get(caseId);
+    if (c === null || c.state !== "contacting_employer" || c.callRequestedAt !== undefined) return false;
+    await ctx.db.patch("cases", caseId, { callRequestedAt: new Date().toISOString() });
+    return true;
+  },
+});
+
+export const recordCallStart = mutation({
+  args: { caseId: v.id("cases"), callRequestId: v.optional(v.string()), error: v.optional(v.string()) },
+  handler: async (ctx, { caseId, callRequestId, error }) => {
+    await ctx.db.patch("cases", caseId, error ? { callError: error } : { callRequestId });
+    await ctx.db.insert("activity", {
+      agent: "voice",
+      action: error ? "call_failed" : "call_placed",
+      detail: error ? `Payroll call could not start: ${error}` : `Calling payroll through Cartesia (call ${callRequestId}). The agent says it is an AI assistant acting with the student's permission.`,
+      inputIds: [caseId],
+      at: new Date().toISOString(),
+    });
+  },
+});
