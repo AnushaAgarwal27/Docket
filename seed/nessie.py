@@ -64,8 +64,15 @@ class Nessie:
     def purchase(self, account_id: str, merchant_id: str, txn: dict) -> str:
         return self._create(f"/accounts/{account_id}/purchases", {
             "merchant_id": merchant_id, "medium": "balance", "purchase_date": txn["date"],
-            "status": "completed", "amount": dollars(txn["amountCents"]), "description": txn["memo"],
+            "status": "completed", "amount": dollars(txn["amountCents"]),
+            "description": f"{txn['counterparty']} | {txn['memo']}",
         })
+
+    def list_deposits(self, account_id: str) -> list[dict]:
+        return self._call("GET", f"/accounts/{account_id}/deposits") or []
+
+    def list_purchases(self, account_id: str) -> list[dict]:
+        return self._call("GET", f"/accounts/{account_id}/purchases") or []
 
 
 OPENING_BALANCE_CENTS = 120000
