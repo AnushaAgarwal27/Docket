@@ -237,3 +237,11 @@ Without ASI:One, the same conversation over the real chat protocol:
 ## Sponsor tools
 
 <!-- One section per sponsor: exactly what the tool does in the product. -->
+
+### Capital One Nessie
+
+Nessie is Priya's bank. `seed/reset.py` creates her customer, a checking account, 8 payroll deposits of $664.92 from "University Dining Payroll", 20 purchases (rent, groceries, phone, a $70 table) and 2 family transfers from India with the rupee amount and rate in the memo. The Ledger agent polls her deposits and purchases every 30 seconds and writes each one to Convex with its Nessie id, so re-polling never duplicates a row. Each paystub is linked to the deposit of exactly its net pay within 3 days. "Simulate 2 weeks" creates the $440.64 "FICA refund" deposit through the Nessie API (`seed/release_refund.py`); the Ledger sees it, matches it to the open case within $1, and the case closes. That deposit is the moment the money comes back.
+
+### Claude (paystub reading)
+
+The Ledger agent sends each paystub PDF to Claude and asks it to copy the printed values as text, exactly as written. Claude never calculates: code parses every amount into integer cents, then checks that Social Security is 6.2% of gross, Medicare is 1.45%, hours times rate equals gross, and net matches a bank deposit. A mismatch is stored as a low-confidence warning on the paystub, never silently fixed. `python -m rules.demo_rejection` shows the other guardrail live: a made-up clause is checked against the stored IRS text, rejected, and logged to the activity feed next to the real quote, which passes.

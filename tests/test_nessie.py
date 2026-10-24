@@ -39,3 +39,28 @@ def test_amounts_sent_as_dollars_and_refund_is_hero_number():
     method, url, body = s.calls[0]
     assert url.endswith("/accounts/acct1/deposits") and body["amount"] == 440.64
     assert body["description"] == "University Dining Payroll | FICA refund"
+
+
+class ForbiddenBulkSession(FakeSession):
+    """Bulk /data delete is 403, like a hackathon key; per-account delete works."""
+
+    def request(self, method, url, params, json, timeout):
+        import requests
+        self.calls.append((method, url, json))
+        r = requests.Response()
+        r.url = url
+        if "/data" in url:
+            r.status_code = 403
+        elif method == "GET":
+            r.status_code, r._content = 200, b'[{"_id": "a1"}, {"_id": "a2"}]'
+        else:
+            r.status_code, r._content = 202, b""
+        return r
+
+
+def test_wipe_falls_back_to_deleting_accounts_on_403():
+    s = ForbiddenBulkSession()
+    Nessie("k", "https://nessie", s).wipe()
+    calls = [(m, u.removeprefix("https://nessie")) for m, u, _ in s.calls]
+    assert calls == [("DELETE", "/data?type=Deposits"), ("GET", "/accounts"),
+                     ("DELETE", "/accounts/a1"), ("DELETE", "/accounts/a2")]
