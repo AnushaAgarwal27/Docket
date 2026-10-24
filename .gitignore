@@ -10,3 +10,4 @@ dashboard/dist/
 .nessie_ids.json
 seed/paystubs/*.pdf
 .pytest_cache/
+eval/results/
