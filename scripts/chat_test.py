@@ -2,7 +2,7 @@
 
     .venv/bin/python -m scripts.chat_test "check my pay" "what's wrong?" "yes"
 
-Starts a throwaway agent on port 8002, sends each message in order, prints each reply, then exits.
+Starts a throwaway agent on port 8009, sends each message in order, prints each reply, then exits.
 """
 
 import asyncio
@@ -28,8 +28,8 @@ COORDINATOR = os.environ.get(
 MESSAGES = sys.argv[1:] or ["check my pay", "what's wrong?", "yes, contact payroll"]
 REPLY_TIMEOUT = 30
 
-tester = Agent(name="docket-tester", seed="docket-tester-local-only", port=8002,
-               endpoint=["http://127.0.0.1:8002/submit"])
+tester = Agent(name="docket-tester", seed="docket-tester-local-only", port=8009,
+               endpoint=["http://127.0.0.1:8009/submit"])
 chat = Protocol(spec=chat_protocol_spec)
 got_reply = asyncio.Event()
 

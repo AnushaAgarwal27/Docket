@@ -13,7 +13,7 @@ import requests
 import yaml
 
 from agents.store import log, mutation
-from rules.quote_check import quote_in_source
+from rules.quote_checker import check_quote
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Docket source collector; Cal Hacks 13.0)"}
 
@@ -37,7 +37,7 @@ def main() -> None:
             "fetchedAt": datetime.now(timezone.utc).isoformat(),
             "hash": hashlib.sha256(text.encode()).hexdigest(),
         })
-        ok = quote_in_source(rule["quote"], text)
+        ok = check_quote(rule["quote"], text).ok
         log("source-collector", "source_fetched",
             f"{rule['source_title']}: {len(text):,} chars; quote for {rule['id']} {'found' if ok else 'NOT FOUND'}",
             sourceId=source_id)

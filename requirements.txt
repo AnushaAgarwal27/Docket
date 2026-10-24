@@ -5,3 +5,5 @@ convex==0.8.1
 requests==2.34.2
 PyYAML==6.0.3
 python-dotenv==1.2.4
+reportlab==5.0.1
+pytest==9.1.1

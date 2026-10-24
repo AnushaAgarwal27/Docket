@@ -16,6 +16,7 @@ import type * as paystubs from "../paystubs.js";
 import type * as profiles from "../profiles.js";
 import type * as seed from "../seed.js";
 import type * as sources from "../sources.js";
+import type * as transactions from "../transactions.js";
 
 import type {
   ApiFromModules,
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   profiles: typeof profiles;
   seed: typeof seed;
   sources: typeof sources;
+  transactions: typeof transactions;
 }>;
 
 /**

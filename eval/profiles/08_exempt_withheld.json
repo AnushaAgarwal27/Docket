@@ -1,0 +1,75 @@
+{
+  "id": "08",
+  "group": "exempt_withheld",
+  "why": "F-1, 2026 is calendar year 4 of 5, FICA withheld",
+  "asOf": "2026-10-24",
+  "profile": {
+    "name": "Ananya Iyer",
+    "visa": "F-1",
+    "arrivalDate": "2023-12-28",
+    "school": "Golden Bear University",
+    "homeCountry": "Synthetic",
+    "homeCurrency": "USD",
+    "workAuth": "on-campus",
+    "phoneMasked": "(***) ***-0000",
+    "filed8843Years": [
+      2025
+    ]
+  },
+  "schoolCalendar": {
+    "school": "Golden Bear University",
+    "sessions": [
+      {
+        "name": "Fall 2025",
+        "start": "2025-08-27",
+        "end": "2025-12-19"
+      },
+      {
+        "name": "Spring 2026",
+        "start": "2026-01-12",
+        "end": "2026-05-15"
+      },
+      {
+        "name": "Fall 2026",
+        "start": "2026-08-26",
+        "end": "2026-12-18"
+      }
+    ]
+  },
+  "paystubs": [
+    {
+      "periodStart": "2026-01-12",
+      "periodEnd": "2026-01-25",
+      "employer": "University Dining Services",
+      "grossCents": 84000,
+      "hoursByWeek": [
+        20,
+        20
+      ],
+      "ssCents": 5208,
+      "medicareCents": 1218,
+      "netCents": 77574,
+      "sourceFile": "paystub_01.pdf"
+    },
+    {
+      "periodStart": "2026-01-26",
+      "periodEnd": "2026-02-08",
+      "employer": "University Dining Services",
+      "grossCents": 84000,
+      "hoursByWeek": [
+        20,
+        20
+      ],
+      "ssCents": 5208,
+      "medicareCents": 1218,
+      "netCents": 77574,
+      "sourceFile": "paystub_02.pdf"
+    }
+  ],
+  "expected": [
+    {
+      "ruleId": "FICA_EXEMPT_F1",
+      "amountCents": 12852
+    }
+  ]
+}
