@@ -35,7 +35,7 @@ export default defineSchema({
     profileId: v.optional(v.id("profiles")), // added: Ledger refund matching looks up open cases per student
     deadline: v.optional(v.string()), // added: plan lists "deadlines" for cases
     draft: v.optional(v.string()), // added: request text Priya approves before any call
-  }).index("by_state", ["state"]),
+  }).index("by_state", ["state"]).index("by_flag", ["flagId"]).index("by_profile", ["profileId"]),
   calls: defineTable({
     caseId: v.id("cases"), answeredBy: v.string(), at: v.string(), summary: v.string(),
     promisedBy: v.optional(v.string()), referenceNo: v.optional(v.string()),

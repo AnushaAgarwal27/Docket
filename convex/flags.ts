@@ -11,6 +11,13 @@ export const listByProfile = query({
   },
 });
 
+export const setStatus = mutation({
+  args: { flagId: v.id("flags"), status: v.string() },
+  handler: async (ctx, { flagId, status }) => {
+    await ctx.db.patch("flags", flagId, { status });
+  },
+});
+
 // Tax agent writes flags. One flag per rule per student; re-running the rules updates it.
 export const upsert = mutation({
   args: {

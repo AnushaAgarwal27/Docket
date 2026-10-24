@@ -18,6 +18,15 @@ export const get = query({
   },
 });
 
+// Title and url only, for citing a source without shipping its full text.
+export const cite = query({
+  args: { sourceId: v.id("sources") },
+  handler: async (ctx, { sourceId }) => {
+    const s = await ctx.db.get(sourceId);
+    return s && { title: s.title, url: s.url };
+  },
+});
+
 // The source collector stores the exact fetched text. One row per URL; a re-fetch replaces it.
 export const upsert = mutation({
   args: { url: v.string(), title: v.string(), text: v.string(), fetchedAt: v.string(), hash: v.string() },
