@@ -204,7 +204,7 @@ If we miss a gate by more than an hour, we cut in this order: **Price agent → 
 
 ## Open issues
 
-See [`docs/PLAN_NOTES.md`](docs/PLAN_NOTES.md). Most important: with three rules, Priya produces **three** flags (the 8843 reminder fires too), unless we seed her as having filed for 2025.
+See [`docs/PLAN_NOTES.md`](docs/PLAN_NOTES.md). The data and rules layer (seed, rules engine, quote checker, Nessie) is documented in [`docs/DATA_AND_RULES.md`](docs/DATA_AND_RULES.md).
 
 ## Setup
 

@@ -1,17 +1,36 @@
-# Every rule points to a stored official source. Quotes must be copied word for word
-# from sources.text after the Apify fetch; the quote checker rejects anything else.
-- id: FICA_EXEMPT_F1
-  check: fica_exempt
-  source_url: https://www.irs.gov/publications/p519  # TODO: exact section anchor
-  quote: "TODO: exact sentence copied from the stored source"
-  action: open_refund_case
-- id: ONCAMPUS_20_HOURS
-  check: over_20_hours_in_session
-  source_url: TODO  # 8 CFR 214.2(f)(9)(i) or Study in the States on-campus page
-  quote: "TODO: exact sentence"
-  action: warn_student
-- id: FORM_8843_ANNUAL
-  check: needs_8843
-  source_url: https://www.irs.gov/forms-pubs/about-form-8843
-  quote: "TODO: exact sentence"
-  action: remind_with_deadline
+# Docket rules. Versioned; every rule points to a stored official source.
+# The model may explain a rule but never creates one.
+#
+# `quote` must appear word for word (after whitespace/punctuation normalization) in the
+# fetched text of `source_url`. `verified: false` means nobody has checked it against the
+# fetched page yet. Run `python -m rules.verify_sources` after the Apify fetch. Either way
+# the engine checks every quote against the stored text at runtime and drops any flag that fails.
+version: 1
+
+rules:
+  - id: FICA_EXEMPT_F1
+    check: fica_exempt
+    source_id: irs_pub_519
+    source_url: https://www.irs.gov/publications/p519
+    # DRAFT from memory of Pub 519 ch. 8 "Students and Exchange Visitors". Replace with the exact sentence from the fetched text.
+    quote: "Services performed by you as a nonresident alien temporarily in the United States as a nonimmigrant under subparagraph (F), (J), (M), or (Q) of section 101(a)(15) of the Immigration and Nationality Act are not covered under the social security program if you perform the services to carry out the purpose for which you were admitted to the United States."
+    verified: false
+    action: open_refund_case
+
+  - id: ONCAMPUS_20_HOURS
+    check: over_20_hours_in_session
+    source_id: sevp_on_campus_employment
+    source_url: https://studyinthestates.dhs.gov/students/work/on-campus-employment
+    # DRAFT. Prefer the school's international office page if it states the limit in one sentence.
+    quote: "While school is in session, you may work up to 20 hours per week."
+    verified: false
+    action: warn_student
+
+  - id: FORM_8843_ANNUAL
+    check: needs_8843
+    source_id: irs_form_8843
+    source_url: https://www.irs.gov/forms-pubs/about-form-8843
+    # DRAFT. Replace with the exact sentence from the fetched Form 8843 page or instructions.
+    quote: "Alien individuals use Form 8843 to explain the basis of their claim that they can exclude days of presence in the United States for purposes of the substantial presence test because they were an exempt individual"
+    verified: false
+    action: remind_with_deadline
