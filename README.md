@@ -179,7 +179,7 @@ If we miss a gate by more than an hour, we cut in this order: **Price agent → 
 **Core:**
 - **Fetch.ai:** ASI:One plus agents reacting to each other.
 - **Anthropic:** the eval score and the quote checker.
-- **Cartesia:** the live payroll call and Hindi.
+- **Cartesia:** the live payroll call, with a written-request escalation when payroll stalls or refuses (the Hindi voice call was cut; see the Cartesia section).
 - **Convex:** the live dashboard.
 - **Capital One Nessie:** the refund deposit closing the case.
 
@@ -210,8 +210,36 @@ See [`docs/PLAN_NOTES.md`](docs/PLAN_NOTES.md). The data and rules layer (seed, 
 
 ```bash
 python3.12 -m venv .venv && source .venv/bin/activate   # uAgents does not support 3.14
-pip install -r requirements.txt
-cp .env.example .env   # fill in keys; never commit them
+pip install -r requirements.txt && npm install
+cp .env.example .env   # fill in keys and a long random *_SEED per agent; never commit it
+npx convex dev         # deploys convex/ and keeps it in sync; leave running
+```
+
+## Run the demo
+
+```bash
+.venv/bin/python -m seed.fetch_sources   # official IRS / eCFR text into `sources` (once)
+.venv/bin/python -m seed.reset           # wipe demo state, re-seed Priya and the simulated cohort (before every rehearsal)
+./scripts/run_agents.sh                  # Tax, Caseworker and Coordinator agents
+npm run dashboard                        # live dashboard at http://localhost:5173
+```
+
+Then in ASI:One, open **docket-coordinator** (or start the message with its `@agent1...` handle;
+messages sent with **To: ASI:One** go to ASI:One's own assistant, not to Docket) and try
+`check my pay`, `what's wrong?`, `yes, contact payroll`.
+
+Without ASI:One, the same conversation over the real chat protocol:
+
+```bash
+.venv/bin/python -m scripts.chat_test "check my pay" "what's wrong?" "yes, contact payroll"
+```
+
+Live scenario checks against the running agents (resets the demo first): agents noticing new paystubs on
+their own, indirect wording, the next-season answer, explicit approval, the proactive refund message, and
+the Agentverse readme:
+
+```bash
+.venv/bin/python -m eval.scenarios
 ```
 
 ## Sponsor tools
@@ -221,6 +249,35 @@ cp .env.example .env   # fill in keys; never commit them
 ### Capital One Nessie
 
 Nessie is Priya's bank. `seed/reset.py` creates her customer, a checking account, 8 payroll deposits of $664.92 from "University Dining Payroll", 20 purchases (rent, groceries, phone, a $70 table) and 2 family transfers from India with the rupee amount and rate in the memo. The Ledger agent polls her deposits and purchases every 30 seconds and writes each one to Convex with its Nessie id, so re-polling never duplicates a row. Each paystub is linked to the deposit of exactly its net pay within 3 days. "Simulate 2 weeks" creates the $440.64 "FICA refund" deposit through the Nessie API (`seed/release_refund.py`); the Ledger sees it, matches it to the open case within $1, and the case closes. That deposit is the moment the money comes back.
+
+### Cartesia (the payroll call)
+
+When Priya approves, Docket phones payroll with a Cartesia **Managed Agent**: a voice agent that asks for the refund, confirms a date and a reference number, and records what payroll said. Voice is how the case actually moves: payroll offices answer phones, and the call is the step a student is least likely to make on her own.
+
+**How it works**
+- **Placing the call:** `agents/caseworker/cartesia.py` starts the call with `POST /agents/calls`, passing the case id, student name, employer and amount as **dynamic variables**. Every approval, from ASI:One or the dashboard, places exactly one call (`cases:claimCall`).
+- **During the call:** the agent uses two **webhook tools** served by Convex HTTP actions (`convex/http.ts`), both protected by a Bearer token (`CARTESIA_TOOL_TOKEN`). `get_case_summary` returns the facts, computed in code, never by the voice model. `log_call_outcome` records the result through the case state machine (`cases:logCallOutcome`).
+- **System tools:** End call, Skip turn (payroll pulling up the account) and Voicemail detection (hang up without leaving tax details on a voicemail).
+- **Outcomes:** `promised` waits for the refund deposit. `needs_student` schedules a three-way call. A first `stalled` or `refused` moves the case to **written request**: the Caseworker writes a formal letter citing the clause and asking for the refund, or for a written refusal she needs for IRS Forms 843 and 8316. "Follow up by phone" places a second call. A second stall or refusal escalates to the IRS checklist.
+- **Rehearsal setting:** each case has a setting (cooperates, stalls once, refuses once), shown on the dashboard so the teammate playing payroll knows what to do. With `CARTESIA_SIMULATE=1`, a stand-in payroll call follows it with no phone, through the same webhooks.
+
+**Setup:** see [`docs/CARTESIA.md`](docs/CARTESIA.md) for the agent's instructions and welcome message, the two tools field by field, the phone number and the `.env` values.
+
+**Responsible use**
+- The welcome message says it is an AI assistant calling with the student's permission, and that the call may be recorded. It never claims to be her.
+- It shares only the refund request. The 20-hour flag is never in `get_case_summary` or the letter, by construction, and a test checks the letter.
+- Nothing is called without the student's approval. The letter is prepared for her to send from her own email; Docket sends nothing on its own.
+- For the demo, the payroll number is a teammate's phone.
+
+**Known limitations**
+- Tested end to end against a stand-in for Cartesia's API and in rehearsal mode. The real call depends on the dashboard setup in `docs/CARTESIA.md`. `CARTESIA_VERSION` is configurable because Cartesia's docs show two API versions.
+- Payroll's answers are whatever the person on the phone says. "Stalls once" is a rehearsal instruction, not a behavior we can force.
+- The written request is prepared, not emailed. No email integration was built.
+- Call transcripts are not stored; only the agent's summary, promised date and reference number are.
+- The Hindi voice call to a parent was cut for time and privacy. Hindi explanations exist in chat through the Coordinator.
+- Real outbound calling to employers has consent and calling-hours rules (TCPA) that this demo does not handle.
+
+**Secrets:** no keys are in the repo. `CARTESIA_API_KEY`, the agent and number ids and `PAYROLL_PHONE` live in `.env`, which is gitignored. The webhook token lives in Convex's environment (`npx convex env set CARTESIA_TOOL_TOKEN ...`) and in your local `.env` for rehearsals.
 
 ### Claude (paystub reading)
 

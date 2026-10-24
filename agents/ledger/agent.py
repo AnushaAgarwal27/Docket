@@ -2,8 +2,9 @@
 
     .venv/bin/python -m agents.ledger.agent
 
-Needs LEDGER_SEED, CONVEX_URL, NESSIE_API_KEY and ANTHROPIC_API_KEY in .env, and either
-NESSIE_ACCOUNT_ID or the .nessie_ids.json written by `python -m seed.reset`.
+Needs LEDGER_SEED, CONVEX_URL and ANTHROPIC_API_KEY in .env. With NESSIE_API_KEY and either
+NESSIE_ACCOUNT_ID or the .nessie_ids.json written by `python -m seed.reset`, it also syncs the bank;
+without it, it only reads paystubs.
 Uses agents/store.py and the paystubs/cases Convex functions from the anusha branch.
 """
 import json
@@ -14,6 +15,7 @@ from dotenv import load_dotenv
 from uagents import Agent, Context
 
 from agents import store
+from agents.messages import LocalFirstResolver, PaystubsRecorded, RefundLanded, address_of, local_endpoint
 from agents.ledger.service import match_refunds, process_paystubs, sync_bank
 from seed.nessie import Nessie
 from seed.reset import IDS_FILE
@@ -52,10 +54,12 @@ class ConvexLedgerStore:
         store.log(agent, action, detail, **extra)
 
 
-agent = Agent(name="docket-ledger", seed=os.environ["LEDGER_SEED"], port=8002)
+agent = Agent(name="docket-ledger", seed=os.environ["LEDGER_SEED"], port=8002,
+              endpoint=local_endpoint("LEDGER"), resolve=LocalFirstResolver())
 ledger_store = ConvexLedgerStore()
-nessie = Nessie()
+nessie = Nessie() if os.environ.get("NESSIE_API_KEY") else None
 done_files: set[str] = set()
+last_profile: dict[str, str | None] = {"id": None}
 
 
 def account_id() -> str:
@@ -73,9 +77,23 @@ async def tick(ctx: Context):
     if pid is None:
         ctx.logger.info(f"no profile named {PROFILE_NAME}; run python -m seed.reset")
         return
-    new_txns = sync_bank(ledger_store, nessie, account_id(), pid)
+    new_txns = sync_bank(ledger_store, nessie, account_id(), pid) if nessie else []
+    if pid != last_profile["id"]:
+        done_files.clear()  # a reset made a new student file, so read every PDF again
+        last_profile["id"] = pid
     new_stubs = process_paystubs(ledger_store, pid, PAYSTUB_DIR, done=done_files)
+    if store.query("profiles:get", {"profileId": pid}) is None:
+        return  # reset while this tick ran; the next tick starts over with the new profile
+    if new_stubs:
+        # Tax checks them right away, before Priya asks.
+        await ctx.send(address_of("TAX"), PaystubsRecorded(profile_id=pid, count=len(new_stubs)))
     matches = match_refunds(ledger_store, pid, new_txns)
+    for case_id, txn_id in matches:
+        # Tell the Coordinator, so Priya hears about her refund without asking.
+        case = store.query("cases:get", {"caseId": case_id})
+        txn = next(t for t in new_txns if t["_id"] == txn_id)
+        await ctx.send(address_of("COORDINATOR"), RefundLanded(
+            profile_id=pid, case_id=case_id, amount_cents=case["amountCents"], counterparty=txn["counterparty"]))
     if new_txns or new_stubs or matches:
         ctx.logger.info(f"{len(new_txns)} transactions, {len(new_stubs)} paystubs, {len(matches)} refunds matched")
 

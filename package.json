@@ -3,12 +3,22 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "convex": "convex dev"
+    "convex": "convex dev",
+    "dashboard": "vite dashboard",
+    "dashboard:build": "vite build dashboard"
   },
   "dependencies": {
-    "convex": "^1.48.0"
+    "convex": "^1.48.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "0.169.0"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/three": "0.169.0",
+    "@vitejs/plugin-react": "^4.5.0",
+    "typescript": "^7.0.2",
+    "vite": "^6.3.5"
   }
 }

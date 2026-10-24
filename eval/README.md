@@ -15,3 +15,16 @@ Each file: `profile`, `paystubs` and `schoolCalendar` (the student's facts), `as
 For the plain-Claude run (eval runner, Person 1), paste only `profile`, `paystubs`, `schoolCalendar` and `asOf`, never `expected`, `why` or `group`, then ask: "Is anything wrong with this student's pay or filings?"
 
 The answer key was written by hand from the rules; `tests/test_eval_profiles.py` checks the rules engine agrees on all 25.
+
+## Running it
+
+```bash
+.venv/bin/python -m eval.run --docket-only   # rules engine only, no API calls
+.venv/bin/python -m eval.run                 # both arms: 25 plain-Claude answers + 25 grader calls
+```
+
+Docket runs the rules engine with every quote checked against the stored sources in Convex.
+Plain Claude gets only the student's facts and the question. A grader call (same model, low effort)
+reads each free-text answer and records which issues it raised, its FICA amount, and any clause it
+quoted; code checks those quotes word for word against the same sources. A profile is correct when
+the issues raised match `expected` exactly. Results land in `eval/results/` (not committed).
