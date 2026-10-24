@@ -20,7 +20,7 @@ from agents.coordinator.season import next_season
 from agents.messages import (
     CaseDecision, CasesResult, DecisionResult, OpenCases, RulesResult, RunRules, address_of,
 )
-from agents.store import dollars, log, query
+from agents.store import dollars, log, mutation, query
 from seed.demo_data import SCHOOL_CALENDAR
 
 AGENT = "coordinator"
@@ -170,13 +170,41 @@ async def explain_with_claude(ctx: Context, text: str, intent: str) -> str:
         reply = None
     if reply is None:
         return COULD_NOT_CHECK
+    unsure = brain.unsure(reply)
+    if unsure:
+        return await asyncio.to_thread(hand_off, reply, unsure, data)
     extra = []
     if intent == "check_pay":
+        await asyncio.to_thread(reopen_reviewed, data["profile"]["_id"])
         cases = await ask(ctx, "CASEWORKER", OpenCases(profile_id=data["profile"]["_id"]), CasesResult)
         pending = json.loads(cases.awaiting_json) if cases else []
         if pending:
             extra.append(approval_prompt(pending[0]))
     return compose(reply, data["flags"], extra)
+
+
+def reopen_reviewed(profile_id: str) -> None:
+    """A confident check after a handoff puts held flags back, so the Caseworker can open the case."""
+    for flag in query("flags:listByProfile", {"profileId": profile_id}):
+        if flag["status"] == "needs_review":
+            mutation("flags:setStatus", {"flagId": flag["_id"], "status": "open"})
+            log(AGENT, "review_cleared", f"{flag['ruleId']} confident again; back to open", inputIds=[flag["_id"]])
+
+
+def hand_off(reply: brain.Reply, unsure: list[brain.Finding], data: dict) -> str:
+    """Low or unknown confidence: hold the refund flag back from the Caseworker and point Priya to a person."""
+    for f in data["flags"]:
+        if f["ruleId"] == "FICA_EXEMPT_F1" and any(u.rule in ("FICA_EXEMPT_F1", "") for u in unsure):
+            flag = next((x for x in query("flags:listByProfile", {"profileId": data["profile"]["_id"]})
+                         if x["ruleId"] == f["ruleId"]), None)
+            if flag and flag["status"] == "open":
+                mutation("flags:setStatus", {"flagId": flag["_id"], "status": "needs_review"})
+    reasons = "; ".join(dict.fromkeys(u.basis for u in unsure))
+    log(AGENT, "handoff", f"Not confident enough to act ({reasons}); no case opened", inputIds=[data["profile"]["_id"]])
+    handoff = (f"I'm not sure enough to contact payroll for you: {reasons}. "
+               "Please check with your international student office or your payroll office first. "
+               "Once they confirm, say **check my pay** and I'll take it from there.")
+    return compose(reply, data["flags"], [handoff])
 
 
 async def respond_to_approval(ctx: Context, approved: bool) -> str:

@@ -1,4 +1,4 @@
-from agents.coordinator.brain import Finding, Reply, allowed_amounts, problems
+from agents.coordinator.brain import Finding, Reply, allowed_amounts, problems, unsure
 
 FACTS = {
     "paystubs": [{"grossCents": 72000, "ssCents": 4464, "medicareCents": 1044}],
@@ -48,3 +48,21 @@ def test_made_up_quote_is_rejected():
 def test_real_quote_passes():
     msg = 'The IRS says "Social security and Medicare taxes are not withheld from pay for the work unless the student is considered a resident alien."'
     assert problems(reply(msg), FACTS, FIRED, SOURCES) == []
+
+
+def test_low_and_unknown_confidence_go_to_a_person():
+    findings = [Finding(rule="FICA_EXEMPT_F1", part="social_security", confidence="high", basis="a", source_quote_id=None),
+                Finding(rule="FICA_EXEMPT_F1", part="medicare", confidence="low", basis="b", source_quote_id=None),
+                Finding(rule="ONCAMPUS_20_HOURS", part=None, confidence="unknown", basis="c", source_quote_id=None)]
+    assert [f.basis for f in unsure(reply("ok", findings))] == ["b", "c"]
+
+
+def test_high_and_medium_confidence_can_act():
+    findings = [Finding(rule="FICA_EXEMPT_F1", part=None, confidence="medium", basis="exception may apply",
+                        source_quote_id=None)]
+    assert unsure(reply("ok", findings)) == []
+
+
+def test_needs_human_always_hands_off():
+    r = Reply(intent="check_pay", needs_human=True, message_to_student="ok", findings=[])
+    assert [f.basis for f in unsure(r)] == ["facts are missing or conflict"]

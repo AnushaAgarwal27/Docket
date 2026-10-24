@@ -70,7 +70,7 @@ class Classification(BaseModel):
 class Finding(BaseModel):
     rule: str
     part: Literal["social_security", "medicare"] | None
-    confidence: Literal["high", "medium", "low"]
+    confidence: Literal["high", "medium", "low", "unknown"]
     basis: str
     source_quote_id: str | None
 
@@ -127,6 +127,15 @@ def write_reply(text: str, facts: dict, excerpts: dict[str, dict]) -> Reply:
 
 
 # ---------- Code checks on what Claude wrote ----------
+
+def unsure(reply: Reply) -> list[Finding]:
+    """Findings that must go to a person instead of a case: low or unknown confidence, or the whole
+    reply flagged needs_human (missing or conflicting facts)."""
+    if reply.needs_human:
+        return list(reply.findings) or [Finding(rule="", part=None, confidence="unknown",
+                                                basis="facts are missing or conflict", source_quote_id=None)]
+    return [f for f in reply.findings if f.confidence in ("low", "unknown")]
+
 
 _MONEY = re.compile(r"\$\s?([\d,]+(?:\.\d{2})?)")
 _QUOTED = re.compile(r"[\"“]([^\"”]{20,})[\"”]")
