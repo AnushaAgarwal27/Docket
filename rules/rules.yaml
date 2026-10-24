@@ -20,3 +20,10 @@
   source_title: "IRS, About Form 8843"
   quote: "If you are an alien individual, file Form 8843 to explain the basis of your claim that you can exclude days present in the United States for purposes of the substantial presence test"
   action: remind_with_deadline
+- id: WRONG_TAX_FORM
+  check: resident_tax_software
+  source_url: https://www.irs.gov/individuals/international-taxpayers/taxation-of-nonresident-aliens
+  source_title: "IRS, Taxation of nonresident aliens"
+  # Not yet checked against the downloaded page; run python -m rules.verify_sources.
+  quote: "must use Form 1040-NR, U.S. Nonresident Alien Income Tax Return"
+  action: warn_student
