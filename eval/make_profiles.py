@@ -19,7 +19,16 @@ NAMES = ["Aarav Mehta", "Mei Lin", "Oluwaseun Adeyemi", "Sofia Rossi", "Hiroshi 
          "Zara Ahmed", "Minh Nguyen", "Elif Yildiz", "Rahul Verma", "Chiara Bianchi", "Daniel Osei", "Sara Haile"]
 
 
-def profile(name, arrival, filed=(2025,), visa="F-1"):
+def exempt_years_before(arrival, year):
+    """Every exempt calendar year (the first 5, counting the arrival year) before `year`."""
+    first = int(arrival[:4])
+    return [y for y in range(first, min(first + 5, year))]
+
+
+def profile(name, arrival, filed=None, visa="F-1"):
+    """`filed` defaults to every past exempt year, so only the 8843 cases are missing one."""
+    if filed is None:
+        filed = exempt_years_before(arrival, 2026)
     return {"name": name, "visa": visa, "arrivalDate": arrival, "school": "Golden Bear University",
             "homeCountry": "Synthetic", "homeCurrency": "USD", "workAuth": "on-campus",
             "phoneMasked": "(***) ***-0000", "filed8843Years": list(filed)}
@@ -65,10 +74,9 @@ for i, (arrival, n, rate) in enumerate([("2024-08-15", 8, 1800), ("2025-08-20", 
 
 # 4 students in their 6th calendar year or later: withholding is correct, no flag.
 for i, arrival in enumerate(["2021-08-16", "2020-08-17", "2019-01-07", "2021-12-30"]):
-    filed = (2025,) if arrival.startswith("2021") else ()
     year = 2026 - int(arrival[:4]) + 1
     case("sixth_year_plus", f"2026 is calendar year {year}; no longer exempt, so withholding is correct",
-         profile(NAMES[8 + i], arrival, filed), stubs("2026-01-12", 6), [])
+         profile(NAMES[8 + i], arrival), stubs("2026-01-12", 6), [])
 
 # 4 clean paystubs, nothing withheld: no flag.
 for i, arrival in enumerate(["2024-08-15", "2025-08-20", "2023-08-21", "2026-01-06"]):
@@ -88,7 +96,7 @@ case("over_20", "30 hours in the weeks of 2025-12-22 and 2025-12-29: winter brea
 for i, (arrival, as_of, deadline) in enumerate([("2025-08-20", "2026-02-01", "2026-06-15"), ("2024-08-15", "2026-03-15", "2026-06-15"),
                                                 ("2023-08-21", AS_OF, "2026-06-15"), ("2025-01-10", "2026-05-01", "2026-06-15")]):
     case("no_income_8843", f"F-1 with no US income, no 8843 on record for 2025 (due {deadline})",
-         profile(NAMES[21 + i], arrival, filed=()), [], [{"ruleId": "FORM_8843_ANNUAL", "amountCents": 0}], as_of=as_of)
+         profile(NAMES[21 + i], arrival, filed=exempt_years_before(arrival, 2025)), [], [{"ruleId": "FORM_8843_ANNUAL", "amountCents": 0}], as_of=as_of)
 
 
 def main():

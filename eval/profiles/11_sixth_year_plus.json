@@ -12,7 +12,13 @@
     "homeCurrency": "USD",
     "workAuth": "on-campus",
     "phoneMasked": "(***) ***-0000",
-    "filed8843Years": []
+    "filed8843Years": [
+      2019,
+      2020,
+      2021,
+      2022,
+      2023
+    ]
   },
   "schoolCalendar": {
     "school": "Golden Bear University",
