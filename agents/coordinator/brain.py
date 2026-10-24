@@ -1,10 +1,10 @@
 """Claude reads what Priya types and writes the explanation; code decides and checks everything else.
 
-Claude classifies the message and phrases the findings in plain words (or Hindi). It never adds a
+Claude classifies the message and phrases the findings in plain words. It never adds a
 rule, a number or a quote: the facts it sees were computed by the rules engine, and the reply is
 rejected unless every dollar amount comes from those facts, every quoted sentence is word for word
-in a verified source, and every finding names a rule that fired. Rejections fall back to the
-template reply and are logged.
+in a verified source, and every finding names a rule that fired. Code adds the disclaimer and the
+verbatim quotes itself.
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ SYSTEM = """You are Docket, an assistant that checks an F-1 international studen
 paychecks for withholding errors. You are not a tax advisor.
 
 INPUTS YOU WILL RECEIVE
-- The student's message (any phrasing, any language)
+- The student's message (any phrasing)
 - Structured facts from our system: paystub lines, bank deposits,
   arrival date, visa status, employer, rule results
 - Source excerpts (e.g., IRS Pub 519) that our code has already verified
@@ -38,8 +38,8 @@ HARD RULES
 5. If facts are missing or conflict (e.g., unclear visa status,
    contractor employer), do not flag. Say what is missing and who to ask
    (international student office or payroll).
-6. Always end with: this is not tax advice; confirm with your
-   international student office.
+6. Do not write a disclaimer; our code always ends the reply with
+   "this is not tax advice; confirm with your international student office."
 
 CONFIDENCE
 - high: rule fired and a verified source supports it
@@ -50,14 +50,13 @@ TASKS
 A) Classify the student's message: check_pay | explain | approve |
    decline | other. Handle indirect wording such as "am I paying tax I
    shouldn't?" as check_pay.
-B) Write the explanation in the student's requested language (default
-   English; support Hindi). Plain words, 6th-grade reading level, under
-   120 words, mention the exact dollar amounts from the facts.
+B) Write the explanation in English. Plain words, 6th-grade reading
+   level, under 120 words, mention the exact dollar amounts from the facts.
 
 In findings, "rule" must be exactly a ruleId from ruleResults. For the Social Security and Medicare
 findings, use rule FICA_EXEMPT_F1 with part "social_security" or "medicare". source_quote_id must be a
 key of the source excerpts, or null. Our code shows each verified source quote under your message,
-so do not repeat the quotes in message_to_student. Do not ask the student to approve anything:
+so do not repeat the quotes in message_to_student: cite each one with source_quote_id instead. Do not ask the student to approve anything:
 our code adds the approval request."""
 
 Intent = Literal["check_pay", "explain", "approve", "decline", "other"]
@@ -65,7 +64,6 @@ Intent = Literal["check_pay", "explain", "approve", "decline", "other"]
 
 class Classification(BaseModel):
     intent: Intent
-    language: str  # the language the student wants the answer in, e.g. "English", "Hindi"
 
 
 class Finding(BaseModel):
@@ -100,7 +98,7 @@ def classify(text: str) -> Classification:
         max_tokens=2000,
         output_config={"effort": "low"},
         system=SYSTEM,
-        messages=[{"role": "user", "content": f"Only do task A, and name the language the student wants.\n\n"
+        messages=[{"role": "user", "content": f"Only do task A.\n\n"
                                               f"Student's message:\n<message>\n{text}\n</message>"}],
         output_format=Classification,
     )
@@ -109,10 +107,9 @@ def classify(text: str) -> Classification:
     return response.parsed_output
 
 
-def write_reply(text: str, facts: dict, excerpts: dict[str, dict], language: str) -> Reply:
+def write_reply(text: str, facts: dict, excerpts: dict[str, dict]) -> Reply:
     """`excerpts` maps source_quote_id (the rule id) to {"quote", "title", "url"}."""
     content = (f"Student's message:\n<message>\n{text}\n</message>\n\n"
-               f"Answer in: {language}\n\n"
                f"Structured facts:\n<facts>\n{json.dumps(facts, indent=2)}\n</facts>\n\n"
                f"Verified source excerpts:\n<excerpts>\n{json.dumps(excerpts, indent=2)}\n</excerpts>")
     response = _anthropic().messages.parse(

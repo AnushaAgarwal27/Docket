@@ -37,7 +37,7 @@ COORDINATOR = os.environ.get("COORDINATOR_ADDRESS", "agent1qwj0e7jf5gu6lw3tael5l
 PY = sys.executable
 ORDER = ["notice", "intent", "season", "approve", "refund", "readme"]
 FICA_CLAUSE = "Social security and Medicare taxes are not withheld from pay for the work"
-DISCLAIMER = "not tax advice"
+DISCLAIMER_END = "confirm with your international student office."
 
 student = Agent(name="docket-scenario-student", seed="docket-scenario-student-local-only", port=8018,
                 endpoint=["http://127.0.0.1:8018/submit"])
@@ -120,9 +120,11 @@ async def scenario_intent(ctx: Context):
         check("intent", False, "paystubs never arrived")
         return
     text = await say(ctx, "am I paying tax I shouldn't?")
-    check("intent", FICA_CLAUSE in text and DISCLAIMER in text.lower() and "$440.64" in text,
-          "indirect wording answered with $440.64, the verified IRS clause and the disclaimer"
-          if text else "no reply")
+    ok = FICA_CLAUSE in text and text.rstrip().lower().endswith(DISCLAIMER_END) and "$440.64" in text
+    check("intent", ok, "indirect wording answered with $440.64, the verified IRS clause, ending with the disclaimer"
+          if ok else f"got {text[:160]!r}")
+    vague = await say(ctx, "hmm")
+    check("intent-other", "check my pay" in vague, "an unclear message gets the help text, not a guess")
 
 
 async def scenario_season(ctx: Context):

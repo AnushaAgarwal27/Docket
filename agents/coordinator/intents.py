@@ -2,8 +2,9 @@
 
 YES/NO approvals are matched in code, so a misread message can never start a payroll call.
 Everything else goes through Claude (agents/coordinator/brain.py): it classifies the message and
-phrases the findings, and code checks the reply before it is shown. Any failure falls back to the
-template reply. Rules and cases are handled by the Tax and Caseworker agents over typed messages;
+phrases the findings, and code checks the reply before it is shown. If Claude fails or its reply
+fails a check, Priya gets "I couldn't check this, ask payroll." and no case is opened. Code adds the
+verbatim quotes Claude cites and the disclaimer. Rules and cases are handled by the Tax and Caseworker agents over typed messages;
 the Coordinator only reads the student file and talks to Priya.
 """
 
@@ -28,6 +29,8 @@ HELP = (
 
 NOT_ADVICE = "This is not tax advice; confirm with your international student office."
 
+COULD_NOT_CHECK = "I couldn't check this, ask payroll."
+
 CONFIRM_APPROVAL = ("To be sure: reply **YES** and I'll contact payroll with the request above, "
                     "or **NO** to hold off.")
 
@@ -45,10 +48,6 @@ def demo_profile() -> dict | None:
     # One student in the demo; real multi-student lookup comes with onboarding.
     profiles = query("profiles:list")
     return profiles[0] if profiles else None
-
-
-def format_flag(n: int, explanation: str, quote: str, title: str, url: str) -> str:
-    return f"**{n}.** {explanation}\n\n{source_block(quote, title, url)}"
 
 
 def source_block(quote: str, title: str, url: str) -> str:
@@ -90,24 +89,7 @@ async def gather_check(ctx: Context) -> dict | str:
     flags = [{"ruleId": f["id"], "amountCents": f["hit"]["amountCents"], "explanation": f["explanation"],
               "quote": f["quote"], "title": f["sourceTitle"], "url": f["source_url"], "detail": f["hit"]}
              for f in json.loads(result.flags_json)]
-    pending = []
-    if flags:
-        cases = await ask(ctx, "CASEWORKER", OpenCases(profile_id=profile["_id"]), CasesResult)
-        pending = json.loads(cases.awaiting_json) if cases else []
-    return {"profile": profile, "paystubs": paystubs, "flags": flags, "pending": pending}
-
-
-def template_check(data: dict) -> str:
-    paystubs, flags = data["paystubs"], data["flags"]
-    if not flags:
-        return f"I checked your {len(paystubs)} paystubs. I didn't find anything wrong."
-    lines = [f"I checked your {len(paystubs)} paystubs from {paystubs[0]['employer']} and found "
-             f"{len(flags)} likely issue{'s' if len(flags) > 1 else ''}:"]
-    for i, f in enumerate(flags, 1):
-        lines.append(format_flag(i, f["explanation"], f["quote"], f["title"], f["url"]))
-    if data["pending"]:
-        lines.append(approval_prompt(data["pending"][0]))
-    return "\n\n".join(lines)
+    return {"profile": profile, "paystubs": paystubs, "flags": flags}
 
 
 def gather_open() -> dict | str:
@@ -127,20 +109,7 @@ def gather_open() -> dict | str:
                       "caseState": CASE_STATUS.get(case["state"], case["state"]) if case else None})
     log(AGENT, "open_flags_listed", f"{len(flags)} unresolved flags for {profile['name']}", inputIds=[profile["_id"]])
     paystubs = query("paystubs:listByProfile", {"profileId": profile["_id"]})
-    return {"profile": profile, "paystubs": paystubs, "flags": flags, "pending": []}
-
-
-def template_open(data: dict) -> str:
-    flags = data["flags"]
-    if not flags:
-        return "Nothing open right now. Say **check my pay** and I'll look at your latest paystubs."
-    lines = [f"You have {len(flags)} open issue{'s' if len(flags) > 1 else ''}:"]
-    for i, f in enumerate(flags, 1):
-        text = format_flag(i, f["explanation"], f["quote"], f["title"], f["url"])
-        if f["caseState"]:
-            text += f"\n\nCase: {f['caseState']}"
-        lines.append(text)
-    return "\n\n".join(lines)
+    return {"profile": profile, "paystubs": paystubs, "flags": flags}
 
 
 def facts_for(data: dict) -> dict:
@@ -152,15 +121,12 @@ def facts_for(data: dict) -> dict:
                                         "ssCents", "medicareCents", "netCents")} for s in data["paystubs"]],
         "ruleResults": [{k: f.get(k) for k in ("ruleId", "amountCents", "detail", "caseState") if f.get(k) is not None}
                         for f in data["flags"]],
-        "caseAwaitingApproval": ({"amountCents": data["pending"][0]["amountCents"]} if data["pending"] else None),
     }
 
 
-def claude_reply(text: str, language: str, data: dict) -> str | None:
-    """Claude's wording with the verified sources attached, or None if any code check fails."""
+def checked_reply(text: str, data: dict) -> brain.Reply | None:
+    """Claude's reply if it passes every code check, else None (logged)."""
     flags = data["flags"]
-    if not flags:
-        return None
     facts = facts_for(data)
     excerpts = {f["ruleId"]: {"quote": f["quote"], "title": f["title"], "url": f["url"]} for f in flags}
     sources = {}
@@ -168,20 +134,46 @@ def claude_reply(text: str, language: str, data: dict) -> str | None:
         row = query("sources:getByUrl", {"url": f["url"]})
         if row is not None:
             sources[f["ruleId"]] = row["text"]
-    reply = brain.write_reply(text, facts, excerpts, language)
+    reply = brain.write_reply(text, facts, excerpts)
     found = brain.problems(reply, facts, {f["ruleId"] for f in flags}, sources)
     if found:
         log(AGENT, "claude_reply_rejected", "; ".join(found))
         return None
     log(AGENT, "claude_reply_checked",
         f"{len(reply.findings)} findings, needs_human={reply.needs_human}; amounts and quotes verified")
+    return reply
+
+
+def compose(reply: brain.Reply, flags: list[dict], extra: list[str]) -> str:
+    """Claude's words, then the verbatim quotes it cited (by source_quote_id), then code-owned text."""
+    by_id = {f["ruleId"]: f for f in flags}
+    cited = list(dict.fromkeys(f.source_quote_id for f in reply.findings if f.source_quote_id in by_id))
     parts = [reply.message_to_student.strip()]
-    parts += [source_block(f["quote"], f["title"], f["url"]) for f in flags]
-    if data["pending"]:
-        parts.append(approval_prompt(data["pending"][0]))
-    if "not tax advice" not in reply.message_to_student.lower():
-        parts.append(NOT_ADVICE)
-    return "\n\n".join(parts)
+    parts += [source_block(by_id[i]["quote"], by_id[i]["title"], by_id[i]["url"]) for i in cited]
+    return "\n\n".join(parts + extra + [NOT_ADVICE])
+
+
+async def explain_with_claude(ctx: Context, text: str, intent: str) -> str:
+    data = await gather_check(ctx) if intent == "check_pay" else await asyncio.to_thread(gather_open)
+    if isinstance(data, str):
+        return data
+    if not data["flags"]:
+        return f"I checked your {len(data['paystubs'])} paystubs and didn't find anything wrong.\n\n{NOT_ADVICE}"
+    try:
+        reply = await asyncio.to_thread(checked_reply, text, data)
+    except Exception as e:
+        ctx.logger.warning(f"Claude reply failed: {e}")
+        await asyncio.to_thread(log, AGENT, "claude_reply_failed", str(e)[:200])
+        reply = None
+    if reply is None:
+        return COULD_NOT_CHECK
+    extra = []
+    if intent == "check_pay":
+        cases = await ask(ctx, "CASEWORKER", OpenCases(profile_id=data["profile"]["_id"]), CasesResult)
+        pending = json.loads(cases.awaiting_json) if cases else []
+        if pending:
+            extra.append(approval_prompt(pending[0]))
+    return compose(reply, data["flags"], extra)
 
 
 async def respond_to_approval(ctx: Context, approved: bool) -> str:
@@ -202,14 +194,6 @@ async def respond_to_approval(ctx: Context, approved: bool) -> str:
     return "Okay, I won't contact payroll. The issue stays on your file; say **check my pay** any time to reopen it."
 
 
-def keyword_intent(t: str) -> str:
-    if "pay" in t and ("check" in t or "look" in t):
-        return "check_pay"
-    if "wrong" in t or "issue" in t or "flag" in t:
-        return "explain"
-    return "other"
-
-
 async def answer(ctx: Context, text: str) -> str:
     t = text.lower().strip()
     words = set(re.findall(r"[a-z']+", t))
@@ -218,27 +202,16 @@ async def answer(ctx: Context, text: str) -> str:
     if t.rstrip(".!") in {"no", "nope", "no thanks", "don't", "dont", "hold off"}:
         return await respond_to_approval(ctx, False)
 
-    language = "English"
     try:
-        c = await asyncio.to_thread(brain.classify, text)
-        intent, language = c.intent, c.language
+        intent = (await asyncio.to_thread(brain.classify, text)).intent
     except Exception as e:
-        ctx.logger.warning(f"classification failed, using keywords: {e}")
-        intent = keyword_intent(t)
-    await asyncio.to_thread(log, AGENT, "intent_classified", f"{intent} ({language}): {text[:80]!r}")
+        ctx.logger.warning(f"classification failed: {e}")
+        await asyncio.to_thread(log, AGENT, "claude_reply_failed", f"classification: {str(e)[:200]}")
+        return COULD_NOT_CHECK
+    await asyncio.to_thread(log, AGENT, "intent_classified", f"{intent}: {text[:80]!r}")
 
     if intent in ("approve", "decline"):
         return CONFIRM_APPROVAL  # only an explicit YES or NO acts
     if intent == "other":
         return HELP
-    data = await gather_check(ctx) if intent == "check_pay" else await asyncio.to_thread(gather_open)
-    if isinstance(data, str):
-        return data
-    try:
-        reply = await asyncio.to_thread(claude_reply, text, language, data)
-    except Exception as e:
-        ctx.logger.warning(f"Claude reply failed, using template: {e}")
-        reply = None
-    if reply is not None:
-        return reply
-    return template_check(data) if intent == "check_pay" else template_open(data)
+    return await explain_with_claude(ctx, text, intent)
