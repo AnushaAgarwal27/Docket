@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useRef, useState } from "react";
+import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -7,6 +7,9 @@ import type { Activity, Case, Patterns, PayrollScript, Snapshot, Timeline } from
 import { AGENT_LABEL, MEDICARE_BP, RULE_LABEL, SS_BP, actionLabel, calendarYear, day, demoFeed, demoLetter, demoSnapshot, pct, time, usd } from "./data";
 import { PaperTrail } from "./PaperTrail";
 import { TracksView } from "./Tracks";
+
+// three.js loads separately, so the page renders before the 3D does.
+const EvidenceStack = lazy(() => import("./EvidenceStack").then((m) => ({ default: m.EvidenceStack })));
 
 // Live mode reads the shared student file from Convex: Anusha's snapshot query, the activity feed,
 // the timeline and the employer pattern. Demo mode (?demo) renders from labelled synthetic data, as an
@@ -242,35 +245,55 @@ function Overview({ snap, stubs, feed, selected, onSelect, onTab, mode, wide, ti
   const employer = stubs[0]?.employer ?? "No employer on file";
   let cum = 0;
   const bars = stubs.map((p) => (cum += p.ssCents + p.medicareCents));
+  const amount = usd(fica?.amountCents ?? withheld);
+  const lede = !fica
+    ? "Docket hasn’t found anything yet. Say “check my pay” in ASI:One and the agents get to work."
+    : closed ? `Your ${amount} refund is back in your account. The case is closed.`
+    : refundCase?.state === "awaiting_approval" ? `We found ${amount} in Social Security and Medicare withheld in error across ${stubs.length} paychecks. Review the request before Docket contacts payroll.`
+    : refundCase?.state === "contacting_employer" ? `Docket is contacting payroll about your ${amount} refund, as an AI assistant acting with your permission.`
+    : refundCase?.state === "written_request" ? "Payroll didn’t commit on the first call. A written request is ready for you to send, and Docket will follow up by phone."
+    : refundCase?.state === "awaiting_response" ? `Payroll promised your ${amount} refund${refundCase.calls[0]?.promisedBy ? ` by ${day(refundCase.calls[0].promisedBy)}` : ""}. Docket is watching your deposits.`
+    : refundCase?.state === "escalate_irs" ? "Payroll won’t refund it. Your IRS claim checklist is ready."
+    : `We found ${amount} withheld in error across ${stubs.length} paychecks.`;
+  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
     <>
-      <section className="hero">
-        <div>
+      <section className="hero2">
+        <div className="h2-copy">
+          <span className="h2-eyebrow">{profile.name} · {profile.visa}, calendar year {calendarYear(profile.arrivalDate, new Date().getFullYear())} of 5 · {term} · {employer}</span>
           <h1>Your money, in focus.</h1>
-          <p className="muted">{profile.name} · {profile.visa}, calendar year {calendarYear(profile.arrivalDate, new Date().getFullYear())} of 5 · {term} · {employer}</p>
-        </div>
-        {mode === "demo" && actions.onReset && <button type="button" className="btn ghost" onClick={actions.onReset}>↺ Reset demo</button>}
-      </section>
-
-      <section className="kpis">
-        <div className="kpi">
-          <span className="kpi-l">{closed ? "Recovered" : "Potential refund"}</span>
-          <div className="kpi-row">
-            <span className={`kpi-v num ${closed ? "okc" : ""}`}>{usd(fica?.amountCents ?? withheld)}</span>
-            <Spark values={bars} done={closed} />
+          <p className="h2-lede">{lede}</p>
+          <div className="h2-actions">
+            <button type="button" className="btn" onClick={() => scrollTo("case-review")}>{refundCase?.state === "awaiting_approval" ? "Review the request" : refundCase ? "See the case" : "See the paystubs"}</button>
+            <button type="button" className="btn ghost" onClick={() => scrollTo("paper-trail")}>See the evidence</button>
+            {mode === "demo" && actions.onReset && <button type="button" className="btn ghost" onClick={actions.onReset}>↺ Reset demo</button>}
           </div>
-          <span className="kpi-s">Across {stubs.length} paychecks · {closed ? "back in Priya’s account" : refundCase ? stateLabel(refundCase.state).toLowerCase() : "not reviewed yet"}</span>
+          <div className="h2-stats">
+            <div>
+              <span className="kpi-l">{closed ? "Recovered" : "Withheld in error"}</span>
+              <div className="kpi-row"><span className={`kpi-v num ${closed ? "okc" : fica ? "evc" : ""}`}>{usd(fica?.amountCents ?? (fica ? withheld : 0))}</span><Spark values={bars} done={closed} /></div>
+              <span className="kpi-s">{fica ? `Across ${stubs.length} paychecks` : "Nothing flagged yet"}</span>
+            </div>
+            <div>
+              <span className="kpi-l">Net pay recorded</span>
+              <span className="kpi-v num">{usd(net)}</span>
+              <span className="kpi-s">{matched} of {stubs.length} matched to a deposit</span>
+            </div>
+            <div>
+              <span className="kpi-l">Items to review</span>
+              <span className="kpi-v num">{openItems.length}</span>
+              <span className="kpi-s">{openItems.length ? openItems.map((f) => shortRule(f.ruleId)).join(" + ") : "Nothing open"}</span>
+            </div>
+          </div>
         </div>
-        <div className="kpi">
-          <span className="kpi-l">Net pay recorded</span>
-          <span className="kpi-v num">{usd(net)}</span>
-          <span className="kpi-s">{matched} of {stubs.length} paystubs matched to a bank deposit</span>
-        </div>
-        <div className="kpi">
-          <span className="kpi-l">Items to review</span>
-          <span className="kpi-v num">{openItems.length}</span>
-          <span className="kpi-s">{openItems.length ? openItems.map((f) => shortRule(f.ruleId)).join(" + ") : "Nothing open"}</span>
+        <div className="h2-stage">
+          {stubs.length > 0 ? (
+            <Suspense fallback={<div className="es-stage" />}>
+              <EvidenceStack stubs={stubs} flagged={!!fica} recovered={closed} totalCents={fica?.amountCents ?? withheld} selected={selected} onSelect={onSelect} />
+            </Suspense>
+          ) : <div className="es-stage es-empty"><p>No paystubs yet. The Ledger reads them when Priya asks “check my pay”.</p></div>}
+          <div className="h2-hint"><span>{stubs.length} paystubs from the student file</span><span>Hover to lift · click to inspect</span></div>
         </div>
       </section>
 
@@ -478,7 +501,7 @@ function CaseReview({ c, mode, onApprove, onFollowUp, onSetScript, onSimulateRef
   const tone = refunded ? "ok" : c.state === "awaiting_approval" ? "ev" : c.state === "escalate_irs" ? "risk" : "ac";
 
   return (
-    <section className="panel case">
+    <section className="panel case" id="case-review">
       <div className="case-h">
         <span className="case-ic"><Icon name="cases" /></span>
         <div>
