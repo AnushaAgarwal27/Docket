@@ -9,7 +9,7 @@ from uagents.resolver import GlobalResolver, Resolver
 
 load_dotenv()
 
-PORTS = {"COORDINATOR": 8001, "TAX": 8003, "CASEWORKER": 8004}
+PORTS = {"COORDINATOR": 8001, "LEDGER": 8002, "TAX": 8003, "CASEWORKER": 8004}
 
 
 def address_of(name: str) -> str:
@@ -62,3 +62,11 @@ class DecisionResult(Model):
     acted: bool  # False when nothing was waiting for approval
     amount_cents: int = 0
     error: str = ""
+
+
+class RefundLanded(Model):
+    """Ledger -> Coordinator: a deposit matched an open refund case, which is now closed."""
+    profile_id: str
+    case_id: str
+    amount_cents: int  # the case amount, from Convex
+    counterparty: str
