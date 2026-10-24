@@ -1,0 +1,64 @@
+"""Typed messages between Docket's agents. Results carry JSON so rows pass through unchanged."""
+
+import os
+
+from dotenv import load_dotenv
+from uagents import Model
+from uagents.crypto import Identity
+from uagents.resolver import GlobalResolver, Resolver
+
+load_dotenv()
+
+PORTS = {"COORDINATOR": 8001, "TAX": 8003, "CASEWORKER": 8004}
+
+
+def address_of(name: str) -> str:
+    """Agent address derived from its seed in .env, e.g. address_of("TAX")."""
+    return Identity.from_seed(os.environ[f"{name}_SEED"], 0).address
+
+
+def local_endpoint(name: str) -> list[str]:
+    return [f"http://127.0.0.1:{PORTS[name]}/submit"]
+
+
+class LocalFirstResolver(Resolver):
+    """Docket's agents run on one machine, so they reach each other directly instead of
+    round-tripping through Agentverse. Every other address (ASI:One users) resolves normally."""
+
+    def __init__(self):
+        self._local = {address_of(name): local_endpoint(name) for name in PORTS}
+        self._global = GlobalResolver()
+
+    async def resolve(self, destination: str) -> tuple[str | None, list[str]]:
+        if destination in self._local:
+            return destination, self._local[destination]
+        return await self._global.resolve(destination)
+
+
+class RunRules(Model):
+    profile_id: str
+
+
+class RulesResult(Model):
+    flags_json: str  # list of flags written this run
+    error: str = ""
+
+
+class OpenCases(Model):
+    profile_id: str
+
+
+class CasesResult(Model):
+    awaiting_json: str  # cases waiting for the student's approval
+    error: str = ""
+
+
+class CaseDecision(Model):
+    profile_id: str
+    approved: bool
+
+
+class DecisionResult(Model):
+    acted: bool  # False when nothing was waiting for approval
+    amount_cents: int = 0
+    error: str = ""

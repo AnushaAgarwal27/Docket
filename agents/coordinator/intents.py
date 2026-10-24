@@ -1,13 +1,20 @@
 """What Priya can ask the Coordinator, and how each request is answered from the student file.
 
 Matching is plain keywords for now; anything unrecognised gets the help text.
+Rules and cases are handled by the Tax and Caseworker agents over typed messages;
+the Coordinator only reads the student file and talks to Priya.
 """
 
+import asyncio
+import json
 import re
 
-from agents.caseworker import engine as caseworker
+from uagents import Context
+
+from agents.messages import (
+    CaseDecision, CasesResult, DecisionResult, OpenCases, RulesResult, RunRules, address_of,
+)
 from agents.store import dollars, log, query
-from agents.tax import engine as tax
 
 AGENT = "coordinator"
 
@@ -43,21 +50,38 @@ def approval_prompt(case: dict) -> str:
             "On a call, I always say I'm an AI assistant acting with your permission.")
 
 
-def check_my_pay() -> str:
-    profile = demo_profile()
+UNAVAILABLE = "Sorry, part of Docket isn't responding right now. Please try again in a moment."
+
+
+async def ask(ctx: Context, agent: str, message, response_type):
+    """Send a typed message to another Docket agent and wait for its reply (None on failure)."""
+    reply, status = await ctx.send_and_receive(address_of(agent), message, response_type=response_type, timeout=25)
+    if reply is None or getattr(reply, "error", ""):
+        ctx.logger.error(f"{agent} failed: {getattr(reply, 'error', '') or status}")
+        return None
+    return reply
+
+
+async def check_my_pay(ctx: Context) -> str:
+    profile = await asyncio.to_thread(demo_profile)
     if profile is None:
         return "I don't have a student file yet. Run the reset script to seed the demo."
-    paystubs = query("paystubs:listByProfile", {"profileId": profile["_id"]})
-    log(AGENT, "check_pay_requested", f"{profile['name']} asked to check pay; {len(paystubs)} paystubs on file",
-        inputIds=[profile["_id"]])
-    flags = tax.run(profile["_id"])
+    paystubs = await asyncio.to_thread(query, "paystubs:listByProfile", {"profileId": profile["_id"]})
+    await asyncio.to_thread(log, AGENT, "check_pay_requested",
+                            f"{profile['name']} asked to check pay; {len(paystubs)} paystubs on file",
+                            inputIds=[profile["_id"]])
+    result = await ask(ctx, "TAX", RunRules(profile_id=profile["_id"]), RulesResult)
+    if result is None:
+        return UNAVAILABLE
+    flags = json.loads(result.flags_json)
     if not flags:
         return f"I checked your {len(paystubs)} paystubs. I didn't find anything wrong."
     lines = [f"I checked your {len(paystubs)} paystubs from {paystubs[0]['employer']} and found "
              f"{len(flags)} likely issue{'s' if len(flags) > 1 else ''}:"]
     for i, f in enumerate(flags, 1):
         lines.append(format_flag(i, f["explanation"], f["quote"], f["sourceTitle"], f["source_url"]))
-    pending = caseworker.open_refund_cases(profile["_id"])
+    cases = await ask(ctx, "CASEWORKER", OpenCases(profile_id=profile["_id"]), CasesResult)
+    pending = json.loads(cases.awaiting_json) if cases else []
     if pending:
         lines.append(approval_prompt(pending[0]))
     return "\n\n".join(lines)
@@ -82,32 +106,33 @@ def whats_wrong() -> str:
     return "\n\n".join(lines)
 
 
-def respond_to_approval(approved: bool) -> str:
-    profile = demo_profile()
-    pending = caseworker.awaiting_approval(profile["_id"]) if profile else []
-    if not pending:
+async def respond_to_approval(ctx: Context, approved: bool) -> str:
+    profile = await asyncio.to_thread(demo_profile)
+    if profile is None:
+        return "I don't have a student file yet."
+    await asyncio.to_thread(log, AGENT, "approval_received" if approved else "approval_declined",
+                            f"Student replied {'YES' if approved else 'NO'} to contacting payroll",
+                            inputIds=[profile["_id"]])
+    result = await ask(ctx, "CASEWORKER", CaseDecision(profile_id=profile["_id"], approved=approved), DecisionResult)
+    if result is None:
+        return UNAVAILABLE
+    if not result.acted:
         return "There's nothing waiting for your approval right now. Say **check my pay** to look for issues."
-    case = pending[0]
     if approved:
-        log(AGENT, "approval_received", f"Student approved contacting payroll for {dollars(case['amountCents'])}",
-            inputIds=[case["_id"]])
-        caseworker.approve(case)
-        return (f"Approved. I'm contacting payroll about your **{dollars(case['amountCents'])}** refund. "
+        return (f"Approved. I'm contacting payroll about your **{dollars(result.amount_cents)}** refund. "
                 "I'll log the call and tell you what they promise.")
-    log(AGENT, "approval_declined", "Student declined contacting payroll", inputIds=[case["_id"]])
-    caseworker.decline(case)
     return "Okay, I won't contact payroll. The issue stays on your file; say **check my pay** any time to reopen it."
 
 
-def answer(text: str) -> str:
+async def answer(ctx: Context, text: str) -> str:
     t = text.lower().strip()
     words = set(re.findall(r"[a-z']+", t))
     if words & {"yes", "approve", "approved"} or "contact payroll" in t:
-        return respond_to_approval(True)
+        return await respond_to_approval(ctx, True)
     if t.rstrip(".!") in {"no", "nope", "no thanks", "don't", "dont", "hold off"}:
-        return respond_to_approval(False)
+        return await respond_to_approval(ctx, False)
     if "pay" in t and ("check" in t or "look" in t):
-        return check_my_pay()
+        return await check_my_pay(ctx)
     if "wrong" in t or "issue" in t or "flag" in t:
-        return whats_wrong()
+        return await asyncio.to_thread(whats_wrong)
     return HELP

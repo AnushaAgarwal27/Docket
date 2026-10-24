@@ -4,7 +4,6 @@ Run from the repo root: .venv/bin/python -m agents.coordinator.agent
 Wait for "registered as mailbox agent", then use Chat with Agent in ASI:One.
 """
 
-import asyncio
 import os
 import re
 from collections import defaultdict, deque
@@ -22,10 +21,12 @@ from uagents_core.contrib.protocols.chat import (
 )
 
 from agents.coordinator.intents import answer
+from agents.messages import LocalFirstResolver
 
 load_dotenv()
 
-agent = Agent(name="docket-coordinator", seed=os.environ["COORDINATOR_SEED"], port=8001, mailbox=True)
+agent = Agent(name="docket-coordinator", seed=os.environ["COORDINATOR_SEED"], port=8001, mailbox=True,
+              resolve=LocalFirstResolver())
 chat = Protocol(spec=chat_protocol_spec)
 
 # Echo guard: ASI:One sometimes sends our own reply back as a new request.
@@ -53,8 +54,7 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
         if any(r in text for r in recent_replies[sender]) or text.startswith("[docket-coordinator]"):
             ctx.logger.info("echo ignored")
             continue
-        # The Convex client is blocking; keep the agent's event loop free.
-        response = await asyncio.to_thread(answer, text)
+        response = await answer(ctx, text)
         recent_replies[sender].append(response)
         await ctx.send(sender, reply(response))
 

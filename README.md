@@ -210,8 +210,27 @@ See [`docs/PLAN_NOTES.md`](docs/PLAN_NOTES.md). Most important: with three rules
 
 ```bash
 python3.12 -m venv .venv && source .venv/bin/activate   # uAgents does not support 3.14
-pip install -r requirements.txt
-cp .env.example .env   # fill in keys; never commit them
+pip install -r requirements.txt && npm install
+cp .env.example .env   # fill in keys and a long random *_SEED per agent; never commit it
+npx convex dev         # deploys convex/ and keeps it in sync; leave running
+```
+
+## Run the demo
+
+```bash
+.venv/bin/python -m seed.fetch_sources   # official IRS / eCFR text into `sources` (once)
+.venv/bin/python -m seed.reset           # wipe demo state, re-seed Priya (before every rehearsal)
+./scripts/run_agents.sh                  # Tax, Caseworker and Coordinator agents
+```
+
+Then in ASI:One, open **docket-coordinator** (or start the message with its `@agent1...` handle;
+messages sent with **To: ASI:One** go to ASI:One's own assistant, not to Docket) and try
+`check my pay`, `what's wrong?`, `yes, contact payroll`.
+
+Without ASI:One, the same conversation over the real chat protocol:
+
+```bash
+.venv/bin/python -m scripts.chat_test "check my pay" "what's wrong?" "yes, contact payroll"
 ```
 
 ## Sponsor tools
