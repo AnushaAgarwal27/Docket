@@ -6,3 +6,6 @@ __pycache__/
 node_modules/
 .convex/
 .DS_Store
+.nessie_ids.json
+seed/paystubs/*.pdf
+.pytest_cache/
