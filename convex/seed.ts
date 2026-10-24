@@ -26,3 +26,12 @@ export const resetDemo = mutation({
     return profileId;
   },
 });
+
+// The simulated cohort for the employer pattern view (seed/cohort.py). Each profile is marked
+// simulated and named as such; its flags come from the real rules engine and quote checker.
+export const addSimulatedStudent = mutation({
+  args: { profile: schema.tables.profiles.validator },
+  handler: async (ctx, { profile }) => {
+    return await ctx.db.insert("profiles", { ...profile, simulated: true });
+  },
+});
