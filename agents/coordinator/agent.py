@@ -5,6 +5,7 @@ Run it, wait for "registered as mailbox agent", then use Chat with Agent in ASI:
 """
 
 import os
+import re
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -42,7 +43,9 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     for item in msg.content:
         if not isinstance(item, TextContent):
             continue
-        text = item.text.strip()
+        # ASI:One prefixes the text with "@agent1..." when the user mentions us.
+        text = re.sub(r"@agent1\w+", "", item.text).strip()
+        ctx.logger.info(f"from {sender[:16]}: {text!r}")
         if text in recent_replies[sender]:
             ctx.logger.info("echo ignored")
             continue
