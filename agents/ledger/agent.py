@@ -7,6 +7,7 @@ NESSIE_ACCOUNT_ID or the .nessie_ids.json written by `python -m seed.reset`, it 
 without it, it only reads paystubs.
 Uses agents/store.py and the paystubs/cases Convex functions from the anusha branch.
 """
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -84,25 +85,33 @@ def profile_id() -> str | None:
 
 @agent.on_interval(period=POLL_SECONDS)
 async def tick(ctx: Context):
-    pid = profile_id()
+    # Every call in this tick is blocking I/O, and process_paystubs is the slowest thing the agent
+    # does: one Claude transcription per PDF, tens of seconds for a full reset. Run directly, it
+    # holds the event loop the whole time, and an agent that cannot reach its own event loop cannot
+    # answer anything -- not a message from the Tax agent, and not the /connect request that creates
+    # its Agentverse mailbox, which is how this surfaced: the Ledger was the one agent whose mailbox
+    # would not connect, and it looked like a network problem rather than a blocked loop.
+    pid = await asyncio.to_thread(profile_id)
     if pid is None:
         ctx.logger.info(f"no profile named {PROFILE_NAME}; run python -m seed.reset")
         return
-    new_txns = sync_bank(ledger_store, nessie, account_id(), pid) if nessie else []
+    new_txns = await asyncio.to_thread(
+        sync_bank, ledger_store, nessie, account_id(), pid) if nessie else []
     if pid != last_profile["id"]:
         done_files.clear()  # a reset made a new student file, so read every PDF again
         last_profile["id"] = pid
-    new_stubs = process_paystubs(ledger_store, pid, PAYSTUB_DIR, done=done_files)
-    if store.query("profiles:get", {"profileId": pid}) is None:
+    new_stubs = await asyncio.to_thread(
+        process_paystubs, ledger_store, pid, PAYSTUB_DIR, done=done_files)
+    if await asyncio.to_thread(store.query, "profiles:get", {"profileId": pid}) is None:
         return  # reset while this tick ran; the next tick starts over with the new profile
     if new_stubs:
         # Tax checks them right away, before Priya asks.
         await tell(ctx, "ledger", "TAX", NewPaystub(profile_id=pid, count=len(new_stubs)),
                    f"{len(new_stubs)} new paystubs recorded", inputIds=new_stubs)
-    matches = match_refunds(ledger_store, pid, new_txns)
+    matches = await asyncio.to_thread(match_refunds, ledger_store, pid, new_txns)
     for case_id, txn_id in matches:
         # The Caseworker closes the case and tells the Coordinator, who tells Priya.
-        case = store.query("cases:get", {"caseId": case_id})
+        case = await asyncio.to_thread(store.query, "cases:get", {"caseId": case_id})
         txn = next(t for t in new_txns if t["_id"] == txn_id)
         await tell(ctx, "ledger", "CASEWORKER", RefundMatched(
             profile_id=pid, case_id=case_id, transaction_id=txn_id, amount_cents=case["amountCents"],
