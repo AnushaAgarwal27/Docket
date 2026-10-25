@@ -12,6 +12,10 @@ export default defineSchema({
     filed8843Years: v.optional(v.array(v.number())), // added: needs_8843 needs a filing record
     employer: v.optional(v.string()), // added: the student's on-campus employer
     filings: v.optional(v.array(v.object({ year: v.number(), form: v.string() }))), // added: forms filed per tax year
+    // added for the Hearing's objection checks; missing values mean "ask", never "assume"
+    employmentType: v.optional(v.union(v.literal("employee"), v.literal("contractor"))),
+    employerIsSchool: v.optional(v.boolean()),
+    enrolled: v.optional(v.boolean()),
     simulated: v.optional(v.boolean()), // added: synthetic cohort for the employer pattern view, never the demo student
   }),
   transactions: defineTable({
@@ -68,5 +72,26 @@ export default defineSchema({
     sourceId: v.optional(v.id("sources")), at: v.string(),
     inputIds: v.optional(v.array(v.string())), // added: plan lists input and output ids
     outputIds: v.optional(v.array(v.string())),
+    // added: agent-to-agent messages are logged too (kind "message"), with who sent what to whom
+    kind: v.optional(v.string()),
+    sender: v.optional(v.string()),
+    receiver: v.optional(v.string()),
+    summary: v.optional(v.string()),
   }),
+  // The Hearing: Tax (advocate) and Auditor argue a flag before it reaches the student; the verdict is decided in code.
+  hearings: defineTable({
+    flagId: v.id("flags"),
+    caseId: v.optional(v.id("cases")),
+    rounds: v.array(v.object({
+      round: v.number(),
+      side: v.union(v.literal("advocate"), v.literal("auditor")),
+      objectionId: v.optional(v.string()),
+      argument: v.string(),
+      evidenceIds: v.array(v.string()),
+      at: v.string(),
+    })),
+    verdict: v.union(v.literal("upheld"), v.literal("downgraded"), v.literal("needs_human"), v.literal("defeated")),
+    reason: v.string(),
+    createdAt: v.string(),
+  }).index("by_flag", ["flagId"]),
 });
