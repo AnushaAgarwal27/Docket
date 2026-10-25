@@ -9,7 +9,7 @@
 function makeSurvey() {
   var form = FormApp.create('International Students: 1-Minute Pay & Tax Survey');
   form.setDescription(
-    'For F-1 and J-1 students. Takes about 1 minute and is anonymous: we never ask who you are or what you earn. ' +
+    'For F-1 and J-1 students. Takes about 1 minute, and is anonymous unless you choose to join the waitlist at the end. ' +
     'Answers help the Docket team (Cal Hacks 13.0) show how common these problems are. ' +
     'This survey is not tax or immigration advice.');
   // Anonymous: never collect email addresses, even if the account's Forms default does.
@@ -62,9 +62,19 @@ function makeSurvey() {
     .setTitle('Tell us more about what happened')
     .setHelpText('Optional. We may quote this in our presentation, without any name.');
 
+  // Optional waitlist at the end, so there is only one form. Skipping it keeps the response anonymous.
+  form.addSectionHeaderItem().setTitle('Join the Docket waitlist (optional)')
+    .setHelpText("Leave your name and email and we'll tell you when Docket launches. Skip this to stay anonymous.");
+  form.addTextItem().setTitle('Name (optional)');
+  form.addTextItem().setTitle('Email (optional)')
+    .setValidation(FormApp.createTextValidation()
+      .setHelpText('Please enter a valid email address.')
+      .requireTextIsEmail()
+      .build());
+
   form.setConfirmationMessage(
-    'Thanks! Quick tip: most F-1 and J-1 students are exempt from Social Security and Medicare for their first ' +
-    '5 calendar years. Check your paystub, and confirm with your international student office.');
+    'Thanks for helping! Most F-1 and J-1 students are exempt from Social Security and Medicare for their first ' +
+    '5 calendar years, so check your paystub and confirm with your international student office.');
 
   Logger.log('Edit the form: ' + form.getEditUrl());
   Logger.log('Share this link: ' + form.getPublishedUrl());

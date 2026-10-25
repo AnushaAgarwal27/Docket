@@ -23,6 +23,7 @@ import type * as seed from "../seed.js";
 import type * as sources from "../sources.js";
 import type * as timeline from "../timeline.js";
 import type * as transactions from "../transactions.js";
+import type * as waitlist from "../waitlist.js";
 
 import type {
   ApiFromModules,
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   sources: typeof sources;
   timeline: typeof timeline;
   transactions: typeof transactions;
+  waitlist: typeof waitlist;
 }>;
 
 /**
