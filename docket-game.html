@@ -82,6 +82,7 @@
   .center-hud .claim { font-family: var(--display); font-weight: 900; font-size: clamp(22px, 2.4vw, 34px); letter-spacing: -0.02em; line-height: 1.1; }
   .center-hud .claim.win { color: var(--win); }
   .center-hud .claim.lose { color: var(--counsel); text-decoration: line-through; }
+  .center-hud .claim.long { font-size: clamp(16px, 1.5vw, 21px); white-space: nowrap; }   /* "Social Security + Medicare" on one line */
   .conditions { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
   .conditions span { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(242,181,68,0.6); color: var(--warn); background: rgba(18,14,11,0.7); }
 
@@ -108,6 +109,7 @@
     background: rgba(24,19,15,0.94); border: 1px solid var(--line-strong);
     border-radius: 14px; padding: 16px 22px 14px; opacity: 0; pointer-events: none;
     transition: opacity .3s ease, transform .3s ease;
+    user-select: none; -webkit-user-select: none;   /* fast clicks on Next or a card shouldn't paint a text selection */
   }
   /* Between lines (while cards fly or a banner plays) the last line stays readable but steps back */
   .dialog.show.stale { opacity: 0.55; }
@@ -123,7 +125,11 @@
   .hint { font-family: var(--mono); font-size: 12px; color: var(--muted); }
   .next-btn { min-height: 42px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--ink); background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 15px; }
   .next-btn[disabled] { opacity: .35; cursor: default; }
-  .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 10px; }
+  .choices { position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 10px; }
+  /* Reserved spot for a guide avatar that will hover over the right card. Empty and invisible for now;
+     choose() keeps it on the right card's top-right corner. Add ?slot=show to the URL to see where it sits. */
+  .avatar-slot { position: absolute; width: 56px; height: 56px; pointer-events: none; z-index: 2; }
+  body.show-slot .avatar-slot { border: 2px dashed rgba(245,231,200,0.6); border-radius: 50%; }
   .choice {
     text-align: left; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line-strong);
     background: var(--panel-2); display: flex; flex-direction: column; gap: 3px; min-height: 56px;
@@ -133,8 +139,6 @@
   .choice b { font-family: var(--display); font-weight: 700; font-size: 17px; }
   .choice span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
   .choice kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  .dialog.watching .choice kbd { display: none; }
-  .dialog.watching .choice { cursor: default; }
   .choice.right { border-color: var(--win); background: rgba(67,209,138,0.12); }
   .choice.wrong { border-color: var(--counsel); background: rgba(240,122,58,0.12); opacity: .7; }
   /* the result is spelled out too, not only colored */
@@ -175,6 +179,13 @@
   .roundcard .t { font-family: var(--display); font-weight: 900; font-size: clamp(48px, 9vw, 120px); letter-spacing: -0.03em; line-height: 1; }
   .roundcard .d { font-size: 17px; color: var(--ink-2); max-width: 560px; text-align: center; padding: 0 16px; }
   .roundcard.go { animation: rc 2.2s ease forwards; }
+  /* A round card waits for the viewer: it stays up until Begin (or Space/Enter) */
+  .roundcard.hold { opacity: 1; background: rgba(18,14,11,0.82); pointer-events: auto; animation: rcIn .4s ease; }
+  .roundcard.out { animation: rcOut .35s ease forwards; }
+  @keyframes rcIn { from { opacity: 0; background: rgba(18,14,11,0); } to { opacity: 1; background: rgba(18,14,11,0.82); } }
+  @keyframes rcOut { from { opacity: 1; background: rgba(18,14,11,0.82); } to { opacity: 0; background: rgba(18,14,11,0); } }
+  .roundcard .next-btn { margin-top: 18px; }
+  .roundcard:not(.hold) .next-btn { visibility: hidden; }
   @keyframes rc {
     0% { opacity: 0; background: rgba(18,14,11,0); }
     15% { opacity: 1; background: rgba(18,14,11,0.82); }
@@ -242,7 +253,8 @@
     .banner { transform: none; }
     .banner.go { animation-name: bannerFade; }
     .banner.hold { animation-name: bannerHoldFade; }
-    .dialog, .fighters { transform: none !important; }
+    .dialog { transform: translate(-50%, 0) !important; }   /* keep the centering, drop only the slide */
+    .fighters { transform: none !important; }
     .choice:hover:not([disabled]), .case-card:hover { transform: none; }
   }
 </style>
@@ -299,7 +311,7 @@
 </section>
 
 <div class="banner" id="banner" role="status"></div>
-<div class="roundcard" id="roundcard"><div class="k" id="rc-k"></div><div class="t" id="rc-t"></div><div class="d" id="rc-d"></div></div>
+<div class="roundcard" id="roundcard"><div class="k" id="rc-k"></div><div class="t" id="rc-t"></div><div class="d" id="rc-d"></div><button class="next-btn" id="rc-next" type="button">Begin ▸</button></div>
 
 <section class="screen" id="title-screen">
   <div class="screen-inner">
@@ -579,7 +591,7 @@ box(11.4, 0.1, 0.14, railMat, 0, 0.92, 3.2);
 // seal on the wall: an original geometric emblem (scales of a ledger), not any real seal.
 // Disc and sign share one group facing the room, clear of the wall, so neither can cut through the other.
 const sealGroup = new THREE.Group(); sealGroup.position.set(0, 5.2, -6.7); scene.add(sealGroup);
-const seal = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.08, 48), brass);
+const seal = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.08, 48), mat(0x7A5E38, 0.6, 0.45));   // duller than the gavel brass: the warm light made it glare behind the judge
 seal.rotation.x = Math.PI / 2; sealGroup.add(seal);
 const sealFace = plate("Docket", "every claim gets a hearing", 1.7, 0.48);
 sealFace.position.z = 0.07; sealGroup.add(sealFace);
@@ -778,12 +790,12 @@ function burst(at, color = 0xF2E8D5, n = 46, power = 1) {
 const SHOTS = {
   title: { pos: [7.5, 4.6, 12.5], look: [0, 1.8, -1] },
   court: { pos: [0, 4.4, 11.8], look: [0, 1.9, -1] },
-  adv: { pos: [-1.0, 2.7, 6.4], look: [-3.2, 1.8, 0.8] },
-  counsel: { pos: [1.0, 2.7, 6.4], look: [3.2, 1.7, 0.8] },
+  adv: { pos: [-1.0, 2.7, 6.4], look: [-3.2, 1.45, 0.8] },   // aimed low so the figure sits above the dialog
+  counsel: { pos: [1.0, 2.7, 6.4], look: [3.2, 1.4, 0.8] },
   judge: { pos: [0, 3.6, 3.4], look: [0, 2.9, -4] },
   duel: { pos: [0, 2.7, 7.6], look: [0, 1.9, 0] },
   call: { pos: [CX, 4.0, 10.8], look: [CX, 2.0, -1] },
-  caller: { pos: [CX - 0.6, 2.7, 6.2], look: [CX - 2.8, 1.8, 0.6] },
+  caller: { pos: [CX - 0.6, 2.7, 6.2], look: [CX - 2.8, 1.4, 0.6] },
   clerk: { pos: [CX + 0.4, 2.9, 5.8], look: [CX + 3.0, 2.0, -0.4] },
   board: { pos: [CX, 3.1, 4.2], look: [CX, 2.8, -3.1] },
   money: { pos: [MX, 3.6, 10.2], look: [MX, 2.2, -1] },
@@ -819,6 +831,8 @@ function showHud(which) {
   $("call-hud").classList.toggle("show", which === "call");
   $("money-hud").classList.toggle("show", which === "money");
 }
+// The big word is a timed flourish. If the banner explains something (a sub line), the explanation
+// stays in the dialog until the viewer presses Next, so nothing moves on by itself.
 async function banner(text, sub, color, hold = false) {
   const b = $("banner");
   b.innerHTML = ""; b.className = "banner";
@@ -826,19 +840,33 @@ async function banner(text, sub, color, hold = false) {
   // the CSS animation runs at the game's pace, so a skipped round doesn't leave a banner over the next line
   b.style.animationDuration = `${(hold ? 0.5 : 1.9) / (SPEED * boost)}s`;
   b.append(text);
-  if (sub) { const s = document.createElement("small"); s.textContent = sub; b.append(s); }
   void b.offsetWidth;
   b.classList.add(hold ? "hold" : "go");
-  if (!hold) await wait(1900);
+  if (hold) return;
+  if (!sub) { await wait(1900); return; }
+  await wait(700);
+  focusDialog();
+  $("speaker").textContent = text; $("speaker").style.setProperty("--dot", color);
+  $("line").textContent = sub; $("sub").textContent = "";
+  $("choice-area").innerHTML = ""; $("btn-next").disabled = false;
+  await waitAdvance();
+  clearBanner();
+  stepBack();
 }
 function clearBanner() { const b = $("banner"); b.className = "banner"; b.innerHTML = ""; }
 async function roundCard(k, t, d) {
   const rc = $("roundcard");
   $("rc-k").textContent = k; $("rc-t").textContent = t; $("rc-d").textContent = d;
-  rc.style.animationDuration = `${2.2 / (SPEED * boost)}s`;
-  rc.classList.remove("go"); void rc.offsetWidth; rc.classList.add("go");
-  await wait(2200);
+  $("dialog").classList.remove("show");
+  rc.style.animationDuration = "";
+  rc.classList.remove("go", "out"); void rc.offsetWidth; rc.classList.add("hold");
+  $("rc-next").focus({ preventScroll: true });
+  await waitAdvance();
+  rc.classList.remove("hold"); rc.classList.add("out");
+  await wait(350);
+  rc.classList.remove("out");
 }
+$("rc-next").addEventListener("click", () => onAdvance());
 
 /* ============================================================
    Dialogue engine
@@ -863,6 +891,8 @@ function focusDialog(choosing = false) {
   d.classList.toggle("choosing", choosing);
   d.classList.toggle("watching", mode === "watch");
 }
+// Between lines (cards flying, a banner) the last line stays up but dimmed, and Next is off until the next line.
+function stepBack() { $("dialog").classList.add("stale"); $("btn-next").disabled = true; $("hint").textContent = ""; }
 function onAdvance() {
   if (typing) { typing.finish(); return; }
   if (advanceResolve) { const r = advanceResolve; advanceResolve = null; r(); }
@@ -870,7 +900,7 @@ function onAdvance() {
 $("btn-next").addEventListener("click", onAdvance);
 addEventListener("keydown", (e) => {
   if (e.target.closest && e.target.closest("button") && (e.key === " " || e.key === "Enter")) return; // let focused buttons act
-  if (e.key === " " || e.key === "Enter") { e.preventDefault(); onAdvance(); }
+  if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!e.repeat) onAdvance(); }   // a held key doesn't skip lines
   if (/^[1-4]$/.test(e.key)) { const btn = document.querySelectorAll("#choice-area .choice")[Number(e.key) - 1]; if (btn && !btn.disabled) btn.click(); }
 });
 function typeText(el, text) {
@@ -879,13 +909,13 @@ function typeText(el, text) {
     let i = 0, done = false;
     const step = () => {
       if (done) return;
-      i += 2;
+      i += 1;
       el.textContent = text.slice(0, i);
-      if (i >= text.length) finish(); else setTimeout(step, 22 / (SPEED * boost));
+      if (i >= text.length) finish(); else setTimeout(step, 24 / (SPEED * boost));
     };
     const finish = () => { if (done) return; done = true; el.textContent = text; typing = null; resolve(); };
     typing = { finish };
-    if (reduced) finish(); else step();
+    if (reduced || skipping()) finish(); else step();
   });
 }
 async function say(speaker, text, opts = {}) {
@@ -904,27 +934,33 @@ async function say(speaker, text, opts = {}) {
   clearInterval(talkLoop);
   drawFace(a, a === judge ? "code" : (opts.mood || "idle"));
   a.talk = 0;
-  await waitAdvance(1100 + text.length * 22);
+  await waitAdvance();
   a.lean = 0;
-  $("dialog").classList.add("stale");
+  stepBack();
 }
-function waitAdvance(autoMs) {
+// Nothing moves on by itself: the game waits here for Next, Space or Enter.
+// The one exception is "Skip round", which the viewer asks for.
+const skipping = () => boost > 1;
+let skipHook = null;   // set while a choice or approval is on screen, so Skip can get past it
+function waitAdvance() {
   return new Promise((resolve) => {
+    if (skipping()) { resolve(); return; }
     advanceResolve = resolve;
-    $("hint").textContent = mode === "watch" ? "Watching · Space to skip ahead" : "Space or Enter to continue";
-    if (mode === "watch") setTimeout(() => { if (advanceResolve === resolve) { advanceResolve = null; resolve(); } }, autoMs / (SPEED * boost));
+    $("hint").textContent = "Next ▸, Space or Enter to continue";
   });
 }
-// A choice: in Play mode the viewer picks; in Watch mode the Advocate picks the right card.
+// A choice: the viewer always picks. Nothing is pre-selected or picked for them (Skip round aside).
 function choose(prompt, options, speakerColor = "#5B8CFF") {
   return new Promise((resolve) => {
+    const right = options.findIndex((o) => o.correct);
+    if (skipping()) { resolve(options[right]); return; }
     focusDialog(true);
-    $("speaker").textContent = mode === "watch" ? "Advocate is choosing" : "Your move";
+    $("speaker").textContent = "Your move";
     $("speaker").style.setProperty("--dot", speakerColor);
     $("line").textContent = prompt;
     $("sub").textContent = "";
     $("btn-next").disabled = true;
-    $("hint").textContent = mode === "watch" ? "Watching the agent choose" : "Pick a card (or press 1–" + options.length + ")";
+    $("hint").textContent = "Pick a card (or press 1–" + options.length + ")";
     const area = $("choice-area");
     area.innerHTML = "";
     const grid = document.createElement("div"); grid.className = "choices"; area.append(grid);
@@ -934,29 +970,34 @@ function choose(prompt, options, speakerColor = "#5B8CFF") {
       b.innerHTML = `<kbd>${i + 1}</kbd><b></b><span></span>`;
       b.querySelector("b").textContent = o.label;
       b.querySelector("span").textContent = o.detail || "";
-      b.addEventListener("click", () => { if (mode !== "watch") pick(i); });   // in Watch mode the agent picks
+      b.addEventListener("click", () => pick(i));
       grid.append(b); return b;
     });
+    // Placeholder for the guide avatar, pinned to the right card's top-right corner
+    const slot = document.createElement("div");
+    slot.className = "avatar-slot"; slot.id = "avatar-slot"; slot.setAttribute("aria-hidden", "true");
+    slot.dataset.target = right; slot.dataset.mode = mode;
+    grid.dataset.correct = right; grid.append(slot);
+    const place = () => { const t = buttons[right]; slot.style.left = `${t.offsetLeft + t.offsetWidth - 34}px`; slot.style.top = `${t.offsetTop - 30}px`; };
+    place();
+    const ro = new ResizeObserver(place); ro.observe(grid);
+    dispatchEvent(new CustomEvent("docket:choices", { detail: { slot, correctIndex: right, buttons, mode } }));
     let locked = false;
+    const finish = (o) => { locked = true; ro.disconnect(); skipHook = null; resolve(o); };
+    skipHook = () => finish(options[right]);
     const pick = async (i) => {
       if (locked) return; const o = options[i];
-      if (mode === "play") stats.picks++;
+      stats.picks++;
       if (o.correct) {
         locked = true; buttons[i].classList.add("right"); buttons.forEach((b) => (b.disabled = true));
-        if (mode === "play") stats.right++;
-        await wait(450); $("btn-next").disabled = false; resolve(o);
+        stats.right++;
+        await wait(450); finish(o);
       } else {
-        buttons[i].classList.add("wrong"); buttons[i].disabled = true;
-        if (mode === "play") stats.wrong++;
-        resolve(o);
-        locked = true;
+        buttons[i].classList.add("wrong"); buttons.forEach((b) => (b.disabled = true));
+        stats.wrong++;
+        finish(o);
       }
     };
-    if (mode === "watch") {
-      const right = options.findIndex((o) => o.correct);
-      setTimeout(() => { buttons[right].focus({ preventScroll: true }); }, 500 / SPEED);
-      setTimeout(() => pick(right), 1500 / SPEED);
-    } else { setTimeout(() => buttons[0].focus({ preventScroll: true }), 50); }
   });
 }
 // Ask until the right card is picked (a wrong pick costs credibility).
@@ -980,8 +1021,11 @@ async function throwCard(from, to, title, body, color) {
   from.arms[1].rotation.x = -1.4;
   await fly(card, V(a.x, 2.3, a.z + 0.4), V((a.x + b.x) / 2, 3.2, 2.6), 650, 0.6, 0.2);
   await wait(500);
-  // land low, in front of the target's podium, so it doesn't cover the robots
-  await fly(card, V((a.x + b.x) / 2, 3.2, 2.6), V(b.x * 0.85, 1.55, Math.max(b.z + 1.2, -2.4)), 420, 0.2, 3);
+  // land on the floor in front of the target, tipped toward the room: still readable from the wide shot,
+  // but it no longer stands upright between the close-up camera and the figure
+  const tip = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2 + 0.45, 0, (Math.random() - 0.5) * 0.2));
+  await fly(card, V((a.x + b.x) / 2, 3.2, 2.6), V(b.x * 0.8, 0.2, Math.max(b.z + 1.6, -2.4)), 420, 0.2, 0, { scale: 0.75, quat: tip });
+  card.userData.rest = true;
   from.arms[1].rotation.x = 0;
   return card;
 }
@@ -1024,7 +1068,7 @@ async function roundHearing() {
   setRounds(1); showHud(null);
   hp.left = 100; hp.right = 100; setBars();
   $("hud-claim").textContent = c.amount ? c.claim : "Social Security + Medicare";
-  $("hud-claim").className = "claim";
+  $("hud-claim").className = c.amount ? "claim" : "claim long";
   $("hud-conditions").innerHTML = "";
   $("f-left-role").textContent = `argues for ${c.first}`;
   shot("court", 1.6);
@@ -1057,7 +1101,7 @@ async function roundHearing() {
     await fly(o1, o1.position.clone(), V(0, 2.4, -2.2), 500, 0.3);
     await rule("Sustained", "2019 was her first calendar year, so 2026 is year 8, past the five exempt years. She's likely taxed as a resident.", o1);
     damage("left", 100); drawFace(adv, "sad"); adv.slump = 1; counsel.joy = 1; drawFace(counsel, "joy");
-    $("hud-claim").className = "claim lose";
+    $("hud-claim").className = "claim long lose";
     shot("court", 1.8);
     await banner("Claim dismissed", "Docket won't call payroll", "#F07A3A");
     await say("Judge", "Claim dismissed. Nadia is likely a resident for tax purposes in 2026, so these taxes likely apply. Docket tells her honestly and doesn't call anyone.", { shot: "judge" });
@@ -1159,19 +1203,23 @@ async function roundCall() {
   // Approval: a signature
   await new Promise((resolve) => {
     focusDialog(true);
-    $("speaker").textContent = mode === "watch" ? "Priya approves" : "Your approval";
+    $("speaker").textContent = "Your approval";
     $("speaker").style.setProperty("--dot", "#6F8CFF");
     $("line").textContent = "One approval places exactly one call.";
     $("sub").textContent = "";
     $("btn-next").disabled = true;
-    $("hint").textContent = "";
+    $("hint").textContent = "Approve to place the call";
     $("choice-area").innerHTML = `<div class="sign-row"><button class="sign-btn" id="btn-sign" type="button">Approve the call</button><svg class="sig" id="sig" viewBox="0 0 200 44" aria-hidden="true"><path d="M6 30 C 26 6, 36 40, 56 22 S 82 10, 96 28 S 126 36, 140 18 S 170 12, 194 26"/></svg></div>`;
+    let signed = false;
     const go = () => {
+      if (signed) return; signed = true; skipHook = null;
       $("btn-sign").disabled = true; $("sig").classList.add("go"); stats.calls++;
-      setTimeout(resolve, 900 / SPEED);
+      wait(900).then(resolve);
     };
+    if (skipping()) { go(); return; }
+    skipHook = go;
     $("btn-sign").addEventListener("click", go);
-    if (mode === "watch") setTimeout(go, 1400 / SPEED); else $("btn-sign").focus({ preventScroll: true });
+    $("btn-sign").focus({ preventScroll: true });
   });
   stepState("cs1", "ok");
   shot("board", 2.2);
@@ -1241,15 +1289,18 @@ async function roundMoney() {
   await say("Ledger", "Watching Priya's Capital One account for a deposit of exactly $440.64 from University Dining Payroll.", { shot: "money", lean: true });
   await new Promise((resolve) => {
     focusDialog(true);
-    $("speaker").textContent = mode === "watch" ? "Fast-forward" : "Your move";
+    $("speaker").textContent = "Your move";
     $("speaker").style.setProperty("--dot", "#43D18A");
     $("line").textContent = "Time passes. Payroll's next pay run is in two weeks.";
     $("sub").textContent = "Simulated: the refund is posted to a Capital One Nessie test account";
-    $("btn-next").disabled = true; $("hint").textContent = "";
+    $("btn-next").disabled = true; $("hint").textContent = "Fast-forward when you're ready";
     $("choice-area").innerHTML = `<div class="sign-row"><button class="sign-btn" id="btn-ff" type="button">Fast-forward 2 weeks ▸▸</button></div>`;
-    const go = () => { $("btn-ff").disabled = true; resolve(); };
+    let done = false;
+    const go = () => { if (done) return; done = true; skipHook = null; $("btn-ff").disabled = true; resolve(); };
+    if (skipping()) { go(); return; }
+    skipHook = go;
     $("btn-ff").addEventListener("click", go);
-    if (mode === "watch") setTimeout(go, 1300 / SPEED); else $("btn-ff").focus({ preventScroll: true });
+    $("btn-ff").focus({ preventScroll: true });
   });
   const days = ["Oct 27", "Oct 30", "Nov 2", "Nov 5", "Nov 7"];
   for (const d of days) { $("date-chip").textContent = d + ", 2026"; wheel.userData.spin = 1; await wait(320); }
@@ -1365,10 +1416,11 @@ $("btn-mode").addEventListener("click", () => setMode(mode === "watch" ? "play" 
 $("btn-start").addEventListener("click", play);
 $("btn-replay").addEventListener("click", () => { $("end-screen").classList.add("hide"); play(); });
 $("btn-other").addEventListener("click", () => { setCase(current.key === "priya" ? "nadia" : "priya"); $("end-screen").classList.add("hide"); play(); });
-$("btn-skip").addEventListener("click", () => { if (!running) return; setMode("watch"); boost = 8; onAdvance(); });
+$("btn-skip").addEventListener("click", () => { if (!running) return; boost = 8; onAdvance(); if (skipHook) skipHook(); });
 if (params.get("payroll") === "agree") payrollWill = "agree";
 if (params.get("case") === "nadia") setCase("nadia");
 if (params.get("mode") === "play") setMode("play");
+if (params.get("slot") === "show") document.body.classList.add("show-slot");
 
 /* ============================================================
    Animation loop
