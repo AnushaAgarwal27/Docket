@@ -90,14 +90,17 @@
   .bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(251,248,243,0.95) calc(10% - 2px) 10%); }
   .meter-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   /* the HUD sits over the 3D room, so each block gets the same cream backing as the round tabs */
-  .center-hud { text-align: center; max-width: 34vw; justify-self: center; padding: 6px 18px 9px; border-radius: 10px; background: rgba(251,247,239,0.95); box-shadow: 0 8px 20px -12px rgba(60,40,20,0.55); }
+  /* styled as a docket tag: paper card, green top edge, an inset hairline frame like the plates in the room */
+  .center-hud { position: relative; text-align: center; max-width: 34vw; justify-self: center; padding: 7px 26px 9px; border-radius: 4px; background: var(--card); border: 1px solid rgba(74,56,38,0.28); border-top: 4px solid var(--file); box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset, 0 10px 22px -12px rgba(60,40,20,0.6); }
+  .center-hud::after { content: ""; position: absolute; inset: 4px; border: 1px solid rgba(74,56,38,0.16); border-radius: 2px; pointer-events: none; }
+  .center-hud .round { letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
   .center-hud .round { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
   .center-hud .claim { font-family: var(--display); font-weight: 900; font-size: clamp(22px, 2.4vw, 34px); letter-spacing: -0.02em; line-height: 1.1; }
   .center-hud .claim.win { color: var(--win); }
   .center-hud .claim.lose { color: var(--counsel); text-decoration: line-through; }
   .center-hud .claim.long { font-size: clamp(16px, 1.5vw, 21px); white-space: nowrap; }   /* "Social Security + Medicare" on one line */
   .conditions { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
-  .conditions span { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(183,121,31,0.5); color: var(--warn); background: rgba(255,255,255,0.9); }
+  .conditions span { font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 3px; border: 1.5px dashed rgba(183,121,31,0.7); color: var(--warn); background: rgba(183,121,31,0.07); }
 
   /* Call + money HUDs */
   .side-hud {
@@ -715,7 +718,7 @@ for (let i = -6; i <= 6; i++) if (Math.abs(i) > 1) box(0.08, 0.9, 0.08, railMat,
 box(11.4, 0.1, 0.14, railMat, 0, 0.92, 3.2);
 // seal on the wall: an original geometric emblem (scales of a ledger), not any real seal.
 // Disc and sign share one group facing the room, clear of the wall, so neither can cut through the other.
-const sealGroup = new THREE.Group(); sealGroup.position.set(0, 5.1, -6.7); scene.add(sealGroup);
+const sealGroup = new THREE.Group(); sealGroup.position.set(0, 4.85, -6.7); scene.add(sealGroup);
 const seal = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.45, 0.08, 48), mat(0xC9AE82, 0.6, 0.3));   // duller than the gavel brass: the warm light made it glare behind the judge
 seal.rotation.x = Math.PI / 2; sealGroup.add(seal);
 const sealFace = plate("Docket", "every claim gets a hearing", 2.55, 0.72, 2);
