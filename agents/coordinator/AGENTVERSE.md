@@ -32,9 +32,11 @@ what do I need to do for next tax season?
 Then reply **yes** to let Docket contact payroll about the refund, **no** to hold off, or **why?** to see the reasoning.
 
 ## How it works
-Docket is five Fetch.ai uAgents that work together. This Coordinator talks to you over the chat protocol;
+Docket is eight Fetch.ai uAgents that work together. This Coordinator talks to you over the chat protocol;
 the Ledger reads paystubs and bank deposits, the Tax agent runs the rules in code, the Auditor argues the
-employer's side before any finding reaches you, and the Caseworker handles the refund case. All math and
+employer's side before any finding reaches you, and the Caseworker handles the refund case. Three more work
+behind them: the Researcher answers what your file cannot and verifies every source, the Organizer finds
+other students at your employer with the same problem, and the Filer fills in your forms. All math and
 decisions are done in code; Claude only reads paystubs and phrases explanations.
 
 ## Limitations
