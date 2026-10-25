@@ -9,13 +9,19 @@ import sys
 from pathlib import Path
 
 from agents.agentverse import ROSTER, inspector_url
-from agents.messages import PORTS, address_of
+from agents.messages import PORTS, address_of, configured
 
 OUT = Path("docs/AGENTS.md")
 
 
 def main() -> None:
-    rows = [(key, *ROSTER[key], PORTS[key], address_of(key)) for key in ROSTER]
+    # An agent with no seed on this machine is simply not listed, so adding one to the roster never
+    # breaks the script for someone who has not pulled the new seeds yet.
+    rows = [(key, *ROSTER[key], PORTS[key], address_of(key)) for key in ROSTER if key in set(configured())]
+    missing = [key for key in ROSTER if key not in set(configured())]
+    if missing:
+        print(f"note: no seed in .env for {', '.join(missing)}; run `python -m scripts.make_seeds`",
+              file=sys.stderr)
     if "--plain" in sys.argv:
         for _, name, _, port, address in rows:
             print(f"{name:<19} {address}\n{'':<19} inspector: {inspector_url(address, port)}")
@@ -23,7 +29,7 @@ def main() -> None:
     lines = [
         "# Docket agents",
         "",
-        "Five Fetch.ai uAgents (uagents 0.26.1). Addresses come from each agent's seed in `.env`, so they stay",
+        f"{len(rows)} Fetch.ai uAgents (uagents 0.26.1). Addresses come from each agent's seed in `.env`, so they stay",
         "the same as long as the seeds do. Regenerate this file with `python -m scripts.print_agents`.",
         "",
         "| Agent | Role | Port | Address | Inspector |",

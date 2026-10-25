@@ -12,6 +12,13 @@ export type Activity = Doc<"activity">;
 export type Timeline = NonNullable<FunctionReturnType<typeof api.timeline.forProfile>>;
 export type Patterns = FunctionReturnType<typeof api.patterns.byEmployer>;
 export type PayrollScript = "cooperate" | "stall_once" | "refuse_once";
+// The surfaces added for the voice, research, filing and group layers. All five come off the same
+// snapshot as everything else, so the dashboard still renders from one reactive query.
+export type NotificationRow = Snapshot["notifications"][number];
+export type DocumentRow = Snapshot["documents"][number];
+export type ResearchRow = Snapshot["research"][number];
+export type StudentCall = Snapshot["studentCalls"][number];
+export type GroupRow = Snapshot["groups"][number];
 
 export const usd = (cents: number) =>
   (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -37,6 +44,11 @@ export const AGENT_LABEL: Record<string, string> = {
   caseworker: "Caseworker",
   voice: "Voice",
   seed: "Setup",
+  researcher: "Athena",
+  organizer: "Group",
+  filer: "Filer",
+  notify: "Messages",
+  guard: "Guardrail",
 };
 
 export const ACTION_LABEL: Record<string, string> = {
@@ -63,6 +75,15 @@ export const ACTION_LABEL: Record<string, string> = {
   written_request_prepared: "Written request prepared",
   simulated_cohort: "Simulated students added",
   call_failed: "Call could not start",
+  call_outcome_rejected: "Call outcome NOT recorded",
+  case_summary_read: "Payroll call read the case",
+  case_summary_missing: "Call asked for a case that does not exist",
+  tool_call_unauthorized: "Tool call REJECTED: bad token",
+  unknown_endpoint: "Tool called a URL that does not exist",
+  call_outcome_updated: "Call outcome filled in",
+  call_outcome_recovered: "Call outcome recovered from the call record",
+  call_outcome_no_date: "Payroll agreed but gave no date",
+  call_record_unreadable: "Call record could not be read",
   refund_matched: "Refund deposit matched",
   case_open: "Case opened",
   case_awaiting_approval: "Waiting for approval",
@@ -71,6 +92,38 @@ export const ACTION_LABEL: Record<string, string> = {
   case_refund_received: "Refund received",
   case_closed: "Case closed",
   case_escalate_irs: "Escalated to the IRS",
+  notification_queued: "Message queued",
+  notification_sent: "Message sent",
+  notification_failed: "Message could not be sent",
+  notification_acknowledged: "Priya answered",
+  student_called: "Called Priya",
+  student_called_in: "Priya called Docket",
+  student_call_finished: "Call with Priya finished",
+  student_call_skipped: "Call skipped",
+  student_call_failed: "Call could not start",
+  question_taken: "Question taken on a call",
+  research_started: "Researching",
+  research_found: "Research finding",
+  research_answered: "Question answered",
+  research_failed: "Research failed",
+  watch_failed: "Watch run failed",
+  group_formed: "Group case opened",
+  group_invited: "Asked to join the group",
+  group_joined: "Joined the group",
+  group_declined: "Declined the group",
+  group_contacting: "Contacting payroll for the group",
+  document_drafted: "Form filled in",
+  document_awaiting_approval: "Form waiting for approval",
+  document_approved: "Priya approved the form",
+  document_declined: "Priya declined the form",
+  document_submitted: "Form submitted",
+  document_rendered: "Form rendered as a PDF",
+  document_not_filled: "Form not filled in (missing fact)",
+  contact_recorded: "Contact found",
+  contact_preferences_updated: "Contact preferences updated",
+  render_checked: "Wording checked",
+  render_rejected: "Wording rejected",
+  render_failed: "Wording layer unavailable",
 };
 export const actionLabel = (a: string) => ACTION_LABEL[a] ?? a.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 
@@ -166,6 +219,100 @@ export function demoSnapshot(): Snapshot {
     }],
     paystubs,
     transactions,
+    ...demoSurfaces(),
+  };
+}
+
+// The voice, research, filing and group surfaces in demo mode. Synthetic like the rest of this
+// file, and labelled as such on screen; it exists so the offline rehearsal shows the same product
+// the live dashboard does.
+function demoSurfaces() {
+  const GROUP_ID = id<"groups">("demo_group");
+  const DOC_ID = id<"documents">("demo_doc_8843");
+  return {
+    notifications: [
+      {
+        _id: id<"notifications">("demo_n3"), _creationTime: NOW - 3 * 60000, profileId: PROFILE_ID,
+        channel: "voice" as const, kind: "group_invite", state: "sent" as const, at: ago(3),
+        title: "Join the group request to University Dining Services?",
+        body: "Four students at University Dining Services have the same problem with their paychecks. "
+          + "They are asking payroll together. Joining does not change your own case, and you can say no.",
+        awaiting: "group_optin" as const, refs: [GROUP_ID],
+      },
+      {
+        _id: id<"notifications">("demo_n2"), _creationTime: NOW - 18 * 60000, profileId: PROFILE_ID,
+        channel: "sms" as const, kind: "document_ready", state: "delivered" as const, at: ago(18),
+        title: "Form 8843 for 2025 is ready for you to check",
+        body: "I filled in your Form 8843 for 2025 from your file. Have a look and tell me yes to send "
+          + "it, or no to leave it. Nothing goes to the IRS until you say so.",
+        awaiting: "approval" as const, refs: [DOC_ID],
+      },
+      {
+        _id: id<"notifications">("demo_n1"), _creationTime: NOW - 29 * 60000, profileId: PROFILE_ID,
+        channel: "chat" as const, kind: "finding", state: "acknowledged" as const, at: ago(29),
+        ackedAt: ago(27), answer: "yes",
+        title: "Social Security and Medicare withheld",
+        body: "I read 8 new paystubs and found $440.64 of Social Security and Medicare tax withheld "
+          + "that you are likely exempt from. Say check my pay to see the rule behind it.",
+        awaiting: "none" as const, refs: [FICA_FLAG],
+      },
+    ],
+    documents: [{
+      _id: DOC_ID, _creationTime: NOW - 20 * 60000, profileId: PROFILE_ID, kind: "form_8843" as const,
+      title: "Form 8843 for 2025", submitTo: "IRS", state: "awaiting_approval" as const,
+      createdAt: ago(20), url: null,
+      fields: [
+        { label: "Tax year", value: "2025", source: "computed from today's date" },
+        { label: "Name", value: "Priya Sharma", source: "profiles.name" },
+        { label: "Visa type", value: "F-1", source: "profiles.visa" },
+        { label: "Date first entered the US", value: "2024-08-15", source: "profiles.arrivalDate" },
+        { label: "Calendar year in the US", value: "2 of 5", source: "computed from profiles.arrivalDate" },
+        { label: "Academic institution", value: "Golden Bear University", source: "profiles.school" },
+      ],
+      body: "Form 8843, Statement for Exempt Individuals\nTax year 2025\n\nPriya Sharma, F-1 student at "
+        + "Golden Bear University, first entered the United States on 2024-08-15. Every F-1 student must "
+        + "file Form 8843 for each year they are in the United States, whether or not they earned any "
+        + "income.\n\nThis is not tax advice; confirm with your international student office before filing.",
+    }],
+    research: [{
+      _id: id<"research">("demo_r1"), _creationTime: NOW - 9 * 60000, profileId: PROFILE_ID,
+      kind: "ask" as const, topic: "Can I get Social Security tax back",
+      question: "my job took social security out, can I get it back?",
+      answer: "Yes. Ask your employer first: the IRS tells students to go back to the employer who "
+        + "withheld the tax before claiming anything from the IRS. If the employer will not refund it, "
+        + "you can claim it yourself with Form 843 and Form 8316.",
+      engine: "claude-opus-5", confidence: "high" as const, actionable: true, createdAt: ago(9),
+      sources: [
+        { title: "Foreign Student Liability for Social Security and Medicare Taxes",
+          url: "https://www.irs.gov/individuals/international-taxpayers/foreign-student-liability-for-social-security-and-medicare-taxes",
+          excerpt: "contact the employer who withheld the" },
+        { title: "Instructions for Form 843", url: "https://www.irs.gov/pub/irs-pdf/i843.pdf",
+          excerpt: "for Refund and Request for Abatement" },
+      ],
+    }],
+    studentCalls: [{
+      _id: id<"calls">("demo_sc1"), _creationTime: NOW - 4 * 60000, profileId: PROFILE_ID,
+      direction: "outbound" as const, purpose: "group_invite", answeredBy: "The student", at: ago(4),
+      summary: "Told Priya four students at her employer have the same problem and asked whether to join.",
+      toNumber: "+19259677432",
+    }, {
+      _id: id<"calls">("demo_sc2"), _creationTime: NOW - 10 * 60000, profileId: PROFILE_ID,
+      direction: "inbound" as const, purpose: "student_inbound", answeredBy: "The student", at: ago(10),
+      summary: "Priya called and asked whether she can get the Social Security tax back. Handed to research.",
+    }],
+    groups: [{
+      membership: {
+        _id: id<"groupMembers">("demo_gm"), _creationTime: NOW, groupId: GROUP_ID, profileId: PROFILE_ID,
+        flagId: FICA_FLAG, amountCents: 44064, state: "invited" as const, invitedAt: ago(5),
+      },
+      group: {
+        _id: GROUP_ID, _creationTime: NOW, employer: "University Dining Services",
+        ruleId: "FICA_EXEMPT_F1", state: "open" as const, threshold: 3, createdAt: ago(5),
+        joinedCount: 3, joinedCents: 96740,
+        summary: "4 students at University Dining Services have the same finding: Social Security and "
+          + "Medicare tax withheld from students who are likely exempt. $1,408.04 withheld in total.",
+      },
+    }],
   };
 }
 

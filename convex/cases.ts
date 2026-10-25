@@ -122,6 +122,39 @@ export const logCallOutcome = mutation({
     const c = await ctx.db.get(caseId);
     if (c === null) throw new Error(`case ${caseId} not found`);
     const attempt = c.callAttempts ?? 1;
+
+    // The agent is told to record the outcome the moment it knows it, rather than at the end of
+    // the call, because the other side can hang up and an unsent outcome is simply lost. That
+    // means it may call again a minute later with a date or a reference it did not have yet.
+    // Treat the second one as filling in the first, not as a new call the case has to move for —
+    // the state has already moved, and rejecting it would throw away the extra detail.
+    if (c.state === "awaiting_response" && (result === "promised" || result === "needs_student")) {
+      const prior = await ctx.db
+        .query("calls")
+        .withIndex("by_case", (q) => q.eq("caseId", caseId))
+        .order("desc")
+        .first();
+      if (prior !== null) {
+        const fuller = {
+          ...(call.promisedBy && !prior.promisedBy ? { promisedBy: call.promisedBy } : {}),
+          ...(call.referenceNo && !prior.referenceNo ? { referenceNo: call.referenceNo } : {}),
+          ...(call.summary.length > prior.summary.length ? { summary: call.summary } : {}),
+        };
+        if (Object.keys(fuller).length > 0) {
+          await ctx.db.patch("calls", prior._id, fuller);
+          if (fuller.promisedBy) await ctx.db.patch("cases", caseId, { nextFollowUp: fuller.promisedBy });
+          await ctx.db.insert("activity", {
+            agent: "voice",
+            action: "call_outcome_updated",
+            detail: `Payroll call updated with ${Object.keys(fuller).join(", ")}`,
+            inputIds: [caseId],
+            at: new Date().toISOString(),
+          });
+        }
+        return prior._id;
+      }
+    }
+
     const callId = await ctx.db.insert("calls", { caseId, ...call, at: new Date().toISOString() });
     if (result === "stalled" || result === "refused") {
       const what = result === "stalled" ? "would not commit to a refund date" : "refused the refund";

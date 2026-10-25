@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import base64
+import re
 from pathlib import Path
 
 from pydantic import BaseModel
 
 from agents.ledger.ledger import to_cents, to_hours
 
-MODEL = "claude-opus-5-5"
+MODEL = "claude-opus-5"
 
 PROMPT = """Transcribe this paystub into the fields of the schema.
 Copy every value exactly as printed, including "$" and commas. Do not calculate,
@@ -66,6 +67,19 @@ def transcript_to_paystub(t: PaystubTranscript, profile_id: str, source_file: st
         "netCents": to_cents(t.netPay),
         "sourceFile": source_file,
     }
-    rate = to_cents(t.hourlyRate) if t.hourlyRate.strip() else None
+    # The hourly rate is printed with its unit — "$18.00 per hour" — and the prompt asks for values
+    # exactly as printed, so that is what comes back. Strip the unit before parsing.
+    #
+    # It is also the one field here that may fail without costing anything. Every other value is
+    # money owed; the rate is only used to check that hours × rate matches gross. Letting it raise
+    # threw away the whole paystub — two of eight on one run, which quietly changed the refund
+    # total. An unreadable rate just means that one cross-check is skipped.
+    rate = None
+    printed = re.sub(r"(?i)\s*(per|an|/)\s*(hour|hr)\.?$", "", t.hourlyRate.strip())
+    if printed:
+        try:
+            rate = to_cents(printed)
+        except ValueError:
+            rate = None
     federal = to_cents(t.federalIncomeTaxWithheld or "0")
     return stub, rate, federal

@@ -31,9 +31,12 @@ from agents.coordinator.cards import Card, validate
 from agents.coordinator.intents import answer, answer_selection
 from agents.coordinator.selection import parse_selection
 from agents.agentverse import add_mailbox_check
-from agents.messages import PORTS, CaseOpened, FindingsReady, LocalFirstResolver, RefundMatched, address_of
+from agents.messages import (
+    PORTS, CaseOpened, DocumentReady, FindingsReady, LocalFirstResolver, RefundMatched,
+    address_of, configured,
+)
 from agents.messaging import heard
-from agents.store import dollars, log
+from agents.store import dollars, log, mutation, query
 
 load_dotenv()
 
@@ -50,7 +53,7 @@ chat = Protocol(spec=chat_protocol_spec)
 # Echo guard: ASI:One sometimes sends our own reply back as a new request.
 recent_replies: dict[str, deque] = defaultdict(lambda: deque(maxlen=5))
 
-DOCKET_AGENTS = {address_of(name) for name in PORTS}
+DOCKET_AGENTS = {address_of(name) for name in configured()}
 STUDENT_KEY = "student_address"  # where proactive messages go; kept in the agent's storage
 
 # Per-session state, keyed by sender and chat session: when it was last active and what it asked last.
@@ -208,6 +211,47 @@ async def on_findings(ctx: Context, sender: str, msg: FindingsReady):
     await tell_student(ctx, text, "proactive_message_sent",
                        f"Told Priya about {len(flags)} issues found on {msg.paystub_count} new paystubs",
                        inputIds=[msg.profile_id])
+
+
+@agent.on_message(DocumentReady)
+async def on_document_ready(ctx: Context, sender: str, msg: DocumentReady):
+    if sender != address_of("FILER"):
+        return
+    await heard("coordinator", sender, msg, f"{msg.title} waiting for approval", inputIds=[msg.document_id])
+
+
+@agent.on_interval(period=float(os.environ.get("NOTIFY_POLL_SECONDS", "10")))
+async def deliver_queued_messages(ctx: Context):
+    """Send the messages other agents queued for the student on the chat channel.
+
+    Every agent writes to notifications rather than reaching for ASI:One itself, so there is one
+    place that knows how to talk to her and one record of what she was actually told. A message
+    that cannot be delivered (she has not chatted with Docket yet) stays queued rather than
+    being dropped, and the activity log says why.
+    """
+    to = ctx.storage.get(STUDENT_KEY)
+    try:
+        pending = await asyncio.to_thread(query, "notifications:pending", {"channel": "chat", "limit": 5})
+    except Exception:
+        ctx.logger.warning("could not read the message queue")
+        return
+    if not pending:
+        return
+    if to is None:
+        ctx.logger.info(f"{len(pending)} message(s) waiting; Priya has not chatted with Docket yet")
+        return
+    for note in pending:
+        message = reply(note["body"])
+        try:
+            await ctx.send(to, message)
+        except Exception:
+            ctx.logger.exception("sending a queued message failed")
+            continue
+        recent_replies[to].append(note["body"])
+        pending_acks = ctx.storage.get("proactive_pending") or {}
+        pending_acks[str(message.msg_id)] = note["title"]
+        ctx.storage.set("proactive_pending", pending_acks)
+        await asyncio.to_thread(mutation, "notifications:markSent", {"notificationId": note["_id"]})
 
 
 agent.include(chat, publish_manifest=True)

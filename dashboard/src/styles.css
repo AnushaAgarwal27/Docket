@@ -1,50 +1,58 @@
-/* Docket workspace. Dark desk, paper documents on it. Lavender is the one UI accent; amber is
-   reserved for evidence (the lines on a paystub that prove something), red for status risk. */
+/* Docket workspace. The palette and type are the Hearing's (docket-game.html): a warm dark desk
+   with cream paper on it, rather than the blue-grey of a generic dashboard. The point of the warmth
+   is that this is a case file about one person's money, not a monitoring console.
+
+   Roles, which the rest of this sheet relies on:
+     ink / panel / night   the desk and the type on it
+     accent (adv blue)     Docket acting, and anything interactive
+     ev (counsel orange)   evidence: the lines on a paystub that prove something
+     ok (win green)        money back, a case closed, a source verified
+     risk                  status risk and anything payroll refused
+   Only evidence is orange, so an orange mark on screen always means "this is the proof". */
 :root {
-  --bg: #0d1016;
-  --panel: #141922;
-  --panel-2: #1a2030;
-  --line: #252c3a;
-  --line-2: #313a4c;
-  --fg: #e8ebf1;
-  --muted: #8d96a8;
-  --faint: #5d6678;
-  --accent: #a9b6ff;
-  --accent-ink: #11152e;
-  --accent-bg: rgba(169, 182, 255, 0.12);
-  --ev: #f0b860;
-  --ev-bg: rgba(240, 184, 96, 0.13);
-  --ev-line: rgba(240, 184, 96, 0.42);
-  --ok: #74ddb0;
-  --ok-bg: rgba(116, 221, 176, 0.12);
-  --risk: #ff8a80;
-  --risk-bg: rgba(255, 138, 128, 0.12);
-  --paper: #f1f3f7;
-  --paper-ink: #1a2131;
-  --paper-muted: #5e6779;
-  --paper-line: #d5dae3;
-  --paper-hl: #fbe2ab;
-  --paper-risk: #fbd1cc;
-  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-  --ui: "Geist", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --night: #120e0b;
+  --bg: #120e0b;
+  --panel: #1c1612;
+  --panel-2: #241c17;
+  --line: rgba(244, 236, 224, 0.16);
+  --line-2: rgba(244, 236, 224, 0.32);
+  --fg: #f4ece0;
+  --muted: #9b8e7d;
+  --faint: #6f6557;
+  --accent: #5b8cff;
+  --accent-ink: #0b1226;
+  --accent-bg: rgba(91, 140, 255, 0.14);
+  --ev: #f07a3a;
+  --ev-bg: rgba(240, 122, 58, 0.14);
+  --ev-line: rgba(240, 122, 58, 0.45);
+  --ok: #43d18a;
+  --ok-bg: rgba(67, 209, 138, 0.13);
+  --warn: #f2b544;
+  --risk: #ff6b57;
+  --risk-bg: rgba(255, 107, 87, 0.13);
+  --judge: #e9dcc4;
+  --paper: #f6f0e4;
+  --paper-ink: #241c17;
+  --paper-muted: #6b6052;
+  --paper-line: #ddd3c0;
+  --paper-hl: #f7e3b4;
+  --paper-risk: #f7d2cb;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  --ui: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: "Archivo", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   --doc: "Newsreader", Georgia, "Times New Roman", serif;
   color-scheme: dark;
 }
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f2f4f8; --panel: #ffffff; --panel-2: #f6f8fb; --line: #e1e5ec; --line-2: #cdd3dd;
-    --fg: #121722; --muted: #5b6578; --faint: #8d96a8; --accent: #4352d9; --accent-ink: #ffffff; --accent-bg: rgba(67, 82, 217, 0.09);
-    --ev: #9a6200; --ev-bg: #fff1d6; --ev-line: rgba(154, 98, 0, 0.45); --ok: #0f8a5b; --ok-bg: #e2f6ec; --risk: #c2392f; --risk-bg: #fde7e5;
-    --paper: #ffffff; --shadow: 0 14px 40px rgba(20, 30, 60, 0.12); color-scheme: light;
-  }
-}
+/* Deliberately no light-mode override: the Hearing is a dark room, and the paper documents inside
+   the UI already carry the light surface. A light desk would make the paper stop reading as paper. */
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--ui); -webkit-font-smoothing: antialiased; }
 button { font: inherit; color: inherit; }
 a { color: var(--accent); }
-code { font-family: ui-monospace, Menlo, monospace; font-size: 0.92em; background: var(--panel-2); padding: 1px 5px; border-radius: 5px; }
+code { font-family: var(--mono); font-size: 0.92em; background: var(--panel-2); padding: 1px 5px; border-radius: 5px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 .num { font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); }
@@ -54,10 +62,12 @@ code { font-family: ui-monospace, Menlo, monospace; font-size: 0.92em; backgroun
 h1, h2, p { margin: 0; }
 
 /* Nav */
+.nav-game { margin-left: auto; flex-shrink: 0; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--fg); text-decoration: none; white-space: nowrap; }
+.nav-game:hover { border-color: var(--fg); }
 .nav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
 .nav-in, .page { max-width: 1320px; margin: 0 auto; padding: 0 max(20px, env(safe-area-inset-left)); }
 .nav-in { display: flex; align-items: center; gap: 24px; height: 60px; }
-.brand { display: flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 600; letter-spacing: -0.03em; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 21px; font-weight: 900; letter-spacing: -0.02em; }
 .mark { width: 28px; height: 28px; }
 .m-bg { fill: var(--accent); }
 .m-d { fill: none; stroke: var(--accent-ink); stroke-width: 2.4; }
@@ -482,3 +492,96 @@ body { background:
 .src-toast.held .src-toast-a .link { color: var(--risk); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .src-toast { animation: none; } }
+
+/* ===========================================================================
+   The surfaces added for the voice, research, filing and group layers.
+   Shared shapes first, then the four panels. Everything uses the tokens at the
+   top of this sheet, so the Hearing's palette carries through without
+   restating a colour here.
+   =========================================================================== */
+
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.meta { font-family: var(--mono); font-size: 11.5px; color: var(--faint); letter-spacing: 0.01em; }
+/* `.tag`, not `.pill`: `.pill` is already the status badge in the page chrome above, and these
+   are a different thing (a small monospace label on a record). */
+.tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.tag.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: var(--ok-bg); }
+.tag.ev { color: var(--ev); border-color: var(--ev-line); background: var(--ev-bg); }
+.tag.risk { color: var(--risk); border-color: color-mix(in srgb, var(--risk) 45%, transparent); background: var(--risk-bg); }
+.tag.go { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-bg); }
+
+.empty { padding: 28px 20px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
+.empty strong { display: block; color: var(--fg); font-weight: 500; margin-bottom: 4px; }
+
+/* ---------- Messages: everything Docket told her, as one thread ---------- */
+.thread { display: flex; flex-direction: column; gap: 10px; max-height: 620px; overflow-y: auto; padding-right: 4px; }
+.msg { border: 1px solid var(--line); border-radius: 14px; border-top-left-radius: 4px; background: var(--panel-2); padding: 12px 14px; display: flex; flex-direction: column; gap: 7px; }
+.msg-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.msg-t { font-weight: 500; }
+.msg-b { font-size: 13.5px; color: var(--fg); opacity: 0.9; white-space: pre-wrap; }
+.msg.awaiting { border-color: var(--ev-line); background: color-mix(in srgb, var(--ev-bg) 55%, var(--panel-2)); }
+.msg.acknowledged { opacity: 0.72; }
+.chan { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); }
+.chan svg { width: 12px; height: 12px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.chan.voice svg { stroke: var(--accent); }
+.chan.sms svg { stroke: var(--ok); }
+
+/* ---------- Documents: the filled-in form, on paper ---------- */
+.doc { background: var(--paper); color: var(--paper-ink); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.doc-h { padding: 14px 18px; border-bottom: 1px solid var(--paper-line); display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.doc-h h3 { margin: 0; font-family: var(--display); font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
+.doc-h .to { font-family: var(--mono); font-size: 11.5px; color: var(--paper-muted); }
+.doc-fields { width: 100%; border-collapse: collapse; }
+.doc-fields th, .doc-fields td { text-align: left; padding: 7px 18px; font-size: 13px; border-bottom: 1px solid var(--paper-line); vertical-align: top; }
+.doc-fields th { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--paper-muted); font-weight: 500; }
+.doc-fields td.v { font-variant-numeric: tabular-nums; font-weight: 500; }
+/* Where each value came from. This column is the honesty of the whole feature: a filled form that
+   cannot say where its numbers came from is just a model's guess on IRS letterhead. */
+.doc-fields td.src { font-family: var(--mono); font-size: 11px; color: var(--paper-muted); }
+.doc-body { padding: 14px 18px; font-family: var(--doc); font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; max-height: 260px; overflow-y: auto; border-top: 1px solid var(--paper-line); }
+.doc-foot { padding: 12px 18px; border-top: 1px solid var(--paper-line); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.doc-foot .note { font-size: 12px; color: var(--paper-muted); margin-right: auto; }
+
+/* ---------- Group case ---------- */
+.group { border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); overflow: hidden; }
+.group-h { padding: 14px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.group-h h3 { margin: 0; font-family: var(--display); font-size: 16px; font-weight: 800; }
+.group-n { display: flex; align-items: baseline; gap: 7px; margin-left: auto; }
+.group-n b { font-family: var(--display); font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.group-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+/* One mark per student. Filled = joined and counted in the ask; outline = asked, not answered;
+   struck = declined. Nobody's name appears: the count is the only thing shared. */
+.heads { display: flex; flex-wrap: wrap; gap: 6px; }
+.head { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--line-2); display: grid; place-items: center; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.head.joined { background: var(--ok); border-color: var(--ok); color: var(--night); font-weight: 600; }
+.head.declined { opacity: 0.4; text-decoration: line-through; }
+.head.you { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Research feed ---------- */
+.find { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 0 12px 12px 0; background: var(--panel-2); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.find.low { border-left-color: var(--warn); }
+.find h4 { margin: 0; font-size: 14px; font-weight: 500; }
+.find p { font-size: 13.5px; opacity: 0.88; white-space: pre-wrap; }
+.find-src { display: flex; flex-direction: column; gap: 4px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.find-src a { font-family: var(--mono); font-size: 11.5px; color: var(--ok); text-decoration: none; overflow-wrap: anywhere; }
+.find-src a:hover { text-decoration: underline; }
+.find-src .ex { font-family: var(--mono); font-size: 11px; color: var(--faint); padding-left: 14px; }
+
+/* ---------- Calls ---------- */
+.scall { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.scall:last-child { border-bottom: 0; }
+.scall-d { width: 28px; height: 28px; flex: none; border-radius: 8px; display: grid; place-items: center; background: var(--panel-2); border: 1px solid var(--line); }
+.scall-d svg { width: 13px; height: 13px; fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.scall.inbound .scall-d svg { stroke: var(--ok); }
+.scall-b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.scall-b .s { font-size: 13.5px; }
+/* The demo redirect, stated on every call rather than hidden: the number the call was for, and the
+   number that actually rang. A demo that quietly dials somewhere else is the kind of thing that
+   should be visible on screen. */
+.redirect { font-family: var(--mono); font-size: 11px; color: var(--warn); }
+
+/* Buttons reuse `.btn` / `.btn.ghost` from the page chrome above. The one addition is a ghost
+   button sitting on a paper document, where the dark border would disappear. */
+.btn.on-paper { background: #fff; color: var(--paper-ink); border: 1px solid var(--paper-line); }
+.btn.on-paper:hover:not(:disabled) { box-shadow: 0 6px 18px rgba(36, 28, 23, 0.18); }

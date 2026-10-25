@@ -7,6 +7,12 @@ import type { Activity, Case, Patterns, PayrollScript, Snapshot, Timeline } from
 import { AGENT_LABEL, MEDICARE_BP, RULE_LABEL, SS_BP, actionLabel, calendarYear, day, demoFeed, demoLetter, demoSnapshot, pct, time, usd } from "./data";
 import { PaperTrail } from "./PaperTrail";
 import { TracksView } from "./Tracks";
+import { Guard, Stage } from "./Guards";
+import { Calls, Documents, Groups, Messages, Research } from "./Surfaces";
+
+// The only phone that rings while the demo redirect is on (agents/voice/calls.py). Shown on a call
+// row so a redirected call is visible rather than silently going somewhere else.
+const DEMO_NUMBER = "+19259677432";
 
 // three.js loads separately, so the page renders before the 3D does.
 const EvidenceStack = lazy(() => import("./EvidenceStack").then((m) => ({ default: m.EvidenceStack })));
@@ -16,11 +22,13 @@ const EvidenceStack = lazy(() => import("./EvidenceStack").then((m) => ({ defaul
 // offline backup for rehearsals and the video; the timeline and pattern panels are live only.
 
 type Mode = "live" | "demo";
-type Tab = "overview" | "paystubs" | "cases" | "activity" | "tracks";
+type Tab = "overview" | "paystubs" | "cases" | "messages" | "forms" | "group" | "research" | "activity" | "tracks";
 type Actions = {
   onApprove?: (caseId: Id<"cases">) => Promise<void>;
   onFollowUp?: (caseId: Id<"cases">) => Promise<void>;
   onSetScript?: (caseId: Id<"cases">, script: PayrollScript) => Promise<void>;
+  onDecideDocument?: (documentId: Id<"documents">, approved: boolean) => Promise<void>;
+  onRespondGroup?: (groupId: Id<"groups">, join: boolean) => Promise<void>;
   onSimulateRefund?: () => void;
   onReset?: () => void;
 };
@@ -41,6 +49,8 @@ export function LiveApp() {
   const approve = useMutation(api.cases.approve);
   const followUp = useMutation(api.cases.followUp);
   const setScript = useMutation(api.cases.setPayrollScript);
+  const decideDocument = useMutation(api.documents.decide);
+  const respondGroup = useMutation(api.groups.respond);
   const state = profiles === undefined ? undefined : profileId === undefined ? null : snap;
   return (
     <>
@@ -49,17 +59,17 @@ export function LiveApp() {
     <Dashboard mode="live" snap={state} feed={feed} timeline={timeline} patterns={patterns}
       onApprove={async (caseId) => { await approve({ caseId }); }}
       onFollowUp={async (caseId) => { await followUp({ caseId }); }}
-      onSetScript={async (caseId, script) => { await setScript({ caseId, script }); }} />
+      onSetScript={async (caseId, script) => { await setScript({ caseId, script }); }}
+      onDecideDocument={async (documentId, approved) => {
+        await decideDocument({ documentId, approved, via: "dashboard" });
+      }}
+      onRespondGroup={async (groupId, join) => {
+        if (profileId) await respondGroup({ groupId, profileId, join, via: "dashboard" });
+      }} />
     </>
   );
 }
 
-class Guard extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() { return { failed: true }; }
-  componentDidCatch(e: Error) { console.warn("Optional panel unavailable (is the backend deployed?):", e.message); }
-  render() { return this.state.failed ? null : this.props.children; }
-}
 
 function TimelineFeed({ profileId, onData }: { profileId: Id<"profiles">; onData: (t: Timeline | null | undefined) => void }) {
   const t = useQuery(api.timeline.forProfile, { profileId, today: localToday() });
@@ -132,6 +142,39 @@ export function DemoApp() {
       runCall(2);
     },
     onSetScript: async (_caseId, script) => patchCase((c) => ({ ...c, payrollScript: script })),
+    onDecideDocument: async (documentId, approved) => {
+      setSnap((s) => ({
+        ...s,
+        documents: s.documents.map((d) => (d._id !== documentId ? d : {
+          ...d, state: approved ? "submitted" : "declined",
+          decidedAt: new Date().toISOString(),
+          ...(approved ? { submittedAt: new Date().toISOString(), submissionRef: "DOCKET-DEMO0042" } : {}),
+        })),
+        notifications: s.notifications.map((n) =>
+          n.refs?.includes(documentId) ? { ...n, state: "acknowledged" as const, answer: approved ? "yes" : "no" } : n),
+      }));
+      push("filer", approved ? "document_approved" : "document_declined",
+           approved ? "Priya approved Form 8843 for 2025; marked signed off, reference DOCKET-DEMO0042."
+                    : "Priya declined Form 8843. Nothing was sent.");
+    },
+    onRespondGroup: async (groupId, join) => {
+      setSnap((s) => ({
+        ...s,
+        groups: s.groups.map((g) => (g.group._id !== groupId ? g : {
+          membership: { ...g.membership, state: join ? "joined" as const : "declined" as const,
+                        decidedAt: new Date().toISOString() },
+          group: join
+            ? { ...g.group, joinedCount: g.group.joinedCount + 1,
+                joinedCents: g.group.joinedCents + g.membership.amountCents }
+            : g.group,
+        })),
+        notifications: s.notifications.map((n) =>
+          n.refs?.includes(groupId) ? { ...n, state: "acknowledged" as const, answer: join ? "join" : "no" } : n),
+      }));
+      push("organizer", join ? "group_joined" : "group_declined",
+           join ? "Priya joined the University Dining Services group case; 4 joined, $1,408.04 combined."
+                : "Priya declined the group case. Her own case is unaffected.");
+    },
     onSimulateRefund: () => {
       const today = new Date().toISOString().slice(0, 10);
       setSnap((s) => ({
@@ -152,7 +195,11 @@ export function DemoApp() {
   return <Dashboard mode="demo" snap={snap} feed={feed} {...actions} />;
 }
 
-const TABS: [Tab, string][] = [["overview", "Overview"], ["paystubs", "Paystubs"], ["cases", "Cases"], ["activity", "Activity"], ["tracks", "Tracks"]];
+const TABS: [Tab, string][] = [
+  ["overview", "Overview"], ["paystubs", "Paystubs"], ["cases", "Cases"],
+  ["messages", "Messages"], ["forms", "Forms"], ["group", "Group"], ["research", "Research"],
+  ["activity", "Activity"], ["tracks", "Tracks"],
+];
 
 function useWide(px: number) {
   const q = `(min-width: ${px}px)`;
@@ -194,6 +241,8 @@ function Dashboard({ mode, snap, feed, timeline, patterns, ...actions }: { mode:
               </button>
             ))}
           </nav>
+          {/* The Hearing game plays this same student file: the agents' real hearing, approval, call and refund. */}
+          <a className="nav-game" href={mode === "demo" ? "/game.html" : "/game.html?case=live"}>Watch the hearing ↗</a>
         </div>
       </header>
 
@@ -217,6 +266,73 @@ function Dashboard({ mode, snap, feed, timeline, patterns, ...actions }: { mode:
         {snap && tab === "overview" && <Overview snap={snap} stubs={stubs} feed={feed} selected={selected} onSelect={inspect} onTab={go} mode={mode} wide={wide} timeline={timeline} patterns={patterns} {...actions} />}
         {snap && tab === "paystubs" && <PaystubsView snap={snap} stubs={stubs} selected={selected} onSelect={inspect} wide={wide} />}
         {snap && tab === "cases" && <CasesView snap={snap} mode={mode} {...actions} />}
+        {snap && tab === "messages" && (
+          <div className="stack">
+            <div className="panel-h flat">
+              <div>
+                <h2>Everything Docket told her</h2>
+                <p className="muted">
+                  One thread, whatever channel carried it. Every agent writes here instead of
+                  reaching for a channel itself, so this is the whole record of what she was told —
+                  and of what is still waiting on her.
+                </p>
+              </div>
+            </div>
+            <Messages rows={snap.notifications} calls={snap.studentCalls} />
+            <div className="panel-h flat" style={{ marginTop: 10 }}>
+              <div>
+                <h2>Calls</h2>
+                <p className="muted">
+                  Docket rings her when something needs her; she can ring the same line and ask
+                  anything. While demo mode is on, only the demo phone rings, and the row says so.
+                </p>
+              </div>
+            </div>
+            <div className="panel pad"><Calls rows={snap.studentCalls} demoNumber={DEMO_NUMBER} /></div>
+          </div>
+        )}
+        {snap && tab === "forms" && (
+          <div className="stack">
+            <div className="panel-h flat">
+              <div>
+                <h2>Forms Docket filled in</h2>
+                <p className="muted">
+                  Every value is computed in code from the student file, and the third column says
+                  which record it came from. Nothing is sent until she approves it.
+                </p>
+              </div>
+            </div>
+            <Documents rows={snap.documents} onDecide={actions.onDecideDocument} />
+          </div>
+        )}
+        {snap && tab === "group" && (
+          <div className="stack">
+            <div className="panel-h flat">
+              <div>
+                <h2>Students with the same problem</h2>
+                <p className="muted">
+                  One student is easy to put off; four at the same employer is a payroll
+                  configuration error. The total counts only the students who said yes.
+                </p>
+              </div>
+            </div>
+            <Groups rows={snap.groups} onRespond={actions.onRespondGroup} />
+          </div>
+        )}
+        {snap && tab === "research" && (
+          <div className="stack">
+            <div className="panel-h flat">
+              <div>
+                <h2>What Athena found</h2>
+                <p className="muted">
+                  Questions she asked, and changes the agent found on its own. Each source was
+                  fetched by code and had to contain the claim before it counted.
+                </p>
+              </div>
+            </div>
+            <Research rows={snap.research} />
+          </div>
+        )}
         {snap && tab === "activity" && <DocketView feed={feed} />}
         {snap && tab === "tracks" && <TracksView snap={snap} feed={feed} patterns={patterns} mode={mode} onTab={go} />}
 
@@ -290,9 +406,9 @@ function Overview({ snap, stubs, feed, selected, onSelect, onTab, mode, wide, ti
         </div>
         <div className="h2-stage">
           {stubs.length > 0 ? (
-            <Suspense fallback={<div className="es-stage" />}>
+            <Stage fallback={<div className="es-stage" />}>
               <EvidenceStack stubs={stubs} flagged={!!fica} recovered={closed} totalCents={fica?.amountCents ?? withheld} selected={selected} onSelect={onSelect} />
-            </Suspense>
+            </Stage>
           ) : <div className="es-stage es-empty"><p>No paystubs yet. The Ledger reads them when Priya asks “check my pay”.</p></div>}
           <div className="h2-hint"><span>{stubs.length} paystubs from the student file</span><span>Hover to lift · click to inspect</span></div>
         </div>
@@ -837,6 +953,10 @@ function Icon({ name }: { name: Tab }) {
     overview: "M3 3h4.5v4.5H3zM9.5 3H14v4.5H9.5zM3 9.5h4.5V14H3zM9.5 9.5H14V14H9.5z",
     paystubs: "M4 2.5h6l3 3V14H4zM10 2.5v3h3M6 8.5h5M6 11h5",
     cases: "M2.5 5h12v8.5h-12zM6 5V3.5h5V5M2.5 8.5h12",
+    messages: "M2.5 4h12v7.5H7l-3 2.5v-2.5H2.5zM5 6.5h7M5 9h4",
+    forms: "M4 2.5h6l3 3V14H4zM10 2.5v3h3M6 9h5M6 11.5h3",
+    group: "M6 7.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM11.5 8a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2zM2 13.5c0-2.2 1.8-3.5 4-3.5s4 1.3 4 3.5M11 10.2c2 .1 3.5 1.3 3.5 3.3",
+    research: "M7.5 12.5a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM11.2 11.2 14.5 14.5",
     activity: "M2 9h3l2-5 3 9 2-4h3",
     tracks: "M3 4h11M3 8.5h11M3 13h11M5.5 2.5v3M11 7v3M7.5 11.5v3",
   }[name];

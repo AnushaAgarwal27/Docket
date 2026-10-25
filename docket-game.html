@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docket · The Hearing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #F3EDE3;
+    --panel: #FBF8F3;
+    --panel-2: #FFFFFF;
+    --line: rgba(74, 56, 38, 0.12);
+    --line-strong: rgba(74, 56, 38, 0.22);
+    --ink: #2B231C;
+    --ink-2: #5F5347;
+    --muted: #8A7D6E;
+    --adv: #3F6FE0;
+    --counsel: #D4581C;
+    --judge: #8A7458;
+    --win: #1F8F55;
+    --warn: #B7791F;
+    --paper: #F6F0E4;
+    --shadow: 0 1px 2px rgba(74, 56, 38, 0.08), 0 6px 18px rgba(74, 56, 38, 0.10);
+    --display: 'Archivo', system-ui, sans-serif;
+    --sans: 'Public Sans', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --serif: 'Fraunces', Georgia, serif;
+    --file: #2F5D50;      /* the dark green edge on Docket's case files */
+    --card: #FBF7EF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--night); color: var(--ink); font-family: var(--sans); }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* ---------- Top HUD ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 22px;
+    background: linear-gradient(rgba(243,237,227,0.92), rgba(243,237,227,0));
+  }
+  .brand { font-family: var(--display); font-weight: 900; font-size: 20px; letter-spacing: -0.02em; }
+  .brand small { font-family: var(--mono); font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 10px; letter-spacing: 0; }
+  /* Round tabs: one cream panel, a bar over each round (dark = now, green = done) */
+  .rounds {
+    display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 10px; width: min(430px, 40vw); margin-top: 6px;
+    padding: 8px 12px 9px; border-radius: 10px; background: rgba(251,247,239,0.95); box-shadow: 0 8px 20px -12px rgba(60,40,20,0.55);
+  }
+  .rounds span { display: block; min-width: 0; font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rounds span::before { content: ""; display: block; height: 4px; border-radius: 4px; margin-bottom: 6px; background: rgba(74,56,38,0.14); transition: background .4s; }
+  .rounds span.on { color: var(--ink); font-weight: 700; }
+  .rounds span.on::before { background: var(--ink); }
+  .rounds span.done { color: var(--file); }
+  .rounds span.done::before { background: var(--file); }
+  .controls { display: flex; gap: 8px; align-items: center; }
+  .chip-btn {
+    white-space: nowrap; min-height: 36px; padding: 0 14px; border-radius: 999px; box-shadow: var(--shadow); border: 1px solid var(--line-strong);
+    background: rgba(255,255,255,0.92); font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+  }
+  .chip-btn:hover { color: var(--ink); border-color: var(--ink-2); }
+  .chip-btn[aria-pressed="true"] { color: var(--night); background: var(--ink); border-color: var(--ink); }
+  a.chip-btn { display: inline-flex; align-items: center; text-decoration: none; }
+  .asi-btn { color: var(--night); background: var(--file); border-color: var(--file); font-weight: 600; }
+  .asi-btn:hover { color: var(--night); background: #234A3F; border-color: #234A3F; }
+
+  /* ---------- Fighter HUD ---------- */
+  .fighters {
+    position: fixed; top: 64px; left: 22px; right: 22px; z-index: 15;
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: start;
+    pointer-events: none; opacity: 0; transform: translateY(-8px); transition: opacity .35s ease, transform .35s ease;
+  }
+  .fighters.show { opacity: 1; transform: none; }
+  .fighter { display: flex; flex-direction: column; gap: 6px; }
+  .fighter.right { align-items: flex-end; text-align: right; }
+  .fighter .who { display: flex; align-items: baseline; gap: 10px; }
+  .fighter.right .who { flex-direction: row-reverse; }
+  .fighter .name { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -0.01em; }
+  .fighter .role { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .bar { width: min(420px, 38vw); height: 16px; border-radius: 4px; background: rgba(74,56,38,0.08); border: 1px solid var(--line-strong); overflow: hidden; position: relative; }
+  .bar i { position: absolute; inset: 0; transform-origin: left; transition: transform .6s cubic-bezier(.2,.8,.2,1), background .3s; }
+  .fighter.right .bar i { transform-origin: right; }
+  .bar .ghost { background: rgba(74,56,38,0.18); transition-delay: .35s; }
+  .bar .fill.adv { background: var(--adv); }
+  .bar .fill.counsel { background: var(--counsel); }
+  .bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(251,248,243,0.95) calc(10% - 2px) 10%); }
+  .meter-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .center-hud { text-align: center; padding-top: 2px; max-width: 34vw; }
+  .center-hud .round { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .center-hud .claim { font-family: var(--display); font-weight: 900; font-size: clamp(22px, 2.4vw, 34px); letter-spacing: -0.02em; line-height: 1.1; }
+  .center-hud .claim.win { color: var(--win); }
+  .center-hud .claim.lose { color: var(--counsel); text-decoration: line-through; }
+  .center-hud .claim.long { font-size: clamp(16px, 1.5vw, 21px); white-space: nowrap; }   /* "Social Security + Medicare" on one line */
+  .conditions { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+  .conditions span { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(183,121,31,0.5); color: var(--warn); background: rgba(255,255,255,0.9); }
+
+  /* Call + money HUDs */
+  .side-hud {
+    position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 15; text-align: center;
+    pointer-events: none; opacity: 0; transition: opacity .35s ease;
+  }
+  .side-hud.show { opacity: 1; }
+  .call-steps { display: flex; gap: 8px; justify-content: center; }
+  .call-steps span { font-family: var(--mono); font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); background: rgba(255,255,255,0.92); }
+  .call-steps span.on { color: var(--ink); border-color: var(--ink-2); }
+  .call-steps span.ok { color: var(--win); border-color: rgba(31,143,85,0.5); }
+  .call-steps span.warn { color: var(--warn); border-color: rgba(183,121,31,0.5); }
+  .money { font-family: var(--display); font-weight: 900; font-size: 56px; letter-spacing: -0.03em; line-height: 1; }
+  .money small { display: block; font-family: var(--mono); font-weight: 400; font-size: 12px; color: var(--ink-2); letter-spacing: 0; margin-top: 6px; }
+  .money.win { color: var(--win); }
+  .date-chip { display: inline-block; margin-top: 10px; font-family: var(--mono); font-size: 13px; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 6px; background: rgba(255,255,255,0.92); }
+
+  /* ---------- Dialogue box ---------- */
+  .dialog {
+    position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); z-index: 20;
+    width: min(900px, calc(100vw - 32px)); max-height: calc(100vh - 150px); overflow-y: auto;
+    background: rgba(251,248,243,0.97); border: 1px solid var(--line); box-shadow: var(--shadow);
+    border-radius: 14px; padding: 16px 22px 14px; opacity: 0; pointer-events: none;
+    transition: opacity .3s ease, transform .3s ease;
+    user-select: none; -webkit-user-select: none;   /* fast clicks on Next or a card shouldn't paint a text selection */
+  }
+  /* Between lines (while cards fly or a banner plays) the last line stays readable but steps back */
+  .dialog.show.stale { opacity: 0.85; }
+  .dialog.show.stale .line, .dialog.show.stale .speaker { opacity: 0.6; }
+  .dialog.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  .speaker { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 800; font-size: 15px; margin-bottom: 6px; }
+  .speaker::before { content: ""; width: 10px; height: 10px; border-radius: 2px; background: var(--dot, var(--ink)); }
+  .line { font-size: 20px; line-height: 1.5; min-height: 60px; }
+  .dialog.choosing .line { min-height: 0; }
+  .line q { quotes: "“" "”"; font-style: italic; }
+  .sub { font-family: var(--mono); font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+  .sub:empty { display: none; }
+  .dialog-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }
+  .hint { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .next-btn { min-height: 42px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--ink); background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 15px; }
+  .next-btn[disabled] { opacity: .35; cursor: default; }
+  .choices { position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 10px; }
+  /* Reserved spot for a guide avatar that will hover over the right card. Empty and invisible for now;
+     choose() keeps it on the right card's top-right corner. Add ?slot=show to the URL to see where it sits. */
+  .avatar-slot { position: absolute; width: 56px; height: 56px; pointer-events: none; z-index: 2; }
+  body.show-slot .avatar-slot { border: 2px dashed rgba(74,56,38,0.45); border-radius: 50%; }
+  .choice {
+    text-align: left; padding: 10px 14px 10px 18px; border-radius: 6px; border: 1px solid rgba(74,56,38,0.14);
+    background: var(--card); box-shadow: inset 5px 0 0 var(--file), 0 1px 0 rgba(60,40,20,0.06), 0 10px 22px -16px rgba(60,40,20,0.55);
+    display: flex; flex-direction: column; gap: 3px; min-height: 56px;
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .choice:hover:not([disabled]) { transform: translateY(-2px); border-color: var(--ink-2); }
+  .choice b { font-family: var(--serif); font-weight: 600; font-size: 18px; }
+  .choice span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
+  .choice kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .choice.right { border-color: var(--win); background: rgba(31,143,85,0.10); }
+  .choice.wrong { border-color: var(--counsel); background: rgba(212,88,28,0.08); opacity: .7; }
+  /* the result is spelled out too, not only colored */
+  .choice.right b::after { content: " ✓ right"; color: var(--win); font-size: 14px; }
+  .choice.wrong b::after { content: " ✗ not this"; color: var(--counsel); font-size: 14px; }
+  .choice[disabled] { cursor: default; }
+  .sign-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+  .sign-btn { min-height: 48px; padding: 0 22px; border-radius: 10px; border: 0; background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 16px; }
+  .sig { width: 200px; height: 44px; }
+  .sig path { fill: none; stroke: #3F6FE0; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 400; stroke-dashoffset: 400; }
+  .sig.go path { transition: stroke-dashoffset .8s ease; stroke-dashoffset: 0; }
+
+  /* ---------- Banners ---------- */
+  .banner {
+    position: fixed; left: 16px; right: 16px; top: 30%; z-index: 25; text-align: center; pointer-events: none;
+    font-family: var(--display); font-weight: 900; font-size: clamp(40px, 6.5vw, 88px); letter-spacing: -0.03em; line-height: 1;
+    text-shadow: 0 2px 0 rgba(255,255,255,0.9), 0 2px 28px rgba(251,248,243,0.95); opacity: 0; transform: scale(1.25);
+  }
+  .banner small { display: block; font-family: var(--sans); font-weight: 500; font-size: 18px; letter-spacing: 0; margin: 16px auto 0; max-width: 640px; width: fit-content; padding: 8px 14px; border-radius: 10px; background: rgba(251,248,243,0.96); box-shadow: var(--shadow); line-height: 1.45; color: var(--ink); text-shadow: none; }
+  .banner.go { animation: bannerIn 1.9s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes bannerIn {
+    0% { opacity: 0; transform: scale(1.35); }
+    14% { opacity: 1; transform: scale(1); }
+    80% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(.98); }
+  }
+  .banner.hold { animation: bannerHold .5s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes bannerHold { 0% { opacity: 0; transform: scale(1.35); } 100% { opacity: 1; transform: scale(1); } }
+  @keyframes bannerFade { 0% { opacity: 0; } 12% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes bannerHoldFade { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+  /* ---------- Round card ---------- */
+  .roundcard {
+    position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px;
+    background: rgba(243,237,227,0); pointer-events: none; opacity: 0;
+  }
+  .roundcard .k { font-family: var(--mono); font-size: 14px; color: var(--ink-2); }
+  .roundcard .t { font-family: var(--display); font-weight: 900; font-size: clamp(48px, 9vw, 120px); letter-spacing: -0.03em; line-height: 1; }
+  .roundcard .d { font-size: 17px; color: var(--ink-2); max-width: 560px; text-align: center; padding: 0 16px; }
+  .roundcard.go { animation: rc 2.2s ease forwards; }
+  /* A round card waits for the viewer: it stays up until Begin (or Space/Enter) */
+  .roundcard.hold { opacity: 1; background: rgba(243,237,227,0.9); pointer-events: auto; animation: rcIn .4s ease; }
+  .roundcard.out { animation: rcOut .35s ease forwards; }
+  @keyframes rcIn { from { opacity: 0; background: rgba(243,237,227,0); } to { opacity: 1; background: rgba(243,237,227,0.9); } }
+  @keyframes rcOut { from { opacity: 1; background: rgba(243,237,227,0.9); } to { opacity: 0; background: rgba(243,237,227,0); } }
+  .roundcard .next-btn { margin-top: 18px; }
+  .roundcard:not(.hold) .next-btn { visibility: hidden; }
+  @keyframes rc {
+    0% { opacity: 0; background: rgba(243,237,227,0); }
+    15% { opacity: 1; background: rgba(243,237,227,0.9); }
+    78% { opacity: 1; background: rgba(243,237,227,0.9); }
+    100% { opacity: 0; background: rgba(243,237,227,0); }
+  }
+
+  /* ---------- Title + results ---------- */
+  .screen {
+    position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; padding: 76px 6vw 32px; overflow-y: auto;
+    background: linear-gradient(90deg, rgba(243,237,227,0.97) 0%, rgba(243,237,227,0.9) 46%, rgba(243,237,227,0.1) 100%);
+    transition: opacity .45s ease;
+  }
+  .screen.hide { opacity: 0; pointer-events: none; }
+  .screen-inner { max-width: 560px; display: flex; flex-direction: column; gap: 18px; margin: auto 0; }
+  .kicker { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
+  .screen h1 { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 5vw, 64px); letter-spacing: -0.035em; line-height: 0.98; }
+  .screen p { font-size: 17px; line-height: 1.6; color: var(--ink-2); }
+  .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cases.three { grid-template-columns: 1fr 1fr 1fr; }
+  .case-card.live .k { color: var(--file); }
+  /* Case cards look like the label on a Docket case file: cream paper, a dark green edge, a serif name */
+  .case-card {
+    position: relative; text-align: left; padding: 14px 16px 16px 22px; border-radius: 6px; border: 1.5px solid transparent; background: var(--card);
+    box-shadow: inset 6px 0 0 var(--file), 0 1px 0 rgba(60,40,20,0.06), 0 14px 28px -18px rgba(60,40,20,0.6);
+    display: flex; flex-direction: column; gap: 6px; min-height: 140px; transition: border-color .15s, transform .15s;
+  }
+  .case-card:hover { transform: translateY(-2px); border-color: rgba(47,93,80,0.45); }
+  .case-card[aria-pressed="true"] { border-color: var(--file); }
+  .case-card .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .case-card .pick { position: absolute; top: 12px; right: 14px; font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--muted); }
+  .case-card[aria-pressed="true"] .pick { color: var(--file); }
+  .case-card b { font-family: var(--serif); font-weight: 600; font-size: 24px; line-height: 1.1; letter-spacing: -0.01em; }
+  .case-card span { font-family: var(--sans); font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+  .case-card em { font-style: normal; font-family: var(--serif); font-weight: 700; font-size: 20px; margin-top: auto; }
+  .case-card em.dim { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--ink-2); }
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mode-btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--panel-2); font-family: var(--display); font-weight: 700; font-size: 15px; }
+  .mode-btn[aria-pressed="true"] { background: var(--ink); color: var(--night); border-color: var(--ink); }
+  .start-btn { align-self: flex-start; min-height: 54px; padding: 0 28px; border-radius: 12px; border: 0; background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 900; font-size: 18px; }
+  .screen .fine { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); box-shadow: 0 1px 2px rgba(74,56,38,0.06); }
+  .stat b { display: block; font-family: var(--display); font-weight: 900; font-size: 24px; line-height: 1.15; letter-spacing: -0.02em; }
+  .stat span { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .link { color: var(--ink); font-family: var(--mono); font-size: 13px; }
+  .proto { position: fixed; left: 22px; bottom: 6px; z-index: 18; font-family: var(--mono); font-size: 11px; color: var(--muted); pointer-events: none; }
+  /* On the title and end screens, the game-only controls step aside */
+  body.menu .rounds, body.menu #btn-skip, body.menu .proto { visibility: hidden; }
+  body.menu .topbar { z-index: 45; }   /* keeps the ASI1 button above the title and end screens */
+
+  @media (max-width: 760px) {
+    .rounds { display: none; }
+    .controls .chip-btn { padding: 0 11px; }
+    .topbar { padding: 0 16px; }
+    .brand small { display: none; }
+    .fighters { left: 16px; right: 16px; top: 58px; }
+    .fighter .role, .meter-label { display: none; }
+    .dialog { bottom: 16px; padding: 12px 16px 12px; max-height: calc(100vh - 150px); }
+    .hint { display: none; }
+    .proto { display: none; }
+    .banner small { font-size: 15px; }
+    .fighters { grid-template-columns: 1fr 1fr; }
+    .center-hud { display: none; }
+    .fighter .name { font-size: 16px; }
+    .bar { width: 42vw; }
+    .line { font-size: 17px; }
+    .screen { background: rgba(243,237,227,0.94); padding: 72px 18px 24px; overflow-y: auto; align-items: flex-start; }
+    .cases, .stats { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* fades only: no zoom, so banners stay readable without motion */
+    .banner { transform: none; }
+    .banner.go { animation-name: bannerFade; }
+    .banner.hold { animation-name: bannerHoldFade; }
+    .dialog { transform: translate(-50%, 0) !important; }   /* keep the centering, drop only the slide */
+    .fighters { transform: none !important; }
+    .choice:hover:not([disabled]), .case-card:hover { transform: none; }
+  }
+</style>
+</head>
+<body class="menu">
+<canvas id="gl" role="img" aria-label="A 3D courtroom where Docket's agents argue a student's case."></canvas>
+
+<header class="topbar">
+  <div class="brand">Docket<small id="case-label"></small></div>
+  <nav class="rounds" aria-label="Rounds">
+    <span id="r1">1 The Hearing</span><span id="r2">2 The Call</span><span id="r3">3 The Money</span>
+  </nav>
+  <div class="controls">
+    <button class="chip-btn" id="btn-mode" aria-pressed="false" title="Switch between watching the agents and choosing the evidence yourself" hidden>Mode: Watch</button>
+    <button class="chip-btn" id="btn-skip" title="Skip to the next round">Skip round ▸</button>
+    <a class="chip-btn asi-btn" id="btn-asi" href="https://asi1.ai/" target="_blank" rel="noopener noreferrer" title="Talk to Docket's agents on ASI:One (opens in a new tab)">ASI1 ↗</a>
+  </div>
+</header>
+
+<section class="fighters" id="fighters" aria-live="polite">
+  <div class="fighter">
+    <div class="who"><span class="name" id="f-left-name">Advocate</span><span class="role" id="f-left-role">argues for Priya</span></div>
+    <div class="bar"><i class="ghost" id="g-left"></i><i class="fill adv" id="b-left"></i></div>
+    <span class="meter-label">Credibility</span>
+  </div>
+  <div class="center-hud">
+    <div class="round" id="hud-round">Round 1 · The hearing</div>
+    <div class="claim" id="hud-claim">$440.64</div>
+    <div class="conditions" id="hud-conditions"></div>
+  </div>
+  <div class="fighter right">
+    <div class="who"><span class="name" id="f-right-name">Payroll's Counsel</span><span class="role" id="f-right-role">argues for the employer</span></div>
+    <div class="bar"><i class="ghost" id="g-right"></i><i class="fill counsel" id="b-right"></i></div>
+    <span class="meter-label">Credibility</span>
+  </div>
+</section>
+
+<section class="side-hud" id="call-hud" aria-live="polite">
+  <div class="call-steps"><span id="cs1">Approved</span><span id="cs2">Dialing</span><span id="cs3">Connected</span><span id="cs4">Outcome</span></div>
+</section>
+<section class="side-hud" id="money-hud" aria-live="polite">
+  <div class="money" id="money">$0.00<small>recovered of $440.64</small></div>
+  <div class="date-chip" id="date-chip">Oct 24, 2026</div>
+</section>
+
+<section class="dialog" id="dialog" aria-live="polite">
+  <div class="speaker" id="speaker"></div>
+  <div class="line" id="line"></div>
+  <div class="sub" id="sub"></div>
+  <div id="choice-area"></div>
+  <div class="dialog-foot">
+    <span class="hint" id="hint">Space or Enter to continue</span>
+    <button class="next-btn" id="btn-next" type="button">Next ▸</button>
+  </div>
+</section>
+
+<div class="banner" id="banner" role="status"></div>
+<div class="roundcard" id="roundcard"><div class="k" id="rc-k"></div><div class="t" id="rc-t"></div><div class="d" id="rc-d"></div><button class="next-btn" id="rc-next" type="button">Begin ▸</button></div>
+
+<section class="screen" id="title-screen">
+  <div class="screen-inner">
+    <span class="kicker">Docket · a caseworker for international students</span>
+    <h1>Payroll took $440.64 from Priya by mistake.</h1>
+    <p>Watch Docket's paper agents fight for it. The Advocate argues for Priya, Payroll's Counsel argues for the employer, and the Judge rules in code, using only her file and the IRS's own words. Win the hearing, and Docket makes the call.</p>
+    <div class="cases" role="group" aria-label="Choose a case">
+      <button class="case-card" id="case-priya" aria-pressed="true">
+        <span class="k">Case file</span><span class="pick" aria-hidden="true">✓ Selected</span>
+        <b>Priya Sharma</b>
+        <span>F-1 · arrived Aug 15, 2024 · calendar year 3 of 5<br>University Dining Services · 8 paystubs</span>
+        <em>$440.64 withheld</em>
+      </button>
+      <button class="case-card" id="case-nadia" aria-pressed="false">
+        <span class="k">Case file</span><span class="pick" aria-hidden="true">Choose</span>
+        <b>Nadia Petrova</b>
+        <span>F-1 · arrived Jan 7, 2019 · calendar year 8<br>Example student from our test set</span>
+        <em class="dim">Can this claim survive?</em>
+      </button>
+      <button class="case-card live" id="case-live" aria-pressed="false" hidden>
+        <span class="k">Live</span><span class="pick" aria-hidden="true">Choose</span>
+        <b id="live-name">Live case</b>
+        <span id="live-facts"></span>
+        <em id="live-claim"></em>
+      </button>
+    </div>
+    <div class="modes" role="group" aria-label="How do you want to play?">
+      <button class="mode-btn" id="mode-watch" aria-pressed="true">Watch the agents</button>
+      <button class="mode-btn" id="mode-play" aria-pressed="false">Argue it yourself</button>
+    </div>
+    <button class="start-btn" id="btn-start">Open the case ▸</button>
+    <p class="fine">Prototype. The hearing is scripted from the student's case file; no real call is placed and no money moves. In Docket, this runs as Fetch.ai agents you talk to in ASI:One.</p>
+  </div>
+</section>
+
+<section class="screen hide" id="end-screen" aria-live="polite">
+  <div class="screen-inner">
+    <span class="kicker" id="end-kicker">Case closed</span>
+    <h1 id="end-title">$440.64 is back with Priya.</h1>
+    <p id="end-text"></p>
+    <div class="stats" id="end-stats"></div>
+    <div class="row">
+      <button class="start-btn" id="btn-replay">Play again</button>
+      <button class="mode-btn" id="btn-other">Try the other case</button>
+    </div>
+    <a class="link" href="https://asi1.ai/" target="_blank" rel="noopener noreferrer">Talk to Docket in ASI:One ↗</a>
+  </div>
+</section>
+
+<div class="proto" id="proto-note">Prototype · scripted from the case file · no real call placed</div>
+
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
+
+/* ============================================================
+   Data: both cases come from Docket's case files / test set.
+   ============================================================ */
+const QUOTE = "Social security and Medicare taxes are not withheld from pay for the work unless the student is considered a resident alien.";
+const CASES = {
+  priya: { key: "priya", id: "PS-2026-001", name: "Priya Sharma", first: "Priya", arrival: "Aug 15, 2024", year: 3, employer: "University Dining Services", claim: "$440.64", amount: 440.64 },
+  nadia: { key: "nadia", id: "NP-2026-009", name: "Nadia Petrova", first: "Nadia", arrival: "Jan 7, 2019", year: 8, employer: "University Dining Services", claim: "Claim", amount: 0 }
+};
+const params = new URLSearchParams(location.search);
+const SPEED = Math.max(0.25, Number(params.get("speed")) || 1);
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let boost = 1;   // raised by "Skip round" until the next round starts
+const wait = (ms) => new Promise((r) => setTimeout(r, ms / (SPEED * boost)));
+const $ = (id) => document.getElementById(id);
+
+/* ============================================================
+   Three.js scene
+   ============================================================ */
+const canvas = $("gl");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xF3EDE3);
+scene.fog = new THREE.Fog(0xF3EDE3, 22, 52);
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 200);
+
+scene.add(new THREE.HemisphereLight(0xFFF8EE, 0x8C7458, 1.7));
+const sun = new THREE.DirectionalLight(0xFFE6C4, 2.0);
+sun.position.set(-6, 14, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 12, bottom: -8, near: 1, far: 50 });
+sun.shadow.bias = -0.0004;
+sun.shadow.radius = 4;
+scene.add(sun);
+scene.add(sun.target);
+const warm = new THREE.PointLight(0xFFE2B8, 18, 14, 2);
+warm.position.set(0, 6, -1);
+scene.add(warm);
+
+const texRegistry = [];
+function tex(w, h, draw) {
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d");
+  draw(ctx, w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  t.userData = { canvas: c, ctx };
+  texRegistry.push({ t, draw, ctx, w, h });
+  return t;
+}
+const F = (w, s, fam = "Archivo") => `${w} ${s}px "${fam}", system-ui, sans-serif`;
+const M = (w, s) => `${w} ${s}px "IBM Plex Mono", ui-monospace, monospace`;
+function wrap(ctx, text, maxW) {
+  const words = text.split(" "), lines = [];
+  let cur = "";
+  for (const w of words) {
+    const t = cur ? cur + " " + w : w;
+    if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+const mat = (color, rough = 0.6, metal = 0) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
+function box(w, h, d, m, x = 0, y = 0, z = 0, parent = scene) {
+  const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+  b.position.set(x, y, z); b.castShadow = true; b.receiveShadow = true; parent.add(b); return b;
+}
+
+/* Floor: warm parquet that runs under all three arenas */
+const floorTex = tex(512, 512, (ctx, w, h) => {
+  ctx.fillStyle = "#A8835F"; ctx.fillRect(0, 0, w, h);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 4; x++) {
+    const off = (y % 2) * 64;
+    const shade = 204 + ((x * 7 + y * 13) % 10) * 2;
+    ctx.fillStyle = `rgb(${shade - 6},${shade - 40},${shade - 84})`;
+    ctx.fillRect(x * 128 + off - 64 + 2, y * 64 + 2, 124, 60);
+  }
+});
+floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+floorTex.repeat.set(50, 10);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(220, 44), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.85 }));
+floor.rotation.x = -Math.PI / 2; floor.position.set(60, 0, 0); floor.receiveShadow = true;
+scene.add(floor);
+
+/* ---------- Agents: origami figures, folded from the paperwork they argue about ---------- */
+function paperGeo(tris, jitter = 0.08) {
+  const pos = [], col = [];
+  tris.forEach((t, i) => {
+    const sh = 1 - jitter + (((i * 37) % 11) / 10) * jitter * 2;   // each fold catches light a little differently
+    for (const v of t) { pos.push(v[0], v[1], v[2]); col.push(sh, sh, sh); }
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  return g;
+}
+const foldMat = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9, flatShading: true, vertexColors: true, side: THREE.DoubleSide });
+const flatMat = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9, flatShading: true });
+function paper(tris, color, parent) { const m = new THREE.Mesh(paperGeo(tris), foldMat(color)); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m; }
+function solid(geo, color, parent, x = 0, y = 0, z = 0) { const m = new THREE.Mesh(geo, flatMat(color)); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m; }
+const mirror = (tris) => tris.map((t) => t.map((v) => [-v[0], v[1], v[2]]).reverse());
+const eyeMat = new THREE.MeshStandardMaterial({ color: 0x15110E, roughness: 0.3 });
+
+function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
+  const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+  const headPivot = new THREE.Group(); body.add(headPivot);
+  const eyes = []; let arms = [];
+  const light = new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.6).getHex();
+  const eye = (r, x, y, z, parent = headPivot) => { const e = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), eyeMat); e.position.set(x, y, z); parent.add(e); eyes.push(e); return e; };
+  const pivot = (x, y, z, parent = body) => { const p = new THREE.Group(); p.position.set(x, y, z); parent.add(p); return p; };
+
+  if (kind === "person") {           // the hearing's people, folded from paper: judge, prosecutor, student
+    const skin = 0xE2B48C, skinDk = 0xC9946A;
+    const look = {
+      judge:   { top: 0x17171B, legs: 0x17171B, shoe: 0x0F0F12, hair: 0xCFCBC4, sleeve: 0x17171B },
+      counsel: { top: 0x2C303A, legs: 0x2C303A, shoe: 0x111114, hair: 0x2A1E16, sleeve: 0x2C303A },
+      student: { top: 0x8E949C, legs: 0x3E5C8A, shoe: 0xF2EEE6, hair: 0x1E1612, sleeve: 0x8E949C }
+    }[outfit] || {};
+    // legs and shoes (the judge's robe covers them)
+    if (outfit !== "judge") for (const x of [-0.1, 0.1]) {
+      solid(new THREE.CylinderGeometry(0.075, 0.065, 0.66, 6), look.legs, body, x, 0.37, 0);
+      const sh = solid(new THREE.BoxGeometry(0.13, 0.08, 0.24), look.shoe, body, x, 0.04, 0.04);
+      if (outfit === "student") solid(new THREE.BoxGeometry(0.135, 0.025, 0.245), 0xD9D2C4, body, x, 0.012, 0.04);   // sneaker soles
+      sh.castShadow = true;
+    }
+    // torso
+    if (outfit === "judge") {        // a black judicial robe to the floor, white collar, dark front seam
+      const robe = solid(new THREE.CylinderGeometry(0.25, 0.36, 1.22, 7), look.top, body, 0, 0.62, 0); robe.material.roughness = 0.6;
+      paper([[[-0.15, 1.22, 0.2], [0.15, 1.22, 0.2], [0, 1.02, 0.27]]], 0xF4F1EA, body);                              // white collar
+      paper([[[-0.03, 1.02, 0.27], [0.03, 1.02, 0.27], [0, 0.12, 0.37]]], 0x2A2A30, body);                            // front seam
+    } else {
+      const t = solid(new THREE.CylinderGeometry(0.22, 0.2, 0.58, 7), look.top, body, 0, 0.95, 0); t.scale.z = 0.72;
+      if (outfit === "counsel") {    // charcoal suit, white shirt in the V, lapels, red tie, buttons
+        paper([[[-0.09, 1.22, 0.16], [0.09, 1.22, 0.16], [0, 0.9, 0.17]]], 0xF4F1EA, body);
+        const lap = [[[-0.1, 1.22, 0.165], [-0.01, 0.88, 0.175], [-0.16, 1.07, 0.15]]];
+        paper(lap, 0x3A3F4B, body); paper(mirror(lap), 0x3A3F4B, body);
+        paper([[[-0.03, 1.21, 0.172], [0.03, 1.21, 0.172], [0, 1.16, 0.175]], [[0, 1.17, 0.175], [-0.035, 0.97, 0.178], [0.035, 0.97, 0.178]], [[-0.035, 0.97, 0.178], [0, 0.92, 0.18], [0.035, 0.97, 0.178]]], 0xB3262E, body);
+        for (const y of [0.84, 0.76]) solid(new THREE.SphereGeometry(0.014, 8, 6), 0x15171C, body, 0, y, 0.15);
+        solid(new THREE.CylinderGeometry(0.205, 0.205, 0.04, 7), 0x23262E, body, 0, 0.68, 0).scale.z = 0.74;          // jacket hem
+      } else {                       // student: grey hoodie, hood down, drawstrings, kangaroo pocket, backpack
+        solid(new THREE.CylinderGeometry(0.21, 0.21, 0.05, 7), 0x7A8088, body, 0, 0.68, 0).scale.z = 0.74;             // ribbed hem
+        const hood = solid(new THREE.TorusGeometry(0.1, 0.045, 6, 10), look.top, body, 0, 1.23, -0.06); hood.rotation.x = Math.PI / 2 - 0.35;
+        for (const x of [-0.035, 0.035]) solid(new THREE.CylinderGeometry(0.006, 0.006, 0.12, 4), 0xF2EEE6, body, x, 1.12, 0.15);
+        box(0.22, 0.1, 0.02, flatMat(0x7F858D), 0, 0.8, 0.14, body);                                                  // pocket
+        box(0.3, 0.36, 0.14, flatMat(0x2B3F7A), 0, 0.98, -0.22, body);                                                 // backpack
+        box(0.22, 0.1, 0.03, flatMat(0x23346A), 0, 0.9, -0.3, body);                                                   // its front pocket
+        for (const x of [-0.12, 0.12]) box(0.04, 0.42, 0.03, flatMat(0x1D2A55), x, 1.0, 0.13, body);                   // straps
+      }
+    }
+    // arms: pivots at the shoulders, hanging down, so throwCard / rule can swing them forward
+    const sw = outfit === "judge" ? 0.27 : 0.25, al = outfit === "judge" ? 0.5 : 0.48;
+    const ar = [pivot(-sw, 1.18, 0), pivot(sw, 1.18, 0)];
+    ar.forEach((p, i) => {
+      const sl = solid(new THREE.CylinderGeometry(outfit === "judge" ? 0.07 : 0.055, outfit === "judge" ? 0.11 : 0.05, al, 6), look.sleeve, p, 0, -al / 2, 0);
+      sl.rotation.z = (i ? -1 : 1) * 0.08;
+      if (outfit === "counsel") solid(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 6), 0xF4F1EA, p, (i ? 1 : -1) * 0.02, -al + 0.01, 0);   // shirt cuffs
+      solid(new THREE.IcosahedronGeometry(0.05, 0), skin, p, (i ? 1 : -1) * 0.02, -al - 0.04, 0);
+    });
+    arms = ar;
+    solid(new THREE.CylinderGeometry(0.05, 0.06, 0.08, 6), skin, body, 0, 1.25, 0);                                     // neck
+    // head
+    headPivot.position.set(0, 1.28, 0);
+    const head = solid(new THREE.IcosahedronGeometry(0.15, 1), skin, headPivot, 0, 0.15, 0); head.scale.set(0.95, 1.08, 1);
+    solid(new THREE.IcosahedronGeometry(0.03, 0), skinDk, headPivot, -0.148, 0.14, 0); solid(new THREE.IcosahedronGeometry(0.03, 0), skinDk, headPivot, 0.148, 0.14, 0);   // ears
+    solid(new THREE.ConeGeometry(0.022, 0.05, 4), skinDk, headPivot, 0, 0.13, 0.155).rotation.x = Math.PI / 2;          // nose
+    eye(0.018, -0.055, 0.18, 0.135); eye(0.018, 0.055, 0.18, 0.135);
+    box(0.06, 0.01, 0.01, flatMat(0x8A4E3A), 0, 0.07, 0.143, headPivot);                                               // mouth
+    // hair
+    const cap = solid(new THREE.SphereGeometry(0.162, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2.1), look.hair, headPivot, 0, 0.17, -0.012);
+    cap.scale.set(1, 0.95, 1.04);
+    if (outfit === "judge") {        // grey, a little fuller at the sides, and reading glasses
+      for (const x of [-0.13, 0.13]) solid(new THREE.IcosahedronGeometry(0.055, 0), look.hair, headPivot, x, 0.16, -0.05);
+      for (const x of [-0.055, 0.055]) { const r = solid(new THREE.TorusGeometry(0.03, 0.006, 4, 12), 0x2A2420, headPivot, x, 0.18, 0.148); r.material.metalness = 0.3; }
+      box(0.05, 0.006, 0.006, flatMat(0x2A2420), 0, 0.185, 0.15, headPivot);
+    } else if (outfit === "counsel") {   // short, side-parted
+      solid(new THREE.BoxGeometry(0.24, 0.05, 0.12), look.hair, headPivot, 0.02, 0.27, 0.06).rotation.z = -0.12;
+    } else {                         // student: a messier fringe
+      for (const [x, rz] of [[-0.07, 0.4], [0, 0.1], [0.07, -0.3]]) { const f = solid(new THREE.ConeGeometry(0.05, 0.1, 4), look.hair, headPivot, x, 0.25, 0.1); f.rotation.set(1.9, 0, rz); }
+    }
+  } else if (kind === "crane") {     // Docket on the phone: a paper crane
+    const T = [0, 0.32, 0], B = [0, -0.12, 0], Fr = [0, 0.08, 0.34], Bk = [0, 0.08, -0.34], L = [-0.17, 0.08, 0], R = [0.17, 0.08, 0];
+    paper([[T, Fr, L], [T, L, Bk], [T, Bk, R], [T, R, Fr], [B, L, Fr], [B, Bk, L], [B, R, Bk], [B, Fr, R]], color, body);
+    const wl = pivot(-0.1, 0.16, 0), wr = pivot(0.1, 0.16, 0);
+    const wing = [[[0, 0, 0.3], [0, 0, -0.32], [0.42, 0.2, -0.02]], [[0, 0, -0.32], [0.78, 0.46, -0.1], [0.42, 0.2, -0.02]], [[0, 0, 0.3], [0.42, 0.2, -0.02], [0.78, 0.46, -0.1]]];
+    paper(wing, color, wr); paper(mirror(wing), color, wl);
+    arms = [wl, wr];
+    paper([[[0, 0.08, -0.28], [0.035, 0.1, -0.3], [0, 0.8, -0.72]], [[0, 0.08, -0.28], [0, 0.8, -0.72], [-0.035, 0.1, -0.3]]], color, body);
+    headPivot.position.set(0, 0.1, 0.3);
+    paper([[[-0.035, 0, 0], [0.035, 0, 0], [0, 0.72, 0.2]], [[0.035, 0, 0], [0, 0.05, -0.06], [0, 0.72, 0.2]], [[0, 0.05, -0.06], [-0.035, 0, 0], [0, 0.72, 0.2]]], color, headPivot);
+    paper([[[0, 0.75, 0.2], [-0.04, 0.63, 0.2], [0, 0.67, 0.5]], [[0, 0.75, 0.2], [0, 0.67, 0.5], [0.04, 0.63, 0.2]]], color, headPivot);
+    eye(0.03, -0.038, 0.69, 0.27); eye(0.03, 0.038, 0.69, 0.27);
+  } else if (kind === "turtle") {    // the Guardian: a paper turtle that protects her status
+    const sh = solid(new THREE.CylinderGeometry(0.18, 0.78, 0.5, 6), color, body, 0, 0.4, 0); sh.rotation.y = Math.PI / 6;
+    const rim = solid(new THREE.CylinderGeometry(0.84, 0.84, 0.08, 6), light, body, 0, 0.14, 0); rim.rotation.y = Math.PI / 6;
+    headPivot.position.set(0, 0.24, 0.76);
+    paper([[[-0.15, 0, 0], [0.15, 0, 0], [0, 0.18, 0.3]], [[0.15, 0, 0], [0, -0.06, 0.26], [0, 0.18, 0.3]], [[0, -0.06, 0.26], [-0.15, 0, 0], [0, 0.18, 0.3]]], light, headPivot);
+    eye(0.035, -0.07, 0.14, 0.2); eye(0.035, 0.07, 0.14, 0.2);
+    const ll = pivot(-0.55, 0.12, 0.45), lr = pivot(0.55, 0.12, 0.45);
+    const leg = [[[0, 0, 0], [0.2, -0.1, 0.18], [0.04, -0.1, 0.32]]];
+    paper(mirror(leg), light, ll); paper(leg, light, lr); arms = [ll, lr];
+    paper([[[0.45, 0.1, -0.5], [0.66, 0, -0.6], [0.5, 0, -0.75]]], light, body); paper(mirror([[[0.45, 0.1, -0.5], [0.66, 0, -0.6], [0.5, 0, -0.75]]]), light, body);
+  } else if (kind === "frog") {      // the Ledger: a paper jumping frog that watches the bank
+    const BL = [-0.45, 0, -0.35], BR = [0.45, 0, -0.35], FL = [-0.38, 0, 0.35], FR = [0.38, 0, 0.35], T = [0, 0.55, -0.05], N = [0, 0.3, 0.45];
+    paper([[BL, BR, T], [BR, FR, T], [FR, N, T], [N, FL, T], [FL, BL, T], [FL, FR, N]], color, body);
+    headPivot.position.set(0, 0.46, 0.12);
+    for (const x of [-0.2, 0.2]) { solid(new THREE.SphereGeometry(0.13, 10, 8), color, headPivot, x, 0.06, 0); eye(0.055, x, 0.1, 0.1); }
+    const ll = pivot(-0.42, 0.05, -0.15), lr = pivot(0.42, 0.05, -0.15);
+    const leg = [[[0, 0, 0], [0.3, 0.12, -0.3], [0.32, 0, 0.12]]];
+    paper(mirror(leg), color, ll); paper(leg, color, lr); arms = [ll, lr];
+  } else if (kind === "clerk") {     // Payroll: a folded filing box with flaps
+    solid(new THREE.BoxGeometry(0.95, 1.15, 0.75), color, body, 0, 0.92, 0);
+    const fl = pivot(-0.475, 1.5, 0), fr = pivot(0.475, 1.5, 0);
+    const flap = [[[0, 0, 0.37], [0, 0, -0.37], [0.42, 0, -0.37]], [[0, 0, 0.37], [0.42, 0, -0.37], [0.42, 0, 0.37]]];
+    paper(flap, light, fr); paper(mirror(flap), light, fl); arms = [fl, fr];
+    headPivot.position.set(0, 1.25, 0.38);
+    eye(0.05, -0.16, 0, 0.01); eye(0.05, 0.16, 0, 0.01);
+    paper([[[-0.06, -0.3, 0.385], [0.06, -0.3, 0.385], [0, -0.62, 0.385]]], 0x3A3F46, body);
+  }
+  g.scale.setScalar(scale);
+  scene.add(g);
+  return { kind, group: g, body, headPivot, arms, eyes, label, mood: "idle", talk: 0, lean: 0, hurt: 0, joy: 0, slump: 0, seed: Math.random() * 3 };
+}
+function drawFace(agent, mood) {
+  agent.mood = mood;
+  const sy = { idle: 1, code: 1, hurt: 0.18, joy: 0.4, sad: 0.55 }[mood] ?? 1;
+  for (const e of agent.eyes) e.scale.set(mood === "hurt" ? 1.3 : 1, sy, 1);
+}
+function plate(text, sub, w = 1.5, h = 0.42) {
+  const t = tex(640, 180, (ctx, cw, ch) => {
+    ctx.fillStyle = "#EFE6D6"; ctx.fillRect(0, 0, cw, ch);
+    ctx.strokeStyle = "#B9A98E"; ctx.lineWidth = 6; ctx.strokeRect(8, 8, cw - 16, ch - 16);
+    ctx.fillStyle = "#17120E"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    let s = 60; do { ctx.font = F(800, s); s -= 2; } while (ctx.measureText(text).width > cw - 60 && s > 20);
+    ctx.fillText(text, cw / 2, sub ? 70 : ch / 2);
+    if (sub) { let s2 = 34; do { ctx.font = M(500, s2); s2 -= 1; } while (ctx.measureText(sub).width > cw - 60 && s2 > 14); ctx.fillStyle = "#5C4F40"; ctx.fillText(sub, cw / 2, 128); }
+  });
+  // polygon offset: a plate sits a hair in front of its wall or bench and must always win the depth test
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 }));
+  return m;
+}
+
+/* ---------- Arena 1: courtroom (x = 0) ---------- */
+const wood = mat(0xB0835A, 0.75), woodDark = mat(0x84603F, 0.8), brass = mat(0xB8925A, 0.35, 0.6);
+const wallTex = tex(512, 512, (ctx, w, h) => {
+  ctx.fillStyle = "#E7DCCB"; ctx.fillRect(0, 0, w, h);
+  for (let x = 0; x < 4; x++) { ctx.strokeStyle = "#D8CAB4"; ctx.lineWidth = 10; ctx.strokeRect(x * 128 + 14, 30, 100, 300); ctx.strokeRect(x * 128 + 14, 360, 100, 130); }
+});
+wallTex.wrapS = THREE.RepeatWrapping; wallTex.repeat.set(5, 1);
+// one paper-panelled backdrop per arena, so the call and the vault sit in the same room as the hearing
+const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.85 });
+for (const x of [0, 60, 120]) box(30, 9, 0.4, wallMat, x, 4.5, -7);
+const bench = box(5.2, 1.9, 1.4, wood, 0, 0.95, -3.6);
+box(5.5, 0.14, 1.7, woodDark, 0, 1.97, -3.6);
+const benchPlate = plate("The Judge", "rules in code · Docket's Rules agent", 2.4, 0.66);
+benchPlate.position.set(0, 1.05, -2.88); scene.add(benchPlate);
+for (const s of [-1, 1]) box(0.5, 6.5, 0.5, woodDark, 7.2 * s, 3.25, -6.4);
+const railMat = mat(0x9C7350, 0.6);
+for (let i = -6; i <= 6; i++) if (Math.abs(i) > 1) box(0.08, 0.9, 0.08, railMat, i * 0.9, 0.45, 3.2);
+box(11.4, 0.1, 0.14, railMat, 0, 0.92, 3.2);
+// seal on the wall: an original geometric emblem (scales of a ledger), not any real seal.
+// Disc and sign share one group facing the room, clear of the wall, so neither can cut through the other.
+const sealGroup = new THREE.Group(); sealGroup.position.set(0, 5.2, -6.7); scene.add(sealGroup);
+const seal = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.08, 48), mat(0xC9AE82, 0.6, 0.3));   // duller than the gavel brass: the warm light made it glare behind the judge
+seal.rotation.x = Math.PI / 2; sealGroup.add(seal);
+const sealFace = plate("Docket", "every claim gets a hearing", 1.7, 0.48);
+sealFace.position.z = 0.07; sealGroup.add(sealFace);
+
+const adv = makeAgent({ kind: "person", outfit: "student", color: 0x4F7CF0, scale: 1.2, label: "Advocate" });
+adv.group.position.set(-3.2, 0.54, 0.8); adv.group.rotation.y = 0.5; adv.home = adv.group.position.clone();
+const counsel = makeAgent({ kind: "person", outfit: "counsel", color: 0xE8743B, scale: 1.2, label: "Payroll's Counsel" });
+counsel.group.position.set(3.2, 0.54, 0.8); counsel.group.rotation.y = -0.5; counsel.home = counsel.group.position.clone();
+const judge = makeAgent({ kind: "person", outfit: "judge", color: 0x17171B, scale: 1.3, label: "Judge" });
+judge.group.position.set(0, 1.0, -4.4); judge.home = judge.group.position.clone();
+
+// Each side stands on a folded-paper pedestal with its name on the front
+function pedestal(x, z, rotY, name, sub, accent) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  const p = solid(new THREE.CylinderGeometry(0.9, 1.0, 0.5, 6), 0xE4D8C4, g, 0, 0.25, 0); p.rotation.y = Math.PI / 6;
+  const ring = solid(new THREE.CylinderGeometry(0.92, 0.92, 0.04, 6), accent, g, 0, 0.52, 0); ring.rotation.y = Math.PI / 6;
+  const pl = plate(name, sub, 1.36, 0.38); pl.position.set(0, 0.27, 0.86); pl.rotation.x = -0.17; g.add(pl);
+  return g;
+}
+pedestal(-3.2, 0.8, 0.5, "Advocate", "argues for the student", 0x4F7CF0);
+pedestal(3.2, 0.8, -0.5, "Payroll's Counsel", "argues for the employer", 0xE8743B);
+
+// Gavel in the judge's hand + sound block on the bench
+const gavelPivot = new THREE.Group(); gavelPivot.position.set(1.15, 2.05, -3.2); scene.add(gavelPivot);
+const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.75, 12), woodDark);
+handle.rotation.z = Math.PI / 2; handle.position.x = -0.35; handle.castShadow = true; gavelPivot.add(handle);
+const gHead = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.42, 20), wood);
+gHead.position.x = -0.72; gHead.castShadow = true; gavelPivot.add(gHead);
+gavelPivot.rotation.z = -0.5;
+box(0.5, 0.1, 0.5, woodDark, 0.45, 2.07, -3.2);
+
+// Exhibit table with the case folder
+const exhibit = new THREE.Group(); exhibit.position.set(0, 0, 0.9); scene.add(exhibit);
+box(2.2, 0.8, 1.0, wood, 0, 0.4, 0, exhibit);
+const folderMat = mat(0xC9A56E, 0.75);
+const folderBack = box(1.1, 0.04, 0.8, folderMat, 0, 0.83, 0, exhibit);
+const folderCoverPivot = new THREE.Group(); folderCoverPivot.position.set(-0.55, 0.86, 0); exhibit.add(folderCoverPivot);
+const folderCover = box(1.1, 0.03, 0.8, folderMat, 0.55, 0, 0, folderCoverPivot);
+const folderLabel = plate("Case file", "", 0.6, 0.18);
+folderLabel.rotation.x = -Math.PI / 2; folderLabel.position.set(0.55, 0.02, 0); folderCoverPivot.add(folderLabel);
+
+/* ---------- Arena 2: the call (x = 60) ---------- */
+const CX = 60;
+box(9, 4.2, 0.4, woodDark, CX, 2.6, -3.4);
+const panelFace = box(7.6, 3.2, 0.1, mat(0x4A3426, 0.7), CX, 2.7, -3.15);
+const jackMat = mat(0xC7A46A, 0.35, 0.7), holeMat = mat(0x0A0807, 0.9);
+for (let r = 0; r < 4; r++) for (let c = 0; c < 9; c++) {
+  const jx = CX - 3.2 + c * 0.8, jy = 1.55 + r * 0.72;
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.035, 8, 20), jackMat); ring.position.set(jx, jy, -3.08); scene.add(ring);
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), holeMat); hole.position.set(jx, jy, -3.085); scene.add(hole);
+}
+const jackA = new THREE.Vector3(CX - 2.4, 2.27, -3.0), jackB = new THREE.Vector3(CX + 2.4, 2.27, -3.0);
+const lamps = [jackA, jackB].map((p) => { const l = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), mat(0x4A4A44, 0.4)); l.position.set(p.x, p.y + 0.42, -3.0); scene.add(l); return l; });
+const plateA = plate("Docket", "the caller", 1.3, 0.36); plateA.position.set(jackA.x, 4.05, -3.08); scene.add(plateA);
+const plateB = plate("Payroll", "University Dining Services", 1.9, 0.36); plateB.position.set(jackB.x, 4.05, -3.08); scene.add(plateB);
+let cord = null;
+const cordMat = mat(0x2B2B2B, 0.5);
+box(2.4, 0.9, 1.1, wood, CX + 2.9, 0.45, 0.4);   // payroll desk
+const phoneBase = box(0.5, 0.16, 0.36, mat(0x111111, 0.4), CX + 3.0, 0.98, 0.4);
+const handsetPivot = new THREE.Group(); handsetPivot.position.set(CX + 3.0, 1.12, 0.4); scene.add(handsetPivot);
+const handset = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.5, 6, 12), mat(0x111111, 0.4));
+handset.rotation.z = Math.PI / 2; handset.castShadow = true; handsetPivot.add(handset);
+const caller = makeAgent({ kind: "crane", color: 0x4F7CF0, scale: 1.45, label: "Docket" });
+caller.group.position.set(CX - 2.6, 0.9, 0.6); caller.group.rotation.y = 0.45; caller.home = caller.group.position.clone();
+const headset = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.014, 6, 16, Math.PI), mat(0x15171A, 0.4));
+headset.position.set(0, 0.72, 0.2); headset.rotation.y = Math.PI / 2; caller.headPivot.add(headset);
+pedestal(CX - 2.6, 0.6, 0.45, "Docket", "the caller", 0x4F7CF0);
+const clerk = makeAgent({ kind: "clerk", color: 0x9AA3AD, scale: 1.1, label: "Payroll" });
+clerk.group.position.set(CX + 3.1, 0, -0.6); clerk.group.rotation.y = -0.35; clerk.home = clerk.group.position.clone();
+const guardian = makeAgent({ kind: "turtle", color: 0x2E9B6C, scale: 1.25, label: "Guardian" });
+guardian.group.position.set(CX - 4.4, 0, -0.4); guardian.group.rotation.y = 0.6; guardian.home = guardian.group.position.clone();
+// Letter + envelope (used if payroll stalls)
+const letterTex = tex(512, 660, (ctx, w, h) => {
+  ctx.fillStyle = "#F7F1E6"; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#17120E"; ctx.font = F(800, 30); ctx.fillText("Written request", 40, 70);
+  ctx.font = M(400, 19); ctx.fillStyle = "#3D332A";
+  const body = "To: University Dining Services Payroll. Re: refund of Social Security and Medicare withheld in error, Priya Sharma. $357.12 + $83.52 = $440.64 across 8 paychecks, Jan 12 to May 3, 2026. Calendar year 3 of 5 on F-1. Docket will follow up by phone on Tue, Oct 27.";
+  wrap(ctx, body, w - 80).forEach((l, i) => ctx.fillText(l, 40, 130 + i * 32));
+  ctx.strokeStyle = "#3F6FE0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(40, 600); ctx.bezierCurveTo(90, 560, 120, 630, 170, 585); ctx.bezierCurveTo(200, 560, 220, 610, 260, 590); ctx.stroke();
+});
+const letter = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.29), new THREE.MeshStandardMaterial({ map: letterTex, roughness: 0.85, side: THREE.DoubleSide }));
+letter.visible = false; scene.add(letter);
+const envelope = new THREE.Group(); envelope.visible = false; scene.add(envelope);
+box(1.1, 0.7, 0.04, mat(0xE8DCC6, 0.85), 0, 0, 0, envelope);
+const flapPivot = new THREE.Group(); flapPivot.position.set(0, 0.35, 0.025); envelope.add(flapPivot);
+const flap = new THREE.Mesh(new THREE.CircleGeometry(0.55, 3), mat(0xDCCFB6, 0.85)); flap.rotation.z = -Math.PI / 2; flap.scale.set(0.62, 1, 1); flap.position.y = -0.2; flapPivot.add(flap);
+
+/* ---------- Arena 3: the money (x = 120) ---------- */
+const MX = 120;
+const vault = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 0.5, 64), mat(0x6E737A, 0.35, 0.8));
+vault.rotation.x = Math.PI / 2; vault.position.set(MX, 3.1, -3.6); vault.castShadow = true; scene.add(vault);
+const wheel = new THREE.Group(); wheel.position.set(MX, 3.1, -3.3); scene.add(wheel);
+for (let i = 0; i < 3; i++) { const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.2, 10), brass); sp.rotation.z = i * Math.PI / 3; wheel.add(sp); }
+wheel.add(new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.07, 10, 48), brass));
+box(10, 6.4, 0.3, woodDark, MX, 3.2, -4.0);
+box(1.8, 1.0, 1.2, wood, MX, 0.5, 0.6);   // pedestal
+function roundedRect(w, h, r) {
+  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r);
+  s.quadraticCurveTo(x + w, y + h, x + w - r, y + h); s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s;
+}
+const cardFront = tex(1024, 640, () => {});
+var BANK = { name: "Priya Sharma", amount: "$440.64", from: "University Dining Payroll" };
+function drawCard(refunded) {
+  const { ctx, canvas: c } = cardFront.userData, w = c.width, h = c.height;
+  ctx.fillStyle = "#FBF8F2"; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#2B231C"; ctx.font = F(800, 52); ctx.fillText("Your bank", 64, 104);
+  ctx.fillStyle = "#6F6357"; ctx.font = M(400, 30); ctx.fillText(`Checking · ${BANK.name}`, 64, 156);
+  ctx.font = M(400, 28); ctx.fillStyle = "#6F6357"; ctx.fillText("8 of 8 paychecks matched to a deposit", 64, 236);
+  if (refunded) {
+    ctx.fillStyle = "#1F8F55"; ctx.font = F(900, 96); ctx.fillText(`+${BANK.amount}`, 64, 420);
+    ctx.fillStyle = "#4A4038"; ctx.font = M(400, 30); ctx.fillText(`${BANK.from} · matched`, 64, 474);
+  } else {
+    ctx.fillStyle = "#4A4038"; ctx.font = M(400, 32); ctx.fillText(`Watching for exactly ${BANK.amount}`, 64, 420);
+  }
+  cardFront.needsUpdate = true;
+}
+drawCard(false);
+cardFront.repeat.set(1 / 4.2, 1 / 2.6); cardFront.offset.set(0.5, 0.5);
+const cardGeo = new THREE.ExtrudeGeometry(roundedRect(4.2, 2.6, 0.22), { depth: 0.06, bevelEnabled: false, curveSegments: 10 });
+const bankCard = new THREE.Mesh(cardGeo, [new THREE.MeshStandardMaterial({ map: cardFront, roughness: 0.45 }), mat(0xE2D6C2, 0.6)]);
+bankCard.position.set(MX, 2.2, 0.4); bankCard.rotation.x = -0.18; bankCard.castShadow = true; scene.add(bankCard);
+const slipTex = tex(512, 220, (ctx, w, h) => {
+  ctx.fillStyle = "#F6F0E4"; ctx.fillRect(0, 0, w, h);
+  ctx.setLineDash([10, 8]); ctx.strokeStyle = "#B9A98E"; ctx.lineWidth = 4; ctx.strokeRect(10, 10, w - 20, h - 20); ctx.setLineDash([]);
+  ctx.fillStyle = "#5C4F40"; ctx.font = M(500, 24); ctx.fillText("Refund · University Dining Payroll", 34, 62);
+  ctx.fillStyle = "#16794F"; ctx.font = F(900, 78); ctx.fillText("$440.64", 34, 160);
+});
+const slip = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.69), new THREE.MeshStandardMaterial({ map: slipTex, roughness: 0.8, side: THREE.DoubleSide }));
+slip.visible = false; scene.add(slip);
+const ledger = makeAgent({ kind: "frog", color: 0x3BAA6E, scale: 1.5, label: "Ledger" });
+ledger.group.position.set(MX - 3.2, 0, 0.9); ledger.group.rotation.y = 0.5; ledger.home = ledger.group.position.clone();
+const closedStamp = plate("Case closed", "$440.64 recovered", 2.6, 0.72);
+closedStamp.material.transparent = true; closedStamp.material.opacity = 0;
+closedStamp.position.set(MX, 4.1, 0.9); closedStamp.rotation.z = 0.08; scene.add(closedStamp);
+
+/* ---------- Flying argument cards, stamps, paper bits ---------- */
+const flyers = [];
+// An argument card looks like a Docket case-file label: cream paper, the side's colour on a thick left edge,
+// a spaced mono kicker and the point in serif, sized up so it reads from the wider shots
+function argCard(title, body, color) {
+  const t = tex(1024, 560, (ctx, w, h) => {
+    ctx.fillStyle = "#FBF7EF"; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = color; ctx.fillRect(0, 0, 30, h);
+    ctx.strokeStyle = "rgba(74,56,38,0.18)"; ctx.lineWidth = 4; ctx.strokeRect(2, 2, w - 4, h - 4);
+    ctx.fillStyle = "#7A6E62"; const kick = title.toUpperCase(); let ts = 34;
+    do { ctx.font = M(600, ts); ts -= 1; } while (ctx.measureText(kick).width > w - 120 && ts > 16);
+    ctx.fillText(kick, 72, 84);
+    // shrink the text until every line fits on the card
+    let size = 76, lines;
+    for (;;) { ctx.font = F(600, size, "Fraunces"); lines = wrap(ctx, body, w - 130); if (lines.length * size * 1.18 <= h - 150 || size <= 30) break; size -= 2; }
+    ctx.fillStyle = "#17120E";
+    lines.forEach((l, i) => ctx.fillText(l, 72, 130 + size + i * size * 1.18));
+  });
+  const m = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.42, 0.02), [mat(0xEDE4D3), mat(0xEDE4D3), mat(0xEDE4D3), mat(0xEDE4D3), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }), mat(0xEDE4D3)]);
+  m.castShadow = true; m.userData.isArg = true; scene.add(m); return m;
+}
+// `land`: { scale, quat } to shrink and settle the mesh into a resting pose on arrival instead of facing the camera
+function fly(mesh, from, to, dur = 900, arc = 1.4, spin = 0, land = null) {
+  return new Promise((resolve) => {
+    flyers.push({ mesh, from: from.clone(), to: to.clone(), t: 0, dur: dur / SPEED, arc, spin, resolve, land,
+      s0: mesh.scale.x, q0: mesh.quaternion.clone() });
+  });
+}
+// Removes a mesh made for one moment and frees its GPU memory, so replays don't pile up textures.
+function drop(m) {
+  scene.remove(m);
+  m.geometry.dispose();
+  for (const mt of [].concat(m.material)) {
+    if (mt.map) { mt.map.dispose(); const i = texRegistry.findIndex((r) => r.t === mt.map); if (i >= 0) texRegistry.splice(i, 1); }
+    mt.dispose();
+  }
+}
+function stampMesh(text, color) {
+  const t = tex(900, 260, (ctx, w, h) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 14; ctx.strokeRect(14, 14, w - 28, h - 28);
+    ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = F(900, 150);
+    ctx.fillText(text, w / 2, h / 2 + 6);
+  });
+  // drawn over the scene like a HUD stamp: no depth test, so nearby props can't flicker through it
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.98), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0, depthWrite: false, depthTest: false }));
+  m.renderOrder = 10;
+  scene.add(m); return m;
+}
+const bits = [];
+const bitGeo = new THREE.PlaneGeometry(0.12, 0.08), bitMats = {};   // shared: bursts never allocate new GPU buffers
+function burst(at, color = 0xF2E8D5, n = 46, power = 1) {
+  const m = bitMats[color] ??= new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, roughness: 0.9 });
+  for (let i = 0; i < n; i++) {
+    const p = new THREE.Mesh(bitGeo, m);
+    p.position.copy(at);
+    const a = Math.random() * Math.PI * 2, s = (1.2 + Math.random() * 2.4) * power;
+    bits.push({ m: p, v: new THREE.Vector3(Math.cos(a) * s, 2 + Math.random() * 3 * power, Math.sin(a) * s * 0.6), r: new THREE.Vector3(Math.random() * 8, Math.random() * 8, Math.random() * 8), life: 2.2 });
+    scene.add(p);
+  }
+}
+
+/* ============================================================
+   Camera shots + shake
+   ============================================================ */
+// Pulled back so the figures sit smaller and the cards, plates and stamps have room to be read
+const SHOTS = {
+  title: { pos: [9.0, 5.4, 15.5], look: [0, 1.9, -1] },
+  court: { pos: [0, 5.4, 15.0], look: [0, 1.8, -1] },
+  adv: { pos: [-0.4, 3.6, 9.6], look: [-3.0, 1.75, 0.6] },   // aimed low so the figure sits above the dialog
+  counsel: { pos: [0.4, 3.6, 9.6], look: [3.0, 1.75, 0.6] },
+  judge: { pos: [0, 4.3, 6.4], look: [0, 2.7, -4] },
+  duel: { pos: [0, 3.8, 11.0], look: [0, 1.9, 0] },
+  call: { pos: [CX, 4.8, 14.0], look: [CX, 2.0, -1] },
+  caller: { pos: [CX - 0.2, 3.4, 9.0], look: [CX - 2.4, 1.6, 0.4] },
+  clerk: { pos: [CX + 0.6, 3.5, 8.6], look: [CX + 2.8, 1.9, -0.4] },
+  board: { pos: [CX, 3.4, 6.4], look: [CX, 2.7, -3.1] },
+  money: { pos: [MX, 4.0, 11.6], look: [MX, 2.2, -1] },
+  card: { pos: [MX, 3.4, 9.6], look: [MX, 2.3, 0.4] },
+  end: { pos: [MX + 7, 5.0, 14], look: [MX, 2.4, -1] }
+};
+const cam = { pos: new THREE.Vector3(...SHOTS.title.pos), look: new THREE.Vector3(...SHOTS.title.look), tPos: new THREE.Vector3(...SHOTS.title.pos), tLook: new THREE.Vector3(...SHOTS.title.look), rate: 2.2, shake: 0, orbit: true };
+function shot(name, rate = 2.4) {
+  const s = SHOTS[name];
+  cam.tPos.set(...s.pos); cam.tLook.set(...s.look); cam.rate = rate; cam.orbit = false;
+}
+function shake(a = 0.22) { if (!reduced) cam.shake = Math.max(cam.shake, a); }
+
+/* ============================================================
+   HUD helpers
+   ============================================================ */
+const hp = { left: 100, right: 100 };
+function setBars() {
+  $("b-left").style.transform = `scaleX(${hp.left / 100})`;
+  $("b-right").style.transform = `scaleX(${hp.right / 100})`;
+  setTimeout(() => {
+    $("g-left").style.transform = `scaleX(${hp.left / 100})`;
+    $("g-right").style.transform = `scaleX(${hp.right / 100})`;
+  }, 380 / SPEED);
+}
+function damage(side, n) { hp[side] = Math.max(0, Math.min(100, hp[side] - n)); setBars(); }
+function setRounds(n) {
+  boost = 1;
+  ["r1", "r2", "r3"].forEach((id, i) => { const el = $(id); el.classList.toggle("on", i + 1 === n); el.classList.toggle("done", i + 1 < n); });
+}
+function showHud(which) {
+  $("fighters").classList.toggle("show", which === "fight");
+  $("call-hud").classList.toggle("show", which === "call");
+  $("money-hud").classList.toggle("show", which === "money");
+}
+// The big word is a timed flourish. If the banner explains something (a sub line), the explanation
+// stays in the dialog until the viewer presses Next, so nothing moves on by itself.
+async function banner(text, sub, color, hold = false) {
+  const b = $("banner");
+  b.innerHTML = ""; b.className = "banner";
+  b.style.color = color;
+  // the CSS animation runs at the game's pace, so a skipped round doesn't leave a banner over the next line
+  b.style.animationDuration = `${(hold ? 0.5 : 1.9) / (SPEED * boost)}s`;
+  b.append(text);
+  void b.offsetWidth;
+  b.classList.add(hold ? "hold" : "go");
+  if (hold) return;
+  if (!sub) { await wait(1900); return; }
+  await wait(700);
+  focusDialog();
+  $("speaker").textContent = text; $("speaker").style.setProperty("--dot", color);
+  $("line").textContent = sub; $("sub").textContent = "";
+  $("choice-area").innerHTML = ""; $("btn-next").disabled = false;
+  await waitAdvance();
+  clearBanner();
+  stepBack();
+}
+function clearBanner() { const b = $("banner"); b.className = "banner"; b.innerHTML = ""; }
+async function roundCard(k, t, d) {
+  const rc = $("roundcard");
+  $("rc-k").textContent = k; $("rc-t").textContent = t; $("rc-d").textContent = d;
+  $("dialog").classList.remove("show");
+  rc.style.animationDuration = "";
+  rc.classList.remove("go", "out"); void rc.offsetWidth; rc.classList.add("hold");
+  $("rc-next").focus({ preventScroll: true });
+  await waitAdvance();
+  rc.classList.remove("hold"); rc.classList.add("out");
+  await wait(350);
+  rc.classList.remove("out");
+}
+$("rc-next").addEventListener("click", () => onAdvance());
+
+/* ============================================================
+   Dialogue engine
+   ============================================================ */
+let mode = "watch";
+let advanceResolve = null;
+let typing = null;
+const stats = { picks: 0, right: 0, wrong: 0, overruled: 0, sustained: 0, struck: 0, calls: 0, letters: 0 };
+const SPEAKERS = {
+  Judge: { color: "#8A7458", agent: () => judge },
+  Advocate: { color: "#3F6FE0", agent: () => adv },
+  "Payroll's Counsel": { color: "#D4581C", agent: () => counsel },
+  Auditor: { color: "#D4581C", agent: () => counsel },
+  Docket: { color: "#3F6FE0", agent: () => caller },
+  Payroll: { color: "#6E7782", agent: () => clerk },
+  Guardian: { color: "#1F8F55", agent: () => guardian },
+  Ledger: { color: "#1F8F55", agent: () => ledger }
+};
+// The dialog's state: the current line or choice is fully lit; between lines it steps back ("stale").
+function focusDialog(choosing = false) {
+  const d = $("dialog");
+  d.classList.add("show"); d.classList.remove("stale");
+  d.classList.toggle("choosing", choosing);
+  d.classList.toggle("watching", mode === "watch");
+}
+// Between lines (cards flying, a banner) the last line stays up but dimmed, and Next is off until the next line.
+function stepBack() { $("dialog").classList.add("stale"); $("btn-next").disabled = true; $("hint").textContent = ""; }
+function onAdvance() {
+  if (typing) { typing.finish(); return; }
+  if (advanceResolve) { const r = advanceResolve; advanceResolve = null; r(); }
+}
+$("btn-next").addEventListener("click", onAdvance);
+addEventListener("keydown", (e) => {
+  if (e.target.closest && e.target.closest("button") && (e.key === " " || e.key === "Enter")) return; // let focused buttons act
+  if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!e.repeat) onAdvance(); }   // a held key doesn't skip lines
+  if (/^[1-4]$/.test(e.key)) { const btn = document.querySelectorAll("#choice-area .choice")[Number(e.key) - 1]; if (btn && !btn.disabled) btn.click(); }
+});
+function typeText(el, text) {
+  return new Promise((resolve) => {
+    el.textContent = "";
+    let i = 0, done = false;
+    const step = () => {
+      if (done) return;
+      i += 1;
+      el.textContent = text.slice(0, i);
+      if (i >= text.length) finish(); else setTimeout(step, 24 / (SPEED * boost));
+    };
+    const finish = () => { if (done) return; done = true; el.textContent = text; typing = null; resolve(); };
+    typing = { finish };
+    if (reduced || skipping()) finish(); else step();
+  });
+}
+async function say(speaker, text, opts = {}) {
+  const sp = SPEAKERS[speaker];
+  focusDialog();
+  $("speaker").textContent = speaker;
+  $("speaker").style.setProperty("--dot", sp.color);
+  $("sub").textContent = opts.sub || "";
+  $("choice-area").innerHTML = "";
+  $("btn-next").disabled = false;
+  if (opts.shot) shot(opts.shot);
+  const a = sp.agent();
+  a.talk = 1; if (opts.lean) a.lean = 1;
+  const talkLoop = setInterval(() => drawFace(a, a.mood === "code" ? "code" : (opts.mood || "idle"), Math.random() > 0.45), 120);
+  await typeText($("line"), text);
+  clearInterval(talkLoop);
+  drawFace(a, a === judge ? "code" : (opts.mood || "idle"));
+  a.talk = 0;
+  await waitAdvance();
+  a.lean = 0;
+  stepBack();
+}
+// Nothing moves on by itself: the game waits here for Next, Space or Enter.
+// The one exception is "Skip round", which the viewer asks for.
+const skipping = () => boost > 1;
+let skipHook = null;   // set while a choice or approval is on screen, so Skip can get past it
+function waitAdvance() {
+  return new Promise((resolve) => {
+    if (skipping()) { resolve(); return; }
+    advanceResolve = resolve;
+    $("hint").textContent = "Next ▸, Space or Enter to continue";
+  });
+}
+// A choice: the viewer always picks. Nothing is pre-selected or picked for them (Skip round aside).
+function choose(prompt, options, speakerColor = "#3F6FE0") {
+  return new Promise((resolve) => {
+    const right = options.findIndex((o) => o.correct);
+    if (skipping()) { resolve(options[right]); return; }
+    focusDialog(true);
+    $("speaker").textContent = "Your move";
+    $("speaker").style.setProperty("--dot", speakerColor);
+    $("line").textContent = prompt;
+    $("sub").textContent = "";
+    $("btn-next").disabled = true;
+    $("hint").textContent = "Pick a card (or press 1–" + options.length + ")";
+    const area = $("choice-area");
+    area.innerHTML = "";
+    const grid = document.createElement("div"); grid.className = "choices"; area.append(grid);
+    const buttons = options.map((o, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "choice";
+      b.innerHTML = `<kbd>${i + 1}</kbd><b></b><span></span>`;
+      b.querySelector("b").textContent = o.label;
+      b.querySelector("span").textContent = o.detail || "";
+      b.addEventListener("click", () => pick(i));
+      grid.append(b); return b;
+    });
+    // Placeholder for the guide avatar, pinned to the right card's top-right corner
+    const slot = document.createElement("div");
+    slot.className = "avatar-slot"; slot.id = "avatar-slot"; slot.setAttribute("aria-hidden", "true");
+    slot.dataset.target = right; slot.dataset.mode = mode;
+    grid.dataset.correct = right; grid.append(slot);
+    const place = () => { const t = buttons[right]; slot.style.left = `${t.offsetLeft + t.offsetWidth - 34}px`; slot.style.top = `${t.offsetTop - 30}px`; };
+    place();
+    const ro = new ResizeObserver(place); ro.observe(grid);
+    dispatchEvent(new CustomEvent("docket:choices", { detail: { slot, correctIndex: right, buttons, mode } }));
+    let locked = false;
+    const finish = (o) => { locked = true; ro.disconnect(); skipHook = null; resolve(o); };
+    skipHook = () => finish(options[right]);
+    const pick = async (i) => {
+      if (locked) return; const o = options[i];
+      stats.picks++;
+      if (o.correct) {
+        locked = true; buttons[i].classList.add("right"); buttons.forEach((b) => (b.disabled = true));
+        stats.right++;
+        await wait(450); finish(o);
+      } else {
+        buttons[i].classList.add("wrong"); buttons.forEach((b) => (b.disabled = true));
+        stats.wrong++;
+        finish(o);
+      }
+    };
+  });
+}
+// Ask until the right card is picked (a wrong pick costs credibility).
+async function present(prompt, options, onWrong) {
+  let remaining = options.slice();
+  for (;;) {
+    const o = await choose(prompt, remaining);
+    if (o.correct) return o;
+    await onWrong(o);
+    remaining = remaining.filter((x) => x !== o);
+  }
+}
+
+/* ---------- Animated beats ---------- */
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const looseCards = [];
+async function throwCard(from, to, title, body, color) {
+  const card = argCard(title, body, color);
+  looseCards.push(card);
+  const a = from.group.position, b = to.group.position;
+  from.arms[1].rotation.x = -1.4;
+  const air = V((a.x + b.x) / 2, 2.85, 2.8);   // low enough to stay clear of the top HUD
+  await fly(card, V(a.x, 2.3, a.z + 0.4), air, 650, 0.6, 0.2);
+  await wait(1300);   // long enough to read it before it lands
+  // land on the floor in front of the target, tipped toward the room: still readable from the wide shot,
+  // but it no longer stands upright between the close-up camera and the figure
+  const tip = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2 + 0.45, 0, (Math.random() - 0.5) * 0.2));
+  await fly(card, air, V(b.x * 0.8, 0.2, Math.max(b.z + 1.6, -2.4)), 420, 0.2, 0, { scale: 0.75, quat: tip });
+  card.userData.rest = true;
+  from.arms[1].rotation.x = 0;
+  return card;
+}
+async function rule(result, reason, card) {
+  shot("judge", 3);
+  await wait(500);
+  judge.arms[1].rotation.x = -1.8;
+  await wait(260);
+  gavelPivot.userData.strike = 1;
+  shake(0.28);
+  judge.arms[1].rotation.x = 0;
+  const colors = { Overruled: "#8A7458", Sustained: "#B7791F", Struck: "#D4581C", Admitted: "#1F8F55", Dismissed: "#D4581C" };
+  const st = stampMesh(result, colors[result] || "#8A7458");
+  st.position.set(0, 3.7, -1.6); st.scale.setScalar(1.8); st.rotation.z = -0.06;
+  // only one verdict stamp on screen at a time
+  for (const old of stamps.splice(0)) drop(old);
+  st.userData.anim = { start: performance.now() };
+  stamps.push(st);
+  if (result === "Struck" && card) { burst(card.position.clone(), 0xF2E8D5, 60, 1.1); const i = looseCards.indexOf(card); if (i >= 0) looseCards.splice(i, 1); drop(card); }
+  // Every other card on the floor goes onto the record pile: a small stack lying flat on the bench's left end
+  looseCards.splice(0).forEach((c) => {
+    if (c === card && result === "Struck") return;
+    recordCount++;
+    const flat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, (recordCount % 2 ? 1 : -1) * 0.07 * recordCount));
+    c.userData.rest = true;
+    fly(c, c.position.clone(), V(-1.95, 2.05 + recordCount * 0.006, -3.45), 700, 0.6, 0, { scale: 0.42, quat: flat });
+  });
+  await say("Judge", `${result}. ${reason}`, { sub: result === "Struck" ? "Quote not found word for word in the stored source" : "" });
+}
+const stamps = [];
+let recordCount = 0;
+
+/* ============================================================
+   Round 1: the hearing
+   ============================================================ */
+let current = CASES.priya;
+let aborted = false;
+async function roundHearing() {
+  const c = current;
+  setRounds(1); showHud(null);
+  hp.left = 100; hp.right = 100; setBars();
+  $("hud-claim").textContent = c.amount ? c.claim : "Social Security + Medicare";
+  $("hud-claim").className = c.amount ? "claim" : "claim long";
+  $("hud-conditions").innerHTML = "";
+  $("f-left-role").textContent = `argues for ${c.first}`;
+  $("f-right-name").textContent = c.live ? "Auditor" : "Payroll's Counsel";
+  shot("court", 1.6);
+  await roundCard("Round 1", "The hearing", "Before Docket asks anyone for money, the claim is argued. Models argue. Code rules.");
+  showHud("fight");
+  folderCoverPivot.userData.open = 1;
+  if (c.live) return liveHearing(c);
+
+  await say("Judge", `Case ${c.id}. ${c.name}, F-1, working for ${c.employer}. The claim: Social Security and Medicare withheld that she likely didn't owe${c.amount ? ", $440.64 in total" : ""}. Advocate, open.`, { shot: "judge" });
+  await say("Advocate", `${c.first} is on an F-1 visa and works on campus. IRS Publication 519 says these taxes aren't withheld from F-1 students unless they're resident aliens.`, { shot: "adv", lean: true });
+  const exhibitA = await throwCard(adv, judge, "Exhibit A · IRS Publication 519", QUOTE, "#3F6FE0");
+  await rule("Admitted", "The quote matches the stored IRS text word for word.", exhibitA);
+  if (aborted) return;
+
+  // Objection 1: residency
+  shot("counsel");
+  counsel.lean = 1;
+  await banner("Objection!", null, "#D4581C");
+  const o1 = await throwCard(counsel, adv, "Payroll's Counsel", "After five calendar years, students can be taxed as residents.", "#D4581C");
+  adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 8); shake(0.12);
+  await say("Payroll's Counsel", "Objection. After five calendar years, F-1 students can be taxed as residents. She may owe these taxes.", { shot: "counsel" });
+  counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
+
+  if (c.key === "nadia") {
+    await present("Payroll's Counsel says she may be a resident. Present the evidence.", [
+      { label: "Arrival date · Jan 7, 2019", detail: "Her first calendar year in the US was 2019", correct: true },
+      { label: "Employer · University Dining Services", detail: "On-campus job" },
+      { label: "Medicare withheld", detail: "From her paystubs" }
+    ], async () => { damage("left", 10); await say("Judge", "Not relevant to residency. Answer the objection.", { shot: "judge" }); });
+    await say("Advocate", "She arrived January 7, 2019.", { shot: "adv", mood: "sad" });
+    await fly(o1, o1.position.clone(), V(0, 2.4, -2.2), 500, 0.3);
+    await rule("Sustained", "2019 was her first calendar year, so 2026 is year 8, past the five exempt years. She's likely taxed as a resident.", o1);
+    damage("left", 100); drawFace(adv, "sad"); adv.slump = 1; counsel.joy = 1; drawFace(counsel, "joy");
+    $("hud-claim").className = "claim long lose";
+    shot("court", 1.8);
+    await banner("Claim dismissed", "Docket won't call payroll", "#D4581C");
+    await say("Judge", "Claim dismissed. Nadia is likely a resident for tax purposes in 2026, so these taxes likely apply. Docket tells her honestly and doesn't call anyone.", { shot: "judge" });
+    return "dismissed";
+  }
+
+  await present("Payroll's Counsel says she may be a resident. Present the evidence.", [
+    { label: "Arrival date · Aug 15, 2024", detail: "2026 is her calendar year 3 of 5", correct: true },
+    { label: "Gross pay · $720.00", detail: "Per two-week paycheck" },
+    { label: "Medicare · $10.44", detail: "Per paycheck" }
+  ], async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "Not relevant to residency. Answer the objection.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
+  await say("Advocate", "She arrived August 15, 2024. That makes 2026 her calendar year 3 of 5. She's still in her exempt years.", { shot: "adv", lean: true });
+  await throwCard(adv, counsel, "Advocate", "Arrived Aug 15, 2024: year 3 of 5.", "#3F6FE0");
+  counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 25); stats.overruled++;
+  await rule("Overruled", "She arrived Aug 15, 2024, so 2026 is calendar year 3 of 5.", o1);
+  counsel.hurt = 0; drawFace(counsel, "idle");
+  if (aborted) return;
+
+  // Objection 2: is the job allowed?
+  shot("counsel"); counsel.lean = 1;
+  await banner("Objection!", null, "#D4581C");
+  const o2 = await throwCard(counsel, adv, "Payroll's Counsel", "This job may not be allowed under her visa.", "#D4581C");
+  adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 6); shake(0.1);
+  await say("Payroll's Counsel", "Objection. The exemption only covers work her visa allows. This job may not qualify.", { shot: "counsel" });
+  counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
+  await present("Is the job allowed under her F-1 visa? Present the evidence.", [
+    { label: "Employer · University Dining Services", detail: "An on-campus job", correct: true },
+    { label: "Arrival date · Aug 15, 2024", detail: "Calendar year 3 of 5" },
+    { label: "Net pay · $664.92", detail: "Per paycheck" }
+  ], async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "That doesn't show the job is allowed. Try again.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
+  await say("Advocate", "Her employer is University Dining Services. It's an on-campus job, the kind F-1 students are allowed to do.", { shot: "adv", lean: true });
+  await throwCard(adv, counsel, "Advocate", "University Dining Services: on campus.", "#3F6FE0");
+  counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 25); stats.overruled++;
+  await rule("Overruled", "The employer is University Dining Services, an on-campus job.", o2);
+  counsel.hurt = 0; drawFace(counsel, "idle");
+  if (aborted) return;
+
+  // Objection 3: a made-up quote gets struck
+  shot("counsel"); counsel.lean = 1;
+  const o3 = await throwCard(counsel, judge, "Payroll's Counsel cites", "“All student wages are subject to FICA.”", "#D4581C");
+  await say("Payroll's Counsel", "The rule is clear: “All student wages are subject to FICA.”", { shot: "counsel" });
+  counsel.lean = 0;
+  await present("Counsel quoted a rule. What does the Advocate do?", [
+    { label: "Ask the Judge to check it", detail: "Against the stored IRS text", correct: true },
+    { label: "Accept the quote", detail: "Counsel sounds sure" },
+    { label: "Argue it's unfair", detail: "Without checking" }
+  ], async () => { damage("left", 12); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "Docket never takes a quote on trust. Every quote gets checked.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
+  await say("Advocate", "Your Honor, please check that quote against IRS Publication 519.", { shot: "adv", lean: true });
+  counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 30); stats.struck++;
+  await rule("Struck", "That sentence doesn't appear in IRS Publication 519. It's struck from the record.", o3);
+  await banner("Made-up rule caught", "An AI agent invented a quote. Docket's code checked it against the IRS text and threw it out.", "#D4581C");
+  counsel.hurt = 0; drawFace(counsel, "idle");
+  if (aborted) return;
+
+  // Objection 4: employer first (sustained — becomes a condition)
+  shot("counsel"); counsel.lean = 1;
+  const o4 = await throwCard(counsel, adv, "Payroll's Counsel", "The refund has to be requested from the employer first.", "#D4581C");
+  await say("Payroll's Counsel", "Objection. A refund like this has to be requested from the employer first, not the IRS.", { shot: "counsel" });
+  counsel.lean = 0;
+  await present("Counsel says: ask the employer first. How does the Advocate answer?", [
+    { label: "Agree: ask payroll first", detail: "IRS forms only if payroll refuses", correct: true },
+    { label: "Skip payroll, go to the IRS", detail: "Faster, maybe" }
+  ], async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "The IRS route starts with the employer. That's the rule.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
+  await say("Advocate", "Agreed. Docket will ask payroll first, and turn to the IRS only if payroll refuses.", { shot: "adv" });
+  damage("right", 5); stats.sustained++;
+  await rule("Sustained", "Ask payroll first. IRS forms only if payroll refuses. Added as a condition.", o4);
+  const chip = document.createElement("span"); chip.textContent = "Condition: ask payroll first"; $("hud-conditions").append(chip);
+  if (aborted) return;
+
+  // Ruling
+  drawFace(counsel, "sad"); counsel.slump = 1; adv.joy = 1; drawFace(adv, "joy");
+  $("hud-claim").className = "claim win";
+  shot("duel", 1.8);
+  burst(V(0, 3.4, 0.6), 0x43D18A, 40, 0.8);
+  await banner("Claim stands", "$440.64 · ask payroll first", "#1F8F55");
+  await say("Judge", "The claim stands: $440.64. Docket may ask University Dining Services payroll for the refund.", { shot: "judge" });
+  return "stands";
+}
+
+/* ============================================================
+   Round 2: the call
+   ============================================================ */
+let payrollWill = "stall";
+function plugCord() {
+  const mid = jackA.clone().add(jackB).multiplyScalar(0.5); mid.y -= 1.1; mid.z += 0.5;
+  const curve = new THREE.CatmullRomCurve3([jackA, jackA.clone().add(V(0.3, -0.6, 0.3)), mid, jackB.clone().add(V(-0.3, -0.6, 0.3)), jackB]);
+  cord = new THREE.Mesh(new THREE.TubeGeometry(curve, 80, 0.04, 8, false), cordMat);
+  cord.castShadow = true; cord.userData.grow = 0; cord.geometry.setDrawRange(0, 0); scene.add(cord);
+}
+function stepState(id, cls) { const el = $(id); el.className = cls; }
+async function roundCall() {
+  if (current.live) return liveCall(current);
+  setRounds(2); showHud(null);
+  for (const old of stamps.splice(0)) drop(old);
+  shot("call", 1.4);
+  await roundCard("Round 2", "The call", "With the ruling in hand, Docket calls payroll. It says it's an AI. It never mentions her hours.");
+  showHud("call");
+  ["cs1", "cs2", "cs3", "cs4"].forEach((id) => stepState(id, ""));
+  await say("Docket", "The court said: ask payroll first. May I call University Dining Services payroll for you?", { shot: "caller", lean: true });
+  // Approval: a signature
+  await new Promise((resolve) => {
+    focusDialog(true);
+    $("speaker").textContent = "Your approval";
+    $("speaker").style.setProperty("--dot", "#3F6FE0");
+    $("line").textContent = "One approval places exactly one call.";
+    $("sub").textContent = "";
+    $("btn-next").disabled = true;
+    $("hint").textContent = "Approve to place the call";
+    $("choice-area").innerHTML = `<div class="sign-row"><button class="sign-btn" id="btn-sign" type="button">Approve the call</button><svg class="sig" id="sig" viewBox="0 0 200 44" aria-hidden="true"><path d="M6 30 C 26 6, 36 40, 56 22 S 82 10, 96 28 S 126 36, 140 18 S 170 12, 194 26"/></svg></div>`;
+    let signed = false;
+    const go = () => {
+      if (signed) return; signed = true; skipHook = null;
+      $("btn-sign").disabled = true; $("sig").classList.add("go"); stats.calls++;
+      wait(900).then(resolve);
+    };
+    if (skipping()) { go(); return; }
+    skipHook = go;
+    $("btn-sign").addEventListener("click", go);
+    $("btn-sign").focus({ preventScroll: true });
+  });
+  stepState("cs1", "ok");
+  shot("board", 2.2);
+  stepState("cs2", "on");
+  plugCord();
+  await wait(1300);
+  lamps[0].material.color.set(0x43D18A);
+  handsetPivot.userData.ring = 1;
+  await wait(900);
+  lamps[1].material.color.set(0x43D18A);
+  handsetPivot.userData.ring = 0; handsetPivot.userData.lift = 1;
+  stepState("cs2", "ok"); stepState("cs3", "on");
+  await say("Docket", "Hi, I'm an AI assistant calling on behalf of Priya Sharma, with her permission.", { shot: "caller" });
+  await say("Payroll", "Okay. What's this about?", { shot: "clerk" });
+  await say("Docket", "Social Security and Medicare were withheld from her 8 paychecks, $440.64 in total. As an F-1 student in calendar year 3 of 5, she's likely exempt. Could you refund it and stop withholding going forward?", { shot: "caller", lean: true });
+  await say("Payroll", "Isn't she a resident by now? We withhold for residents. And how many hours does she work?", { shot: "clerk" });
+  await present("Payroll pushed back. What does Docket use?", [
+    { label: "Ruling 1 · Year 3 of 5", detail: "Overruled in the hearing", correct: true },
+    { label: "Mention her 24-hour week", detail: "Answer the hours question" },
+    { label: "Hang up", detail: "Try another day" }
+  ], async (o) => {
+    if (o.label.startsWith("Mention")) {
+      guardian.lean = 1; drawFace(guardian, "hurt");
+      await say("Guardian", "Stop. Her hours have nothing to do with this refund, and mentioning them could put her visa status at risk. Docket never brings them up.", { shot: "caller" });
+      guardian.lean = 0; drawFace(guardian, "idle");
+    } else {
+      await say("Guardian", "Don't give up on a claim that just won its hearing. Use the ruling.", { shot: "caller" });
+    }
+  });
+  await say("Docket", "She arrived August 15, 2024, so 2026 is her third calendar year of five. The exemption still applies. I can't discuss anything beyond this refund.", { shot: "caller", lean: true });
+  stepState("cs3", "ok");
+  if (payrollWill === "agree") {
+    await say("Payroll", "Understood. We'll refund it with the next pay run and stop the withholding.", { shot: "clerk" });
+    stepState("cs4", "ok");
+    await banner("Payroll agreed", "Refund promised with the next pay run", "#1F8F55");
+  } else {
+    await say("Payroll", "I'd need to check with our tax team. I can't commit to a date.", { shot: "clerk" });
+    stepState("cs4", "warn");
+    await say("Docket", "Understood. I'll send the request in writing today and follow up on Tuesday, October 27.", { shot: "caller" });
+    // Letter: appears, folds, goes into the envelope, flies to payroll
+    letter.visible = true; letter.position.set(CX - 1.2, 2.6, 1.6); letter.rotation.set(0, 0.2, 0); letter.scale.set(1, 1, 1);
+    shot("call", 2.4);
+    await wait(900);
+    letter.userData.fold = 1;
+    await wait(900);
+    envelope.visible = true; envelope.position.set(CX - 1.2, 2.2, 1.6); flapPivot.rotation.x = -2.6;
+    await fly(letter, letter.position.clone(), V(CX - 1.2, 2.25, 1.62), 400, 0.1);
+    letter.visible = false; flapPivot.userData.close = 1;
+    await wait(500);
+    await fly(envelope, envelope.position.clone(), V(CX + 2.6, 1.15, 0.5), 900, 1.4, 1.5);
+    stats.letters++;
+    await banner("Payroll stalled", "Letter sent · follow-up Tue, Oct 27", "#B7791F");
+  }
+}
+
+/* ============================================================
+   Round 3: the money
+   ============================================================ */
+async function roundMoney() {
+  if (current.live) return liveMoney(current);
+  setRounds(3); showHud(null);
+  shot("money", 1.4);
+  await roundCard("Round 3", "The money", "Docket doesn't stop at a promise. It watches the bank until the exact amount lands.");
+  showHud("money");
+  drawCard(false);
+  $("money").innerHTML = "$0.00<small>recovered of $440.64</small>"; $("money").className = "money";
+  $("date-chip").textContent = "Oct 24, 2026";
+  await say("Ledger", "Watching Priya's Capital One account for a deposit of exactly $440.64 from University Dining Payroll.", { shot: "money", lean: true });
+  await new Promise((resolve) => {
+    focusDialog(true);
+    $("speaker").textContent = "Your move";
+    $("speaker").style.setProperty("--dot", "#1F8F55");
+    $("line").textContent = "Time passes. Payroll's next pay run is in two weeks.";
+    $("sub").textContent = "Simulated: the refund is posted to a Capital One Nessie test account";
+    $("btn-next").disabled = true; $("hint").textContent = "Fast-forward when you're ready";
+    $("choice-area").innerHTML = `<div class="sign-row"><button class="sign-btn" id="btn-ff" type="button">Fast-forward 2 weeks ▸▸</button></div>`;
+    let done = false;
+    const go = () => { if (done) return; done = true; skipHook = null; $("btn-ff").disabled = true; resolve(); };
+    if (skipping()) { go(); return; }
+    skipHook = go;
+    $("btn-ff").addEventListener("click", go);
+    $("btn-ff").focus({ preventScroll: true });
+  });
+  const days = ["Oct 27", "Oct 30", "Nov 2", "Nov 5", "Nov 7"];
+  for (const d of days) { $("date-chip").textContent = d + ", 2026"; wheel.userData.spin = 1; await wait(320); }
+  wheel.userData.spin = 0;
+  shot("card", 2.2);
+  slip.visible = true; slip.position.set(MX, 6.5, 1.4); slip.rotation.set(0.2, 0, 0.3);
+  await fly(slip, slip.position.clone(), V(MX, 2.25, 0.55), 1100, 0.8, 2.2);
+  slip.visible = false;
+  drawCard(true);
+  shake(0.12);
+  burst(V(MX, 2.6, 0.8), 0x43D18A, 36, 0.7);
+  const t0 = performance.now();
+  await new Promise((resolve) => {
+    const tick = () => {
+      const k = Math.min(1, (performance.now() - t0) / (900 / SPEED));
+      $("money").innerHTML = `$${(440.64 * k).toFixed(2)}<small>recovered of $440.64</small>`;
+      if (k < 1) requestAnimationFrame(tick); else { $("money").className = "money win"; resolve(); }
+    };
+    tick();
+  });
+  ledger.joy = 1; drawFace(ledger, "joy");
+  await say("Ledger", "Deposit matched: $440.64 from University Dining Payroll. Closing the case.", { shot: "card", mood: "joy" });
+  shot("end", 1.6);
+  closedStamp.userData.show = 1;
+  burst(V(MX, 4.2, 1), 0xF2E8D5, 70, 1.2);
+  await banner("Case closed", "$440.64 recovered", "#1F8F55");
+}
+
+/* ============================================================
+   Live case: the student file in Convex, as Docket's agents left it.
+   The hearing below is the one the Tax and Auditor agents actually held (hearings table);
+   the approval, the payroll call and the refund are the real case moving through its states.
+   Read and written through Convex's HTTP API, so this page needs no client library.
+   ============================================================ */
+const CONVEX = (document.querySelector('meta[name="convex-url"]')?.content || params.get("convex") || "").replace(/\/$/, "");
+// Set by the build that serves this page: the deployed game opens on the live case, and posts the
+// refund through its own endpoint (/api/release-refund on Vercel, /__docket/release-refund in dev).
+const metaOf = (name) => document.querySelector(`meta[name="${name}"]`)?.content;
+const DEFAULT_CASE = params.get("case") || metaOf("docket-default-case");
+const REFUND_ENDPOINT = metaOf("docket-refund-endpoint") || "/__docket/release-refund";
+const OBJECTION = {
+  missing_visa_or_arrival_data: "Missing visa or arrival date",
+  employer_is_contractor: "Is this contractor work?",
+  year_count_boundary: "Past the 5 exempt years?",
+  student_exception_applies: "A different exemption may apply",
+  medicare_recovery_uncertain: "Can Medicare be recovered?",
+  school_in_session: "Was school in session that week?"
+};
+async function convex(kind, path, args = {}) {
+  const r = await fetch(`${CONVEX}/api/${kind}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path, args, format: "json" }) });
+  const j = await r.json();
+  if (j.status !== "success") throw new Error(j.errorMessage || `${path} failed`);
+  return j.value;
+}
+const dollars = (cents) => `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const longDate = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const realWait = (ms) => new Promise((r) => setTimeout(r, ms));
+// Ask Convex until `done(file)` holds or time runs out; `onTick` gets each fresh file.
+async function pollFile(done, seconds, onTick) {
+  const stop = Date.now() + seconds * 1000;
+  for (;;) {
+    let file = null;
+    try { file = await convex("query", "game:caseFile"); } catch (e) { console.warn("Docket live:", e); }
+    if (file) { current.file = file; onTick && onTick(file); if (done(file)) return file; }
+    if (Date.now() > stop || !running) return file;
+    await realWait(2000);
+  }
+}
+function liveCase(file) {
+  const s = file.student, f = file.finding;
+  const arrivalYear = Number(s.arrivalDate.slice(0, 4));
+  const payYear = f?.payYear || new Date().getFullYear();
+  return {
+    key: "live", live: true, id: "LIVE", name: s.name, first: s.name.split(" ")[0],
+    arrival: longDate(s.arrivalDate), year: payYear - arrivalYear + 1, visa: s.visa,
+    employer: f?.employer || s.employer || "the employer",
+    claim: f ? dollars(f.amountCents) : "No finding yet", amount: f ? f.amountCents / 100 : 0, file
+  };
+}
+async function loadLive() {
+  if (!CONVEX) return;
+  let file;
+  try { file = await convex("query", "game:caseFile"); } catch (e) { console.warn("Docket live:", e); return; }
+  if (!file) return;
+  const keep = current && current.key === "live";
+  CASES.live = liveCase(file);
+  if (keep) current = CASES.live;
+  const c = CASES.live, h = file.hearing;
+  $("case-live").hidden = false;
+  document.querySelector(".cases").classList.add("three");
+  $("live-name").textContent = c.name;
+  $("live-facts").innerHTML = "";
+  $("live-facts").append(`${c.visa} · arrived ${c.arrival} · calendar year ${c.year} of 5`, document.createElement("br"),
+    h ? `Hearing held by the agents: ${h.verdict.replace("_", " ")}` : "No hearing yet: ask Docket “check my pay”");
+  $("live-claim").textContent = file.finding ? `${c.claim} withheld` : "Waiting for the agents";
+}
+const liveVerdictLabel = { upheld: "Claim stands", downgraded: "Claim stands, with a condition", needs_human: "Needs a person", defeated: "Claim dismissed" };
+
+async function liveHearing(c) {
+  const f = c.file.finding, h = c.file.hearing;
+  if (!f || !h) {
+    await say("Judge", `Nothing to hear yet. Ask Docket “check my pay” in ASI:One. The Tax and Auditor agents hold the hearing, and it appears here.`, { shot: "judge" });
+    return "pending";
+  }
+  await say("Judge", `Case file for ${c.name}, ${c.visa}, working for ${c.employer}. The claim: Social Security and Medicare withheld that ${c.first} likely didn't owe, ${c.claim} in total. This is the hearing Docket's agents held on ${longDate(h.at.slice(0, 10))}. Advocate, open.`, { shot: "judge" });
+  const [opening, ...rest] = h.rounds;
+  await say("Advocate", opening.argument, { shot: "adv", lean: true });
+  const exhibit = await throwCard(adv, judge, `Exhibit A · ${(f.sourceTitle || "IRS source").split(",")[0]}`, f.quote, "#3F6FE0");
+  await rule("Admitted", "The quote matches the stored IRS text word for word.", exhibit);
+  if (aborted) return;
+  for (let i = 0; i < rest.length; i++) {
+    const o = rest[i];
+    if (o.side !== "auditor") continue;
+    const reply = rest[i + 1] && rest[i + 1].side === "advocate" && rest[i + 1].objectionId === o.objectionId ? rest[i + 1] : null;
+    const label = OBJECTION[o.objectionId] || o.objectionId;
+    shot("counsel"); counsel.lean = 1;
+    await banner("Objection!", null, "#D4581C");
+    const card = await throwCard(counsel, adv, "The Auditor objects", label, "#D4581C");
+    adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 8); shake(0.12);
+    await say("Auditor", `Objection. ${o.argument}`, { shot: "counsel" });
+    counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
+    const m = reply ? reply.argument.match(/^(.*?)\s*\[(rebutted|conceded|unresolved)\]$/s) : null;
+    const answer = m ? m[1] : reply?.argument, outcome = m ? m[2] : "unresolved";
+    if (answer) await say("Advocate", answer, { shot: "adv", lean: true });
+    if (outcome === "rebutted") {
+      counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 22); stats.overruled++;
+      await rule("Overruled", "The Advocate answered it from the student file.", card);
+      counsel.hurt = 0; drawFace(counsel, "idle");
+    } else {
+      damage("left", outcome === "conceded" ? 12 : 18); stats.sustained++;
+      await rule("Sustained", outcome === "conceded" ? "The Advocate conceded it. It stays on the record as a condition." : "The file can't answer it. A person needs to check.", card);
+      const chip = document.createElement("span"); chip.textContent = label; $("hud-conditions").append(chip);
+    }
+    if (aborted) return;
+  }
+  const win = h.verdict === "upheld" || h.verdict === "downgraded";
+  if (win) {
+    drawFace(counsel, "sad"); counsel.slump = 1; adv.joy = 1; drawFace(adv, "joy");
+    $("hud-claim").className = "claim win"; shot("duel", 1.8); burst(V(0, 3.4, 0.6), 0x43D18A, 40, 0.8);
+  } else {
+    drawFace(adv, "sad"); adv.slump = 1; counsel.joy = 1; drawFace(counsel, "joy");
+    $("hud-claim").className = "claim long lose"; shot("court", 1.8);
+  }
+  await banner(liveVerdictLabel[h.verdict], win ? `${c.claim} · ${h.verdict === "upheld" ? "ask payroll first" : `${c.first} decides`}` : "Docket won't call payroll", win ? "#1F8F55" : "#D4581C");
+  await say("Judge", `${liveVerdictLabel[h.verdict]}. ${h.reason}${win ? ` Docket may ask ${c.employer} payroll for the refund, with ${c.first}'s approval.` : ""}`, { shot: "judge" });
+  return win ? "stands" : h.verdict === "defeated" ? "dismissed" : "needs_human";
+}
+
+async function liveCall(c) {
+  setRounds(2); showHud(null);
+  for (const old of stamps.splice(0)) drop(old);
+  shot("call", 1.4);
+  await roundCard("Round 2", "The call", "With the ruling in hand, Docket calls payroll. Only with approval, and it says it's an AI.");
+  showHud("call");
+  ["cs1", "cs2", "cs3", "cs4"].forEach((id) => stepState(id, ""));
+  let file = await pollFile(() => true, 0);
+  const k = file?.case;
+  if (!k) {
+    await say("Docket", `There's no case open for this finding yet. Once ${c.first} answers the review card in ASI:One, the Caseworker opens one.`, { shot: "caller" });
+    return "no_case";
+  }
+  if (k.state === "closed" && k.outcome === "declined_by_student") {
+    await say("Docket", `${c.first} said no to contacting payroll, so Docket didn't call. Nothing was sent.`, { shot: "caller" });
+    return "declined";
+  }
+  if (k.state === "awaiting_approval") {
+    await say("Docket", `The court said: ask payroll first. May I call ${c.employer} payroll for you?`, { shot: "caller", lean: true });
+    const approved = await new Promise((resolve) => {
+      focusDialog(true);
+      $("speaker").textContent = "Your approval";
+      $("speaker").style.setProperty("--dot", "#3F6FE0");
+      $("line").textContent = "This is the real case. Approving places one real payroll call through Cartesia.";
+      $("sub").textContent = "The same approval as the review card in ASI:One or the dashboard button";
+      $("btn-next").disabled = true;
+      $("hint").textContent = "Approve to place the call";
+      $("choice-area").innerHTML = `<div class="sign-row"><button class="sign-btn" id="btn-sign" type="button">Approve the call</button><button class="mode-btn" id="btn-hold" type="button">Not now</button><svg class="sig" id="sig" viewBox="0 0 200 44" aria-hidden="true"><path d="M6 30 C 26 6, 36 40, 56 22 S 82 10, 96 28 S 126 36, 140 18 S 170 12, 194 26"/></svg></div>`;
+      let signed = false;
+      $("btn-sign").addEventListener("click", async () => {
+        if (signed) return; signed = true;
+        $("btn-sign").disabled = true; $("btn-hold").disabled = true;
+        try { await convex("mutation", "cases:approve", { caseId: k.id }); }
+        catch (e) { $("sub").textContent = `Couldn't approve: ${e.message}`; signed = false; $("btn-sign").disabled = false; $("btn-hold").disabled = false; return; }
+        $("sig").classList.add("go"); stats.calls++;
+        realWait(900).then(() => resolve(true));
+      });
+      $("btn-hold").addEventListener("click", () => resolve(false));
+      $("btn-sign").focus({ preventScroll: true });
+    });
+    if (!approved) {
+      await say("Docket", "Understood. Nothing is sent. The case waits for your approval.", { shot: "caller" });
+      return "held";
+    }
+  }
+  else await say("Docket", `${c.first} already approved contacting payroll, in ASI:One or on the dashboard.`, { shot: "caller" });
+  stepState("cs1", "ok");
+  shot("board", 2.2);
+  stepState("cs2", "on");
+  plugCord();
+  lamps[0].material.color.set(0x43D18A);
+  handsetPivot.userData.ring = 1;
+  focusDialog();
+  $("speaker").textContent = "Docket"; $("speaker").style.setProperty("--dot", "#3F6FE0");
+  $("line").textContent = `Calling ${c.employer} payroll. The Cartesia agent logs what payroll says when the call ends.`;
+  $("sub").textContent = "Waiting for the call record…"; $("choice-area").innerHTML = ""; $("btn-next").disabled = true; $("hint").textContent = "";
+  file = await pollFile((x) => x.call || x.case?.callError || ["written_request", "escalate_irs", "awaiting_response", "closed"].includes(x.case?.state) && x.call, 180);
+  handsetPivot.userData.ring = 0;
+  const kk = file?.case, call = file?.call;
+  if (kk?.callError && !call) {
+    stepState("cs2", "warn");
+    await say("Docket", `The call couldn't start: ${kk.callError}`, { shot: "caller", sub: "Nothing reached payroll. The case stays approved; the Caseworker can retry." });
+    return "call_failed";
+  }
+  if (!call) {
+    stepState("cs2", "warn");
+    await say("Docket", "The call is still going. The dashboard shows the outcome the moment it's logged.", { shot: "caller" });
+    return "call_pending";
+  }
+  lamps[1].material.color.set(0x43D18A); handsetPivot.userData.lift = 1;
+  stepState("cs2", "ok"); stepState("cs3", "ok");
+  await say("Docket", `Call logged. ${call.answeredBy}: ${call.summary}`, { shot: "caller", sub: [call.promisedBy && `Promised by ${longDate(call.promisedBy)}`, call.referenceNo && `Reference ${call.referenceNo}`].filter(Boolean).join(" · ") });
+  if (kk.state === "awaiting_response" || kk.state === "closed") {
+    stepState("cs4", "ok");
+    await banner("Payroll agreed", call.promisedBy ? `Refund promised by ${longDate(call.promisedBy)}` : "Refund promised", "#1F8F55");
+    return "ok";
+  }
+  stepState("cs4", "warn");
+  if (kk.state === "written_request") {
+    letter.visible = true; letter.position.set(CX - 1.2, 2.6, 1.6); letter.rotation.set(0, 0.2, 0); letter.scale.set(1, 1, 1);
+    shot("call", 2.4); await wait(900); letter.userData.fold = 1; await wait(900);
+    envelope.visible = true; envelope.position.set(CX - 1.2, 2.2, 1.6); flapPivot.rotation.x = -2.6;
+    await fly(letter, letter.position.clone(), V(CX - 1.2, 2.25, 1.62), 400, 0.1);
+    letter.visible = false; flapPivot.userData.close = 1; await wait(500);
+    await fly(envelope, envelope.position.clone(), V(CX + 2.6, 1.15, 0.5), 900, 1.4, 1.5);
+    stats.letters++;
+    await banner("Payroll stalled", "Docket prepared the written request", "#B7791F");
+    return "ok";
+  }
+  await banner(kk.state === "escalate_irs" ? "Escalated" : "Needs the student", kk.state === "escalate_irs" ? "Forms 843 + 8316 checklist is next" : `Payroll wants to talk to ${c.first}`, "#B7791F");
+  return kk.state;
+}
+
+async function liveMoney(c) {
+  setRounds(3); showHud(null);
+  shot("money", 1.4);
+  await roundCard("Round 3", "The money", "Docket doesn't stop at a promise. The Ledger watches the bank until the amount lands.");
+  showHud("money");
+  drawCard(false);
+  $("money").innerHTML = `$0.00<small>recovered of ${c.claim}</small>`; $("money").className = "money";
+  $("date-chip").textContent = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const closed = (x) => x.case?.state === "closed" && x.case?.outcome === "refunded";
+  let file = await pollFile(() => true, 0);
+  if (!closed(file)) {
+    await say("Ledger", `Watching ${c.first}'s Capital One account for a deposit of ${c.claim} from ${c.employer}.`, { shot: "money", lean: true });
+    const released = await new Promise((resolve) => {
+      focusDialog(true);
+      $("speaker").textContent = "Your move"; $("speaker").style.setProperty("--dot", "#1F8F55");
+      $("line").textContent = "Payroll's next pay run is in about two weeks.";
+      $("sub").textContent = "Sandbox: this posts the refund to the Capital One Nessie test account; the Ledger finds it on its own";
+      $("btn-next").disabled = true; $("hint").textContent = "";
+      $("choice-area").innerHTML = `<div class="sign-row"><button class="sign-btn" id="btn-ff" type="button">Post the refund to the test bank ▸▸</button></div>`;
+      $("btn-ff").addEventListener("click", async () => {
+        $("btn-ff").disabled = true;
+        try { const r = await fetch(REFUND_ENDPOINT, { method: "POST" }); if (!r.ok) throw new Error(await r.text()); resolve(true); }
+        catch (e) { $("sub").textContent = `Couldn't post it from here (${e.message}). Run: python -m seed.release_refund ${new Date().toISOString().slice(0, 10)}`; resolve(false); }
+      });
+      $("btn-ff").focus({ preventScroll: true });
+    });
+    focusDialog();
+    $("speaker").textContent = "Ledger"; $("speaker").style.setProperty("--dot", "#1F8F55");
+    $("sub").textContent = "";
+    $("line").textContent = released ? "Deposit posted. The Ledger checks the bank every 30 seconds and matches it to the case." : "Waiting for the deposit…";
+    $("choice-area").innerHTML = ""; $("btn-next").disabled = true;
+    file = await pollFile(closed, 150, () => { wheel.userData.spin = 1; });
+    wheel.userData.spin = 0;
+    if (!closed(file)) {
+      await say("Ledger", "No matching deposit yet. I keep watching, and Docket messages the student the moment it lands.", { shot: "money" });
+      return "watching";
+    }
+  }
+  shot("card", 2.2);
+  slip.visible = true; slip.position.set(MX, 6.5, 1.4); slip.rotation.set(0.2, 0, 0.3);
+  await fly(slip, slip.position.clone(), V(MX, 2.25, 0.55), 1100, 0.8, 2.2);
+  slip.visible = false;
+  drawCard(true); shake(0.12); burst(V(MX, 2.6, 0.8), 0x43D18A, 36, 0.7);
+  $("money").innerHTML = `${c.claim}<small>recovered of ${c.claim}</small>`; $("money").className = "money win";
+  ledger.joy = 1; drawFace(ledger, "joy");
+  await say("Ledger", `Deposit matched to the case from ${c.employer}. The Caseworker closed it and Docket told ${c.first}.`, { shot: "card", mood: "joy" });
+  shot("end", 1.6);
+  closedStamp.userData.show = 1;
+  burst(V(MX, 4.2, 1), 0xF2E8D5, 70, 1.2);
+  await banner("Case closed", `${c.claim} recovered`, "#1F8F55");
+  return "closed";
+}
+
+function endLive(kind) {
+  const c = current, statHtml = (b, s) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`;
+  const text = {
+    closed: [`Case closed`, `${c.claim} is back with ${c.first}.`, "Argued by the agents, approved by the student, called, and confirmed in the bank. Every step is a row in the Convex student file."],
+    watching: ["Still open", `Docket is watching for ${c.claim}.`, "The Ledger checks the bank every 30 seconds. When the deposit lands, the case closes and the student gets a message."],
+    call_pending: ["Calling", "The payroll call is still going.", "The Cartesia agent logs the outcome when it hangs up; the dashboard shows it live."],
+    call_failed: ["Call didn't start", "Approved, but the call couldn't start.", "Nothing reached payroll. The reason is on the dashboard and the case stays approved."],
+    held: ["Waiting on you", "Nothing was sent.", "Docket never contacts payroll without the student's yes. The case waits for approval."],
+    declined: ["Declined", "The student said no, so nobody was called.", "Docket respects the answer and keeps the finding on file."],
+    no_case: ["No case yet", "The finding is waiting for the student.", "Answer the review card in ASI:One to open the case."],
+    pending: ["No hearing yet", "Ask Docket to check the pay.", "Type “check my pay” to the Coordinator in ASI:One. The agents hold the hearing and it appears here."],
+    dismissed: ["Claim dismissed", "The Auditor won this one.", c.file.hearing?.reason || ""],
+    needs_human: ["Needs a person", "The file can't settle this alone.", c.file.hearing?.reason || ""]
+  }[kind] || ["Live case", kind, ""];
+  $("end-kicker").textContent = text[0]; $("end-title").textContent = text[1]; $("end-text").textContent = text[2];
+  const h = c.file.hearing;
+  $("end-stats").innerHTML = (h ? statHtml(`${stats.overruled} / ${stats.overruled + stats.sustained}`, "objections answered in the agents' hearing") : "") +
+    (c.file.finding ? statHtml(c.claim, kind === "closed" ? "recovered, matched in the bank" : "withheld, per the paystubs") : "") +
+    statHtml("Live", "from Docket's agents and the Convex student file");
+  $("btn-other").textContent = "Play Priya's sample case";
+}
+
+/* ============================================================
+   Game flow
+   ============================================================ */
+let running = false;
+let skipTo = 0;
+function resetWorld() {
+  for (const a of [adv, counsel, judge, caller, clerk, guardian, ledger]) { a.hurt = a.joy = a.slump = a.lean = 0; a.group.position.copy(a.home); drawFace(a, a === judge ? "code" : "idle"); }
+  for (const s of stamps) drop(s); stamps.length = 0;
+  for (const f of flyers.splice(0)) f.resolve();
+  scene.children.filter((o) => o.userData && o.userData.isArg).forEach(drop);
+  looseCards.length = 0; recordCount = 0;
+  for (const b of bits.splice(0)) scene.remove(b.m);
+  if (cord) { scene.remove(cord); cord.geometry.dispose(); cord = null; }
+  lamps.forEach((l) => l.material.color.set(0x4A4A44));
+  handsetPivot.userData = {};
+  letter.visible = false; letter.userData.fold = 0; letter.scale.set(1, 1, 1);
+  envelope.visible = false; flapPivot.userData = {}; flapPivot.rotation.x = 0;
+  closedStamp.userData.show = 0; closedStamp.material.opacity = 0;
+  folderCoverPivot.userData.open = 0;
+  Object.assign(BANK, current.live ? { name: current.name, amount: current.claim, from: current.employer } : { name: "Priya Sharma", amount: "$440.64", from: "University Dining Payroll" });
+  drawCard(false);
+  Object.keys(stats).forEach((k) => (stats[k] = 0));
+  clearBanner();
+}
+async function play() {
+  if (running) return;
+  running = true; aborted = false;
+  resetWorld();
+  $("title-screen").classList.add("hide");
+  $("end-screen").classList.add("hide");
+  document.body.classList.remove("menu");
+  $("case-label").textContent = `Case ${current.id} · ${current.name}`;
+  const verdict = await roundHearing();
+  $("dialog").classList.remove("show");
+  if (verdict === "dismissed" && !current.live) { end("dismissed"); running = false; return; }
+  if (current.live && verdict !== "stands") { end(verdict || "pending"); running = false; return; }
+  const called = await roundCall();
+  $("dialog").classList.remove("show");
+  if (current.live && called !== "ok") { end(called); running = false; return; }
+  const money = await roundMoney();
+  $("dialog").classList.remove("show");
+  end(current.live ? money : "closed");
+  running = false;
+}
+function end(kind) {
+  showHud(null); clearBanner();
+  document.body.classList.add("menu");
+  const es = $("end-screen");
+  const statHtml = (b, s) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`;
+  if (current.live) endLive(kind);
+  else if (kind === "dismissed") {
+    $("end-kicker").textContent = "Claim dismissed";
+    $("end-title").textContent = "The hearing can lose. That's the point.";
+    $("end-text").textContent = "Nadia is in calendar year 8, past the five exempt years, so these taxes likely apply to her. Docket tells her plainly and doesn't call payroll or send a letter. A claim only moves forward if it survives the other side.";
+    $("end-stats").innerHTML = statHtml("Sustained", "Payroll's Counsel: likely a resident") + statHtml("0 calls", "Nothing sent on a losing claim");
+    $("btn-other").textContent = "Play Priya's case";
+  } else {
+    $("end-kicker").textContent = "Case closed";
+    $("end-title").textContent = "$440.64 is back with Priya.";
+    $("end-text").textContent = `Argued, checked, called, and confirmed in her bank. Next on her docket: Form 8843 for 2026, due Apr 15, 2027.`;
+    const picks = stats.picks ? statHtml(`${stats.right}/${stats.picks}`, "your evidence picks were right") : statHtml("4 / 4", "objections answered by the Advocate");
+    $("end-stats").innerHTML = statHtml("$440.64", "recovered, matched to the cent") + statHtml(`${stats.struck} made-up rule`, "caught by code before anyone acted on it") + statHtml(stats.letters ? "1 call · 1 letter" : "1 call", payrollWill === "agree" ? "payroll agreed on the call" : "payroll stalled, so Docket wrote") + picks;
+    $("btn-other").textContent = "Try Nadia's case";
+  }
+  es.classList.remove("hide");
+  shot(kind === "dismissed" ? "court" : "end", 1.2);
+  cam.orbit = true;
+  setTimeout(() => $("btn-replay").focus({ preventScroll: true }), 500);
+}
+
+/* Title + controls */
+function setCase(key) {
+  current = CASES[key];
+  $("proto-note").textContent = current.live ? "Live · from Docket's agents and the Convex student file" : "Prototype · scripted from the case file · no real call placed";
+  for (const k of ["priya", "nadia", "live"]) {
+    if (!$("case-" + k) || $("case-" + k).hidden) continue;
+    $("case-" + k).setAttribute("aria-pressed", key === k);
+    $("case-" + k).querySelector(".pick").textContent = key === k ? "✓ Selected" : "Choose";
+  }
+}
+function setMode(m) {
+  mode = m;
+  $("mode-watch").setAttribute("aria-pressed", m === "watch");
+  $("mode-play").setAttribute("aria-pressed", m === "play");
+  $("btn-mode").textContent = m === "watch" ? "Mode: Watch" : "Mode: Play";
+  $("btn-mode").setAttribute("aria-pressed", m === "play");
+}
+$("case-priya").addEventListener("click", () => setCase("priya"));
+$("case-nadia").addEventListener("click", () => setCase("nadia"));
+$("case-live").addEventListener("click", () => setCase("live"));
+$("mode-watch").addEventListener("click", () => setMode("watch"));
+$("mode-play").addEventListener("click", () => setMode("play"));
+$("btn-mode").addEventListener("click", () => setMode(mode === "watch" ? "play" : "watch"));
+$("btn-start").addEventListener("click", play);
+$("btn-replay").addEventListener("click", () => { $("end-screen").classList.add("hide"); play(); });
+$("btn-other").addEventListener("click", () => { setCase(current.key === "priya" ? "nadia" : "priya"); $("end-screen").classList.add("hide"); play(); });
+$("btn-skip").addEventListener("click", () => { if (!running) return; boost = 8; onAdvance(); if (skipHook) skipHook(); });
+if (params.get("payroll") === "agree") payrollWill = "agree";
+if (params.get("case") === "nadia") setCase("nadia");
+// The live case appears once Convex answers, and refreshes while the menu is up, so a hearing the agents
+// hold while this page is open shows up without a reload.
+loadLive().then(() => { if (DEFAULT_CASE === "live" && CASES.live) setCase("live"); });
+setInterval(() => { if (!running) loadLive(); }, 5000);
+if (params.get("mode") === "play") setMode("play");
+if (params.get("slot") === "show") document.body.classList.add("show-slot");
+
+/* ============================================================
+   Animation loop
+   ============================================================ */
+const clock = new THREE.Clock();
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight;
+  camera.fov = innerWidth < 760 ? 58 : 42;
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize); resize();
+let pointer = { x: 0, y: 0 };
+addEventListener("pointermove", (e) => { pointer.x = e.clientX / innerWidth - 0.5; pointer.y = e.clientY / innerHeight - 0.5; });
+const ease = (t) => t * t * (3 - 2 * t);
+// a per-frame lerp factor tuned at 60 fps, corrected for the real frame time
+const ease60 = (k, dt) => 1 - Math.pow(1 - k, dt * 60 * SPEED * boost);
+const endHidden = (() => { const es = $("end-screen"); return () => es.classList.contains("hide"); })();
+const _fwd = new THREE.Vector3();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+  // camera
+  if (cam.orbit && !running && !reduced) {
+    const ang = Math.sin(t * 0.18) * 0.55;
+    const base = endHidden() ? SHOTS.title : (current.key === "nadia" ? SHOTS.court : SHOTS.end);
+    cam.tPos.set(base.look[0] + Math.sin(ang) * 14.5 + (base === SHOTS.end ? 2 : 0), base.pos[1], base.look[2] + Math.cos(ang) * 14.5);
+    cam.tLook.set(...base.look);
+  }
+  const k = 1 - Math.exp(-cam.rate * dt * boost * SPEED);
+  cam.pos.lerp(cam.tPos, k); cam.look.lerp(cam.tLook, k);
+  camera.position.copy(cam.pos);
+  if (!reduced) { camera.position.x += pointer.x * 0.5; camera.position.y -= pointer.y * 0.3; }
+  if (cam.shake > 0.001) {
+    camera.position.x += Math.sin(t * 61) * cam.shake * 0.5; camera.position.y += Math.sin(t * 47 + 1.3) * cam.shake * 0.5;
+    cam.shake *= Math.pow(0.02, dt);
+  }
+  camera.lookAt(cam.look);
+  const arenaX = Math.round(cam.look.x / 60) * 60;   // the shadow camera only moves between arenas, so shadows don't crawl
+  sun.position.set(arenaX - 6, 14, 10); sun.target.position.set(arenaX, 0, 0);
+  warm.position.x = cam.look.x;
+
+  // agents: idle breathing, talk bob, lean, hurt recoil, joy hop, slump
+  for (const a of [adv, counsel, judge, caller, clerk, guardian, ledger]) {
+    const g = a.group;
+    a._lean = THREE.MathUtils.lerp(a._lean || 0, a.lean, 1 - Math.pow(0.001, dt));
+    a._hurt = THREE.MathUtils.lerp(a._hurt || 0, a.hurt, 1 - Math.pow(0.0001, dt));
+    a._slump = THREE.MathUtils.lerp(a._slump || 0, a.slump, 1 - Math.pow(0.01, dt));
+    const breathe = reduced ? 0 : Math.sin(t * 2 + g.position.x) * 0.02;
+    const hop = a.joy && !reduced ? Math.abs(Math.sin(t * 6)) * 0.12 : 0;
+    const hover = a.kind === "crane" && !reduced ? Math.sin(t * 1.6 + a.seed) * 0.07 : 0;
+    g.position.y = a.home.y + breathe + hop + hover;
+    a.body.rotation.x = a._lean * 0.18 - a._hurt * 0.25 + a._slump * 0.22;
+    a.body.scale.y = 1 - a._hurt * 0.14;                       // paper crumples a little when hit
+    a.headPivot.rotation.x = a.talk && !reduced ? Math.sin(t * 14) * 0.07 : a._slump * 0.4;
+    a.headPivot.rotation.z = a._hurt * 0.2 * Math.sin(t * 30);
+    const f = reduced ? 0 : Math.sin(t * (a.talk ? 9 : 2.2) + a.seed) * (a.talk ? 0.35 : 0.1);
+    if (a.kind === "crane") { a.arms[0].rotation.z = -f; a.arms[1].rotation.z = f; }
+    else if (a.kind === "clerk") { a.arms[0].rotation.z = -(0.5 + (a.talk ? f : 0)); a.arms[1].rotation.z = 0.5 + (a.talk ? f : 0); }
+    else a.arms[0].rotation.x = THREE.MathUtils.lerp(a.arms[0].rotation.x, a.talk ? Math.sin(t * 7) * 0.5 - 0.3 : 0, ease60(0.15, dt));
+    // blink now and then while idle
+    if (a.mood === "idle" || a.mood === "code") { const bl = ((t + a.seed) % 3.6) < 0.11; for (const e of a.eyes) e.scale.y = bl ? 0.12 : 1; }
+  }
+  // gavel strike
+  if (gavelPivot.userData.strike) {
+    gavelPivot.userData.st = (gavelPivot.userData.st || 0) + dt * 5 * SPEED;
+    const s = gavelPivot.userData.st;
+    gavelPivot.rotation.z = s < 0.5 ? -0.5 - s * 1.6 : (s < 1 ? -1.3 + (s - 0.5) * 2.4 : -0.5);
+    if (s >= 1.6) { gavelPivot.userData.strike = 0; gavelPivot.userData.st = 0; gavelPivot.rotation.z = -0.5; }
+  }
+  // folder cover
+  const fo = folderCoverPivot.userData.open || 0;
+  folderCoverPivot.rotation.z = THREE.MathUtils.lerp(folderCoverPivot.rotation.z, fo ? 2.6 : 0, ease60(0.06, dt));
+  // flying things
+  for (let i = flyers.length - 1; i >= 0; i--) {
+    const f = flyers[i];
+    f.t += dt * 1000 / Math.max(1, f.dur) * boost;
+    const p = Math.min(1, f.t), e = ease(p);
+    f.mesh.position.lerpVectors(f.from, f.to, e);
+    f.mesh.position.y += Math.sin(p * Math.PI) * f.arc;
+    if (f.land) {
+      f.mesh.scale.setScalar(THREE.MathUtils.lerp(f.s0, f.land.scale, e));
+      f.mesh.quaternion.slerpQuaternions(f.q0, f.land.quat, e);
+    } else {
+      f.mesh.rotation.y += f.spin * dt;
+      if (!f.mesh.userData.rest) f.mesh.lookAt(camera.position);
+    }
+    if (p >= 1) { flyers.splice(i, 1); f.resolve(); }
+  }
+  // stamps
+  for (const s of stamps) {
+    const an = s.userData.anim; if (!an) continue;
+    an.t = (performance.now() - an.start) / 1000 * SPEED * boost;   // real time, not frame time
+    const p = Math.min(1, an.t / 0.35);
+    camera.getWorldDirection(_fwd);
+    s.position.copy(camera.position).addScaledVector(_fwd, 5).addScaledVector(camera.up, 0.55);
+    s.quaternion.copy(camera.quaternion);
+    s.scale.setScalar(THREE.MathUtils.lerp(1.4, 0.72, ease(p)));
+    s.material.opacity = an.t < 2.4 ? Math.min(1, p * 1.4) : Math.max(0, 1 - (an.t - 2.4) * 2);
+  }
+  // paper bits
+  for (let i = bits.length - 1; i >= 0; i--) {
+    const b = bits[i];
+    b.v.y -= 6 * dt; b.m.position.addScaledVector(b.v, dt);
+    b.m.rotation.x += b.r.x * dt; b.m.rotation.y += b.r.y * dt;
+    if (b.m.position.y < 0.02) { b.m.position.y = 0.02; b.v.multiplyScalar(0.3); }
+    b.life -= dt;
+    if (b.life <= 0) { scene.remove(b.m); bits.splice(i, 1); }
+  }
+  // call arena
+  if (cord) {
+    cord.userData.grow = Math.min(1, cord.userData.grow + dt * 0.9 * SPEED);
+    cord.geometry.setDrawRange(0, Math.floor(cord.geometry.index.count * cord.userData.grow));
+  }
+  if (handsetPivot.userData.ring && !reduced) handsetPivot.rotation.z = Math.sin(t * 40) * 0.08;
+  else handsetPivot.rotation.z = THREE.MathUtils.lerp(handsetPivot.rotation.z, handsetPivot.userData.lift ? 0.6 : 0, ease60(0.1, dt));
+  if (letter.userData.fold) { letter.scale.y = THREE.MathUtils.lerp(letter.scale.y, 0.36, ease60(0.08, dt)); letter.scale.x = THREE.MathUtils.lerp(letter.scale.x, 0.95, ease60(0.08, dt)); }
+  if (flapPivot.userData.close) flapPivot.rotation.x = THREE.MathUtils.lerp(flapPivot.rotation.x, 0, ease60(0.12, dt));
+  // money arena
+  if (wheel.userData.spin) wheel.rotation.z += dt * 4;
+  closedStamp.material.opacity = THREE.MathUtils.lerp(closedStamp.material.opacity, closedStamp.userData.show ? 1 : 0, ease60(0.08, dt));
+  if (closedStamp.userData.show) closedStamp.lookAt(camera.position);
+
+  renderer.render(scene, camera);
+}
+document.fonts.ready.then(() => {
+  // redraw canvas textures that used web fonts
+  for (const r of texRegistry) { r.ctx.clearRect(0, 0, r.w, r.h); r.draw(r.ctx, r.w, r.h); r.t.needsUpdate = true; }
+  for (const a of [adv, counsel, caller, clerk, guardian, ledger]) drawFace(a, "idle");
+  drawFace(judge, "code");
+  drawCard(false);
+}).catch(() => {});
+requestAnimationFrame(animate);
+window.__game = { play, setCase, setMode, stats, get running() { return running; } };
+</script>
+</body>
+</html>

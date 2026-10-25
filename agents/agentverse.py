@@ -23,6 +23,9 @@ ROSTER = {
     "TAX": ("docket-tax", "Runs the rules in code and argues the student's side in the Hearing (Advocate)"),
     "AUDITOR": ("docket-auditor", "Argues the employer's side in the Hearing and issues the verdict in code"),
     "CASEWORKER": ("docket-caseworker", "Refund case state machine, approvals, payroll calls and letters"),
+    "RESEARCHER": ("docket-researcher", "Athena: researches what the file cannot answer and watches the rules that fired, verifying every source in code"),
+    "ORGANIZER": ("docket-organizer", "Finds employers where several students share a finding and runs the combined request for the ones who opt in"),
+    "FILER": ("docket-filer", "Fills in the student's forms from stored records and submits only what she approves"),
 }
 CHECK_DELAY_SECONDS = 20  # let registration land first
 

@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from agents.store import dollars
 from rules.quote_checker import check_quote
 
-MODEL = "claude-opus-5-5"
+MODEL = "claude-opus-5"
 
 SYSTEM = """You are Docket, an assistant that checks an F-1 international student's
 paychecks for withholding errors. You are not a tax advisor.
@@ -48,10 +48,17 @@ CONFIDENCE
 
 TASKS
 A) Classify the student's message: check_pay | explain | next_season |
-   profile | approve | decline | other. Handle indirect wording such as "am I paying
-   tax I shouldn't?" as check_pay. Questions about what to file or do for the
-   coming tax season or next year are next_season. Wanting to set up or
-   change their visa, arrival date or employer details is profile.
+   profile | approve | decline | research | documents | contact | group | other.
+   Handle indirect wording such as "am I paying tax I shouldn't?" as check_pay.
+   Questions about what to file or do for the coming tax season or next year are
+   next_season. Wanting to set up or change their visa, arrival date or employer
+   details is profile. Wanting to change their phone number, or whether Docket may
+   call or text them, is contact. Asking about their forms, what they need to file,
+   or to see or sign something is documents. Asking about other students with the
+   same problem, or about joining or leaving a group request, is group. A question
+   about US tax, visa or work rules that our stored records cannot answer — anything
+   needing outside information, current events, or a rule we have not already
+   checked — is research.
 B) Write the explanation in English. Plain words, 6th-grade reading
    level, under 120 words, mention the exact dollar amounts from the facts.
 
@@ -61,7 +68,8 @@ key of the source excerpts, or null. Our code shows each verified source quote u
 so do not repeat the quotes in message_to_student: cite each one with source_quote_id instead. Do not ask the student to approve anything:
 our code adds the approval request."""
 
-Intent = Literal["check_pay", "explain", "next_season", "profile", "approve", "decline", "other"]
+Intent = Literal["check_pay", "explain", "next_season", "profile", "approve", "decline",
+                 "research", "documents", "contact", "group", "other"]
 
 
 class Classification(BaseModel):

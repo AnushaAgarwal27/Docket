@@ -45,23 +45,42 @@ No agent tells another what to do. Each one reacts to what the others wrote in t
 
 ## Architecture
 
+Four layers, each with one job. The layer boundaries are the point: the research layer can be wrong
+without anything wrong being *said*, and the voice layer can be talking to anyone without learning
+anything it should not.
+
 ```
-                 Priya (ASI:One)  <──>  Coordinator agent
-                                           │ routes work, asks approval
-         ┌──────────────┬──────────────────┼──────────────┐
-      Ledger         Tax (Advocate)     Auditor          Caseworker
-   Nessie bank,     rules run in      objections and     cases, approvals,
-   paystubs,        code; clause      the verdict,       Cartesia calls
-   Claude reads     checked in code   in code            payroll
-         └──────────────┴────────┬─────────┴──────────────┘
-                 Shared student file on Convex
-   profiles · transactions · paystubs · sources · flags · cases · calls · activity
-                                 │
-                          Live dashboard
+   ┌─ VOICE ─ Cartesia ──────────────────────────────────────────────────────┐
+   │  she calls Docket and asks anything · Docket calls her when she's needed │
+   │  Docket calls payroll with her approval · texts and chat                 │
+   └──────────────────────────────┬──────────────────────────────────────────┘
+                                  │  every word crosses this line
+   ┌─ GUARDRAIL ─ Claude ─────────┴──────────────────────────────────────────┐
+   │  redacts by audience · writes for the channel · then CODE checks it:    │
+   │  no amount outside the facts, no quote not in a verified source,        │
+   │  no phone number we didn't supply. Rejected text falls back to code.    │
+   └──────────────────────────────┬──────────────────────────────────────────┘
+                                  │
+   ┌─ AGENTS ─ Fetch.ai uAgents ──┴──────────────────────────────────────────┐
+   │  Ledger      Nessie bank, paystubs, refund matching                     │
+   │  Tax         rules in code; argues the student's side (Advocate)        │
+   │  Auditor     argues the employer's side; the verdict, in code           │
+   │  Caseworker  case state machine, approvals, calls, letters              │
+   │  Researcher  Athena: deep research + news watch, sources verified       │
+   │  Organizer   finds employers with a pattern; runs the group request     │
+   │  Filer       fills her forms in; submits only what she approved         │
+   │  Coordinator the one she talks to in ASI:One                            │
+   └──────────────────────────────┬──────────────────────────────────────────┘
+                                  │
+           Shared student file on Convex · Nessie is the bank
+   profiles · transactions · paystubs · sources · flags · hearings · cases · calls
+   notifications · research · documents · groups · groupMembers · contacts · activity
+                                  │
+                           Live dashboard
                   (activity feed, cases, money)
 ```
 
-- 5 agents (Coordinator, Ledger, Tax, Auditor, Caseworker), each a **Fetch.ai uAgent** in Python 3.12/3.13. Only the Coordinator speaks the chat protocol to ASI:One.
+- 8 agents (Coordinator, Ledger, Tax, Auditor, Caseworker, Researcher, Organizer, Filer), each a **Fetch.ai uAgent** in Python 3.12/3.13. Only the Coordinator speaks the chat protocol to ASI:One.
 - **Convex** is the shared student file. The dashboard shows every row the moment it lands.
 - **Nessie** feeds the Ledger, official sources are fetched into `sources`, and **Cartesia** makes the calls.
 
@@ -84,7 +103,7 @@ Money is stored in **integer cents everywhere**. No floats, and no numbers writt
 
 ## The agents
 
-**1. Coordinator** is the only agent Priya talks to. It's a uAgent with a mailbox and the chat protocol, reachable in ASI:One. It handles intents like "check my pay", "what's wrong?", "yes, contact payroll", "is $70 normal for a table?", and "explain in Hindi". It sends approval prompts (an interactive card if we find Fetch's format), and its echo guard ignores ASI:One replaying our own replies.
+**1. Coordinator** is the only agent Priya talks to. It's a uAgent with a mailbox and the chat protocol, reachable in ASI:One. It handles intents like "check my pay", "what's wrong?", "yes, contact payroll", "is $70 normal for a table?", and "explain in Hindi". It sends approval prompts as ASI:One Interactive Cards ([`agents/coordinator/cards.py`](agents/coordinator/cards.py)), with the narration text as the fallback if a client can't render them, and its echo guard ignores ASI:One replaying our own replies.
 
 **2. Ledger** turns bank data and paystubs into clean rows.
 - It polls Nessie every 30s, using the Nessie id for dedupe.
@@ -101,6 +120,34 @@ Money is stored in **integer cents everywhere**. No floats, and no numbers writt
 - Follow-ups are a Convex scheduled function. A "simulate 2 weeks" button jumps the clock for the demo.
 
 **5. Auditor** argues the employer's side of every finding before it reaches the student (the Hearing), and issues the verdict in code. The Price agent from the original plan was cut.
+
+**6. Researcher (Athena)** answers what the student file cannot, and watches for what changes it.
+- A question she asks on the phone that the file cannot answer is recorded, not guessed at. This agent researches it and sends the answer back as a message.
+- It runs on ASI:One's agentic models — Fetch.ai's deep-execution layer, which plans the research and can call other agents on Agentverse — and falls back to Claude with web search.
+- **Every source is then fetched by code and has to contain the claim's wording before it counts.** A page that 404s or does not support the answer is dropped, and an answer left with no surviving source is marked low confidence and never stated as fact.
+- What leaves for a third-party research service is built by allow-list — visa category, rule id, employer *kind* — with her name, employer, school, phone and amounts stripped in code first.
+
+**7. Organizer** notices when several students at one employer have the same finding, and gets them asking together. One student is easy to put off; four is a payroll configuration error. **Nobody is in the combined request until they say yes**: an invited student's amount is not in the total and their name is not in the letter. The invitation gives a count and an employer, never another student's name or amount. Joining never pauses or weakens her own case.
+
+**8. Filer** fills her forms in — Form 8843, the refund letter, and Forms 843 and 8316 for the IRS route — and submits only what she approved. Every field is computed in code from a stored record and shows which record, so nothing on a tax form was written by a model. A missing fact stops the form rather than being filled with a plausible guess. Docket cannot file with the IRS, and says so plainly instead of implying it did.
+
+## The guardrail layer ([`agents/guard.py`](agents/guard.py))
+
+Everything a person reads or hears goes through one module, in three steps.
+
+1. **Redact.** Each audience gets its own allow-list of facts. Payroll never receives work hours, an arrival date, bank rows or another student's name, because those keys are not in its slice — there is nothing to leak. A group message can carry a count and an employer and nothing that could identify a person.
+2. **Convert.** Claude turns the redacted facts into words for one channel: a sentence a voice agent can speak, a text short enough to send, a chat reply, a paragraph for a document.
+3. **Check.** Code reads what came back and rejects it unless every dollar amount is in the facts, every quoted sentence is word for word in a verified source, no phone number appears that we did not supply, and the text fits the channel. A rejected render falls back to a sentence written entirely in code.
+
+Claude writes the words. It never decides the money, the rule or the recipient, and it cannot widen its own audience.
+
+## The voice layer ([`docs/CARTESIA.md`](docs/CARTESIA.md))
+
+Two Cartesia agents. The **payroll caller** asks one employer for one refund. The **student line** works both ways: Docket rings her when something needs her, and she can ring the same number and ask anything.
+
+Three things the student line will not do: discuss a file with a number it does not recognise, read a maybe as a yes, or answer a tax or status question it was not given an answer for — an unknown question is handed to the research agent and the answer arrives as a message.
+
+**The demo redirect:** while `DEMO_CALL_REDIRECT` is on, `DEMO_CALL_NUMBER` is the only phone that rings, whoever the call is for. The intended number still travels with the call and is shown on the dashboard, so a redirected call is visible rather than quietly going elsewhere. That is what makes it safe for the research agent to find real payroll and legal-aid numbers: finding a number and dialling it are separate steps, and only the second is gated.
 
 ## Rules engine and source verification
 
@@ -179,22 +226,113 @@ If we miss a gate by more than an hour, we cut in this order: **Price agent → 
 
 ## Sponsor tracks
 
-**Core:**
-- **Fetch.ai:** ASI:One plus agents reacting to each other.
-- **Anthropic:** the eval score and the quote checker.
-- **Cartesia:** the live payroll call, with a written-request escalation when payroll stalls or refuses (the Hindi voice call was cut; see the Cartesia section).
-- **Convex:** the live dashboard.
-- **Capital One Nessie:** the refund deposit closing the case.
+Each track below says what the tool actually does in the product, what the judges for that track are
+looking for, and where the evidence is. Nothing here is aspirational — if it isn't built, it says so.
 
-**Add-ons, only if working by freeze:** Apify, Bright Data, Microsoft Built for the Real World, CRS (credit agent), Notability, Best People-First Hack.
+### Fetch.ai — ASI:One Agent Challenge: *From Intent to Action*
 
-## Live pitch (2 minutes)
+The headline track, and the one the architecture is shaped around. The challenge asks for an agent
+discovered through ASI:One that understands intent and **takes action** — explicitly "more than a
+chatbot or a thin wrapper around an API."
 
-1. **0:00 to 0:15, hook:** "Priya's been losing $55 every paycheck and has no idea." (Use a real student quote.)
-2. **0:15 to 0:45, notice:** "check my pay" in ASI:One makes the feed light up with $440.64 flagged, the IRS clause on screen, and the 24-hour week.
-3. **0:45 to 1:15, act:** Priya says yes and the phone on the table rings. The call log appears.
-4. **1:15 to 1:35, remember:** "simulate 2 weeks" lands the $440.64, and the case closes.
-5. **1:35 to 2:00, prove it:** "Plain Claude: X of 25. Docket: Y of 25, every answer sourced." Close with: *"Claude can answer a question. It can't notice the one you didn't know to ask."*
+Docket's answer: **a student types "check my pay" in ASI:One, and a phone rings in a payroll office.**
+
+| Mandatory requirement | How |
+|---|---|
+| Agent registered on Agentverse | **8 uAgents**, each `mailbox=True, publish_agent_details=True` with its own published README |
+| Agent Chat Protocol | `Protocol(spec=chat_protocol_spec)` on the Coordinator; `ChatMessage` in, `ChatAcknowledgement` out |
+| Discoverable and usable via ASI:One | Every agent publishes tags, features and example queries from its `AGENTVERSE.md` |
+| Meaningful tool execution / orchestration | 8 agents, 22 typed message types, a 4-agent adversarial Hearing, plus telephony, banking, crawling and live web research |
+| Whole workflow inside ASI:One | `check my pay` → sourced findings → `yes` → real call → refund tracked → case closed. The dashboard is a bonus view, not a dependency |
+| Public repo with run instructions | [Setup](#setup) and [Run the demo](#run-the-demo) |
+
+**Bonus criteria:** multi-agent collaboration (the Hearing), ASI Interactive Cards
+([`agents/coordinator/cards.py`](agents/coordinator/cards.py) — form, detail and review, validated
+before send), reliability and recovery from failed tool calls (below), real-time data, and a system
+that keeps working after the hackathon. **The Payment Protocol is not implemented** — the one bonus
+criterion we skipped, and we don't claim it.
+
+**The two things worth arguing in front of a judge.**
+
+*Agents that disagree.* Before a finding reaches the student, the Tax agent claims it, the Auditor
+objects on the employer's behalf, Tax rebuts from the file, and the Auditor issues a verdict **in
+code**. A verdict that isn't `upheld` opens no case. One model arguing with itself in a prompt is
+theatre; two agents holding separate state is a check.
+
+*Recovery that came from a real failure.* The voice agent reports call outcomes through a webhook.
+Ours was misconfigured, so a call completed, payroll made a real promise, and the case silently sat
+forever. [`agents/caseworker/call_record.py`](agents/caseworker/call_record.py) now reads Cartesia's
+own record of its calls every 45 seconds and recovers the outcome — refusing any promised date that
+doesn't parse or sits in the past, and downgrading anything uncertain to "stalled" rather than
+inventing a promise. A real promise shouldn't be lost because a webhook was.
+
+Full track breakdown and the video script: **[`docs/DEMO_FETCHAI.md`](docs/DEMO_FETCHAI.md)**.
+
+### Anthropic — Claude
+
+Claude is used in four places and is **never allowed to decide anything**: it transcribes paystubs,
+phrases findings, converts facts into words for a channel, and classifies a call summary into one of
+four fixed outcomes. Code does all math, all rule evaluation, and every state transition.
+
+The interesting part is the third one. Every sentence a person reads or hears crosses
+[`agents/guard.py`](agents/guard.py): facts are redacted to an allow-list for that audience, Claude
+writes from the redacted slice, then **code rejects the result** unless every dollar amount is in the
+facts, every quoted sentence is word for word in a verified source, and no phone number appears that
+we didn't supply. A rejected render falls back to a sentence written entirely in code. Payroll never
+hears about her work hours because those keys aren't in payroll's slice — there is nothing to leak.
+
+Evidence on camera: `python -m rules.demo_rejection` rejects a fabricated clause and passes the real
+one, both logged to the activity feed.
+
+### Cartesia — voice
+
+A two-way voice layer. Docket calls payroll on the student's approval, reads the live case file
+mid-call through a webhook tool, and records what payroll said. The call states that it is an AI
+calling with the student's permission and that the call may be recorded; it never pretends to be her.
+
+Voice is the step that matters because payroll offices answer phones, and calling one is the thing a
+student is least likely to do herself.
+
+Details, setup and the responsible-use notes: [`docs/CARTESIA.md`](docs/CARTESIA.md) and the
+[Cartesia section](#cartesia-the-payroll-call) below.
+
+### Convex — the shared student file
+
+Every agent reads and writes one reactive database, and every dashboard panel is a live query. No
+agent calls another to tell it what to do: the Ledger writes a paystub, the Tax agent notices. The
+case state machine runs in Convex mutations, so an invalid transition is rejected at the database
+rather than argued about in Python. The voice agent's webhook tools are Convex HTTP actions.
+
+### Capital One Nessie — the bank
+
+Nessie is Priya's actual bank account, not a mock. The seed creates her customer, 8 payroll deposits,
+20 purchases and 2 family transfers from India. The Ledger polls it, dedupes on the Nessie id, and
+matches each paystub to the deposit of exactly its net pay within 3 days. **"Simulate 2 weeks" creates
+the real $440.64 refund deposit through the Nessie API** — the Ledger sees it, matches it to the open
+case within $1, and the case closes. That deposit is the moment the money comes back.
+
+### Apify — official sources
+
+Every rule quotes a page that Apify fetched: IRS Pub 519, 8 CFR 214.2 on eCFR, the Form 8843 page.
+Each is stored with its fetch time and a sha256. When a hash changes, Docket logs `source_changed`,
+re-checks that rule's quote, and **holds the rule's flags back** if the sentence is no longer on the
+page. That is what makes this hold up after the hackathon: the law moves, and we notice.
+
+## Demo videos
+
+| Video | Guide |
+|---|---|
+| Fetch.ai track (4 min) — Agentverse, uAgents, ACP, ASI:One, the Hearing | [`docs/DEMO_FETCHAI.md`](docs/DEMO_FETCHAI.md) |
+| Main submission (3 min) — the whole story, all sponsors | [`docs/DEMO_VIDEO.md`](docs/DEMO_VIDEO.md) |
+
+Both include a pre-flight checklist, a shot list with timings, the exact words to type into ASI:One,
+and what to do when something breaks mid-shoot.
+
+One command puts the demo in a clean, recordable state:
+
+```bash
+.venv/bin/python -m scripts.demo_reset   # ~1 min: seed, 8 paystubs, rules, $440.64 case open
+```
 
 ## Rules we never break
 
@@ -214,22 +352,39 @@ See [`docs/PLAN_NOTES.md`](docs/PLAN_NOTES.md). The data and rules layer (seed, 
 ```bash
 python3.12 -m venv .venv && source .venv/bin/activate   # uAgents does not support 3.14
 pip install -r requirements.txt && npm install
-cp .env.example .env   # fill in keys and a long random *_SEED per agent; never commit it
+cp .env.example .env   # fill in the keys; never commit it
+.venv/bin/python -m scripts.make_seeds   # prints the agent seeds you are missing, to paste into .env
 npx convex dev         # deploys convex/ and keeps it in sync; leave running
 ```
+
+An agent's Agentverse address is derived from its seed, so once an agent is registered its seed must
+not change. `make_seeds` prints only the ones that are missing, so re-running it is safe.
 
 ## Run the demo
 
 ```bash
 .venv/bin/python -m seed.fetch_sources   # official IRS / eCFR text into `sources` (once)
 .venv/bin/python -m seed.reset           # wipe demo state, re-seed Priya and the simulated cohort (before every rehearsal)
-./scripts/run_agents.sh                  # Tax, Caseworker and Coordinator agents
+./scripts/run_agents.sh                  # all eight agents; refuses to start if a seed is missing
 npm run dashboard                        # live dashboard at http://localhost:5173
 ```
 
 Then in ASI:One, open **docket-coordinator** (or start the message with its `@agent1...` handle;
 messages sent with **To: ASI:One** go to ASI:One's own assistant, not to Docket) and try
 `check my pay`, `what's wrong?`, `yes, contact payroll`.
+
+The rest of what she can do there:
+
+| Say | What happens |
+|---|---|
+| `my forms` | the filled-in form, field by field, with the record each value came from, and Approve / Not yet |
+| `anyone else?` | other students at her employer with the same finding, and the option to join them |
+| `call me` | her phone number and whether Docket may call or text her — nothing is dialled without this |
+| anything else about F-1 pay, tax or status | goes to the research agent, which answers with sources it verified, or says it could not |
+
+The dashboard has a tab for each of these — **Messages** (everything Docket told her, on any channel,
+and whether it reached her), **Forms**, **Group**, **Research** — plus the original Overview,
+Paystubs, Cases, Activity and Tracks.
 
 Without ASI:One, the same conversation over the real chat protocol:
 
@@ -248,6 +403,68 @@ the Agentverse readme:
 ## Sponsor tools
 
 <!-- One section per sponsor: exactly what the tool does in the product. -->
+
+### Fetch.ai (the agents, Agentverse and ASI:One)
+
+Docket is **eight uAgents**. Each owns one decision nobody else is allowed to make, which is what
+makes them able to check each other rather than just relay to each other.
+
+| Agent | Port | Owns |
+|---|---|---|
+| `docket-coordinator` | 8001 | The only agent the student talks to: chat protocol, cards, narration |
+| `docket-ledger` | 8002 | Nessie bank feed, paystub PDFs, refund matching |
+| `docket-tax` | 8003 | The rules, in code; argues the student's side (Advocate) |
+| `docket-auditor` | 8006 | Argues the employer's side; issues the verdict in code |
+| `docket-caseworker` | 8004 | Case state machine, approvals, payroll calls, letters |
+| `docket-researcher` | 8005 | Athena: deep research and news watch, every source verified |
+| `docket-organizer` | 8007 | Finds employers with a shared pattern; runs the group request |
+| `docket-filer` | 8008 | Fills forms from stored records; submits only what she approved |
+
+Print the live addresses and Agentverse inspector links with
+`.venv/bin/python -m scripts.print_agents --plain`. An address is derived from its seed, so **once an
+agent is registered its seed must not change**; `scripts.make_seeds` only prints the ones missing.
+
+**Agentverse.** Every agent runs `mailbox=True` with `publish_agent_details=True` and a
+`readme_path` pointing at its own `AGENTVERSE.md` (tags, features, example queries). Being listed in
+the Almanac is not proof the mailbox exists, so [`agents/agentverse.py`](agents/agentverse.py) asks
+Agentverse for the agent's own mailbox at startup, signed by the agent, and logs the answer to the
+console *and* the activity feed. A missing **Connect → Mailbox** click shows up as a warning with the
+inspector URL rather than as a silent ASI:One failure.
+
+**Agent Chat Protocol.** `Protocol(spec=chat_protocol_spec)` on the Coordinator
+([`agents/coordinator/agent.py`](agents/coordinator/agent.py)): it acknowledges every `ChatMessage`
+before answering, sends one `ChatMessage` per part so a card and its narration stay separate, and
+marks only the last one as ending the session. An echo guard drops ASI:One replaying our own replies.
+
+**Agent-to-agent.** 22 typed `Model` messages in [`agents/messages.py`](agents/messages.py) —
+`RunRules`, `OpenCases`, `CaseDecision`, `Claim`, `Objection`, `Rebuttal`, `Verdict`, `CaseOpened`,
+`WatchRefund`, `ResearchQuestion`, `PatternFound`, `GroupInvite`, `FillDocument` and the rest. A
+`LocalFirstResolver` routes to a local port when the agent is on this machine and through Agentverse
+otherwise, so the same code runs in both. Senders are checked: the Caseworker ignores a `Verdict`
+that didn't come from the Auditor's address.
+
+**ASI:One Interactive Cards.** [`agents/coordinator/cards.py`](agents/coordinator/cards.py) builds
+form, detail and review cards as `MetadataContent` with `card_protocol_version "1"`, used for profile
+capture, refund approval, group invites and document review. Every card is validated before it is
+sent — field kinds, CTA shape, 64 KB payload cap — and the narration text above it is the fallback if
+the card is rejected, so a client that can't render cards still gets a usable message. Every number
+on a card is read from the student file; nothing there computes money.
+
+**ASI:One agentic models.** The Researcher's primary engine is `asi1-agentic` at `api.asi1.ai`
+([`agents/researcher/athena.py`](agents/researcher/athena.py)), which plans a research task and can
+discover and call other agents on Agentverse; Claude with web search is the fallback. Either way the
+answer has to earn its sources: **every URL is re-fetched in code and must actually contain the
+claim's wording**, or it's dropped, and an answer with no surviving source is marked low confidence
+and never stated as fact.
+
+**Known limitations**
+- One student profile at a time. Multi-student lookup needs onboarding we didn't build.
+- Agents run on our machines, so ASI:One only reaches Docket while they're up.
+- The Fetch.ai **Payment Protocol is not implemented**.
+- Cards are validated against the published spec but have only been exercised in our own client and
+  ASI:One; an unusual renderer may fall back to the text.
+
+**Secrets:** every agent seed lives in `.env`, which is gitignored. `ASI_ONE_API_KEY` too.
 
 ### Capital One Nessie
 

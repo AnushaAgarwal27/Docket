@@ -24,11 +24,16 @@ class Resp:
 
 
 class FakeSession:
+    """Records every POST. place_call makes two: one to our own webhook for the case brief, then
+    the real one to Cartesia. `calls` keeps only the Cartesia one, which is what these tests are
+    about; `brief_calls` keeps the other so a test can assert on it if it needs to."""
+
     def __init__(self, resp):
-        self.resp, self.calls = resp, []
+        self.resp, self.calls, self.brief_calls = resp, [], []
 
     def post(self, url, json, headers, timeout):
-        self.calls.append({"url": url, "json": json, "headers": headers})
+        record = {"url": url, "json": json, "headers": headers}
+        (self.calls if url.endswith("/agents/calls") else self.brief_calls).append(record)
         return self.resp
 
 
@@ -37,10 +42,21 @@ def env(monkeypatch):
     for k, v in ENV.items():
         monkeypatch.setenv(k, v)
     monkeypatch.delenv("CARTESIA_API_BASE", raising=False)
+    monkeypatch.delenv("DEMO_CALL_NUMBER", raising=False)
+    # Most tests check the call we mean to place, not the demo redirect, which has its own tests.
+    monkeypatch.setenv("DEMO_CALL_REDIRECT", "0")
+
+
+OK = {"calls": [{"number": "+14155550123", "agent_call_id": "call_9", "error": None}]}
+
+VARIABLES = {
+    "case_id": "case123", "student_name": "Priya Sharma", "employer": "University Dining Services",
+    "refund_amount": "$440.64", "paycheck_count": "8",
+}
 
 
 def test_request_shape(env):
-    s = FakeSession(Resp(200, {"calls": [{"number": "+14155550123", "agent_call_id": "call_9", "error": None}]}))
+    s = FakeSession(Resp(200, OK))
     assert cartesia.place_call(CASE, PROFILE, STUBS, session=s) == "call_9"
     sent = s.calls[0]
     assert sent["url"] == "https://api.cartesia.ai/agents/calls"
@@ -49,10 +65,20 @@ def test_request_shape(env):
     assert body["agent_id"] == "agent_1" and body["from_number_id"] == "num_1"
     call = body["outbound_calls"][0]
     assert call["to_number"] == "+14155550123"  # spaces and dashes stripped
-    assert call["dynamic_variables"] == {
-        "case_id": "case123", "student_name": "Priya Sharma", "employer": "University Dining Services",
-        "refund_amount": "$440.64", "paycheck_count": "8",
-    }
+    # The number the call is for travels with it, so the agent can say who it is reaching.
+    assert call["dynamic_variables"] == {**VARIABLES, "intended_number": "+14155550123"}
+
+
+def test_demo_redirect_rings_the_demo_phone_only(env, monkeypatch):
+    """With the redirect on (the default), payroll's number is still what the call is about,
+    but the only phone that rings is DEMO_CALL_NUMBER."""
+    monkeypatch.delenv("DEMO_CALL_REDIRECT", raising=False)
+    monkeypatch.setenv("DEMO_CALL_NUMBER", "+19259677432")
+    s = FakeSession(Resp(200, OK))
+    assert cartesia.place_call(CASE, PROFILE, STUBS, session=s) == "call_9"
+    call = s.calls[0]["json"]["outbound_calls"][0]
+    assert call["to_number"] == "+19259677432"
+    assert call["dynamic_variables"]["intended_number"] == "+14155550123"
 
 
 def test_per_destination_error_is_raised(env):

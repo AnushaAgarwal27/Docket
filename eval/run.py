@@ -26,7 +26,7 @@ from agents.store import query
 from rules.engine import evaluate, load_rules
 from rules.quote_checker import check_quote
 
-MODEL = "claude-opus-5-5"
+MODEL = "claude-opus-5"
 PROFILES_DIR = Path(__file__).with_name("profiles")
 RESULTS_DIR = Path(__file__).with_name("results")
 QUESTION = "Is anything wrong with this student's pay or filings?"
