@@ -1805,7 +1805,8 @@ function animate() {
   const k = 1 - Math.exp(-cam.rate * dt * boost * SPEED);
   cam.pos.lerp(cam.tPos, k); cam.look.lerp(cam.tLook, k);
   camera.position.copy(cam.pos);
-  if (!reduced) { camera.position.x += pointer.x * 0.5; camera.position.y -= pointer.y * 0.3; }
+  // mouse parallax only on the title and end screens: in play it slid the wall seal out from under the centered HUD
+  if (!reduced && cam.orbit) { camera.position.x += pointer.x * 0.5; camera.position.y -= pointer.y * 0.3; }
   if (cam.shake > 0.001) {
     camera.position.x += Math.sin(t * 61) * cam.shake * 0.5; camera.position.y += Math.sin(t * 47 + 1.3) * cam.shake * 0.5;
     cam.shake *= Math.pow(0.02, dt);
