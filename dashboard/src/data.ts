@@ -75,6 +75,7 @@ export const ACTION_LABEL: Record<string, string> = {
   written_request_prepared: "Written request prepared",
   simulated_cohort: "Simulated students added",
   call_failed: "Call could not start",
+  call_outcome_rejected: "Call outcome NOT recorded",
   refund_matched: "Refund deposit matched",
   case_open: "Case opened",
   case_awaiting_approval: "Waiting for approval",

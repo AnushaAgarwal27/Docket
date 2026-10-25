@@ -98,6 +98,17 @@ http.route({
       });
     } catch (e) {
       const reason = e instanceof Error ? e.message.split("\n")[0] : "unknown error";
+      // The voice agent is told to end the call politely, so payroll hears a normal goodbye and a
+      // failure sounds exactly like a success. That is right for payroll and wrong for us: a
+      // rejected write would otherwise be invisible until someone went looking in the database.
+      // Leave a row saying what was lost and why.
+      await ctx.runMutation(api.activity.log, {
+        agent: "voice",
+        action: "call_outcome_rejected",
+        detail: `Payroll said "${result}" on case ${caseId} but it could not be recorded: ${reason}. ` +
+          `The call ended normally, so nothing on the call itself showed this.`,
+        inputIds: [caseId],
+      });
       return text(`Could not record the outcome (${reason}). Thank them and end the call; the team will follow up.`, 409);
     }
     const next =
