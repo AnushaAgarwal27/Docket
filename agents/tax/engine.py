@@ -53,6 +53,17 @@ def paystub_ids(hit: dict, paystubs: list[dict]) -> list[str]:
             if p["periodStart"] in starts or any(p["periodStart"] <= w <= p["periodEnd"] for w in weeks)]
 
 
+def rules_profile(profile: dict) -> dict:
+    """The student file stores the employer as a name plus employmentType / employerIsSchool; the rules
+    (rules/rules.py) read it as {"name", "type": "university" | "contractor"}. Translate, never guess."""
+    employer = profile.get("employer")
+    if isinstance(employer, dict) or employer is None:
+        return profile
+    kind = ("contractor" if profile.get("employmentType") == "contractor"
+            else "university" if profile.get("employerIsSchool") else None)
+    return {**profile, "employer": {"name": employer, **({"type": kind} if kind else {})}}
+
+
 def run(profile_id: str, as_of: date | None = None, calendar: dict = SCHOOL_CALENDAR) -> list[dict]:
     """Returns the flags written this run, as stored rows. The calendar lets the rules skip breaks."""
     as_of = as_of or date.today()
@@ -63,7 +74,7 @@ def run(profile_id: str, as_of: date | None = None, calendar: dict = SCHOOL_CALE
     written = []
 
     for rule in yaml.safe_load(RULES_FILE.read_text()):
-        hit = checks.CHECKS[rule["check"]](profile, paystubs, calendar, as_of)
+        hit = checks.CHECKS[rule["check"]](rules_profile(profile), paystubs, calendar, as_of)
         if hit is None:
             log(AGENT, "rule_not_triggered", f"{rule['id']}: no issue for {profile['name']}", inputIds=[profile_id])
             continue

@@ -19,3 +19,15 @@ def test_hours_links_only_the_paystub_with_the_long_week():
 
 def test_rule_without_paystubs_links_none():
     assert paystub_ids({"amountCents": 0, "taxYear": 2025}, STUBS) == []
+
+
+def test_stored_profile_is_translated_for_the_rules():
+    from agents.tax.engine import rules_profile
+    stored = {**PROFILE, "employer": "University Dining Services", "employmentType": "employee", "employerIsSchool": True}
+    assert rules_profile(stored)["employer"] == {"name": "University Dining Services", "type": "university"}
+    assert rules_profile({**stored, "employmentType": "contractor"})["employer"]["type"] == "contractor"
+    assert rules_profile({**stored, "employerIsSchool": False})["employer"] == {"name": "University Dining Services"}
+    eval_style = {**PROFILE, "employer": {"name": "Residential Life", "type": "university"}}
+    assert rules_profile(eval_style) is eval_style
+    hit = fica_exempt(rules_profile(stored), STUBS, SCHOOL_CALENDAR, date(2026, 10, 24))
+    assert hit["amountCents"] == 44064
