@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* The game sizes itself to --mana-app-height; on a plain page give it the viewport. */
+:root { --mana-app-height: 100dvh; }
+html, body, #root { margin: 0; min-height: 100%; background: #EADFCB; }
+.page { width: 100%; max-width: 1400px; margin: 0 auto; }
