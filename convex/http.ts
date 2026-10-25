@@ -303,4 +303,26 @@ http.route({
   }),
 });
 
+// A catch-all, purely so a mistyped tool URL is not silent.
+//
+// A webhook tool pointed at the wrong path reaches this deployment and 404s with no trace, which
+// looks exactly like the tool never being called — and on the call it sounds the same too, because
+// the agent just carries on without the facts. This records what was asked for, so the feed can
+// tell "wrong path" (a row appears here) from "wrong host" (nothing appears anywhere).
+// Exact routes above take precedence, so this only ever sees requests nothing else matched.
+http.route({
+  pathPrefix: "/",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const path = new URL(req.url).pathname;
+    await ctx.runMutation(api.activity.log, {
+      agent: "voice",
+      action: "unknown_endpoint",
+      detail: `Something POSTed to ${path}, which is not a Docket endpoint. If this is a Cartesia ` +
+        `tool, its URL is wrong — compare it with scripts/check_voice.`,
+    });
+    return text(`No endpoint at ${path}.`, 404);
+  }),
+});
+
 export default http;
