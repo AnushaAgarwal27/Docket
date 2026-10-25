@@ -1,4 +1,4 @@
-You are making the 3-minute main demo video for **Docket**, our Cal Hacks 13.0 project. You know the idea already. This prompt gives you everything else: the real numbers, our user research, exactly what each prize track's judges look for and where that appears, a timed script, and the files to use. Follow it closely. Each track's judges watch for their own criteria, so every track below must be visibly covered. (Fetch.ai also gets its own separate video, so here it gets the essentials, not the deep dive.)
+You are making the 3-minute main demo video for **Docket**, our Cal Hacks 13.0 project, **using the Docket Pocket app we built here in Mana as the product on screen**. You know the idea and the app already. This prompt gives you everything else: the real numbers, our user research, exactly what each prize track's judges look for and where that appears, a timed script, and the files to use. Follow it closely. Each track's judges watch for their own criteria, so every track below must be visibly covered. (Fetch.ai also gets its own separate video, so here it gets the essentials, not the deep dive.)
 
 ## Output
 
@@ -6,7 +6,8 @@ You are making the 3-minute main demo video for **Docket**, our Cal Hacks 13.0 p
 - Voiceover: warm, calm, plain English. No hype words ("revolutionary", "seamless", "game-changing").
 - Burned-in captions for every spoken line, and **subtitles on the phone call**.
 - A small lower-third **track tag** whenever a sponsor's tool or criterion is on screen, e.g. "Fetch.ai · 8 agents on Agentverse".
-- Look: cream and beige paper, dark ink text, green for money recovered, orange for objections. These match the game's colors.
+- Look: match the Docket Pocket app's own design (its colors, type and components), so the video and the app feel like one product. Green for money recovered, orange for objections.
+- **Every product moment is a real Docket Pocket screen**, shown in a phone or browser frame. Don't draw fake UI and don't use screenshots from anywhere else.
 - Say "Priya is a synthetic student; the survey is real" once, early.
 
 ## The product in one sentence
@@ -55,14 +56,14 @@ Verdict: **"Claim stands, with a condition"**, so Priya decides.
 | **Capital One Nessie** | Completeness, creativity, complexity | Her bank account; the refund deposit closing the case (1:50–2:10) | "Her bank account runs on Capital One's Nessie API. When the refund deposit lands, the Ledger matches it, and the case closes on its own." |
 | **Anthropic** | A named community, a real problem, it works, thoughtful use of Claude, knowing where it could go wrong | Survey (named community), the quote check, the eval (2:10–2:25) | "Claude reads paystubs and writes explanations. Code does every calculation and every decision, because a wrong number here costs a student money." |
 | **Mana.space** | Meaningful use of Mana, plus one moment where Mana changed what we built or how fast | The Mana moment (2:40–2:52) and the end card | See the Mana beat in the script |
-| **Convex** | Real Convex features: live queries, functions, file storage, one backend that updates live | Dashboard and game updating on their own | "Every agent writes to one Convex student file, so every screen updates live, including this game." |
+| **Convex** | Real Convex features: live queries, functions, file storage, one backend that updates live | The screens updating on their own as the case moves | "Every agent writes to one Convex student file, so every screen updates live." |
 | **Apify** | Meaningful use of Apify | The IRS quote check (0:45–1:10) | "Apify fetches the official IRS pages, and code checks every quote against them word for word." |
 | **Best People-First Hack** (general prize) | Impact on people | The whole story | No separate line needed |
 
 ## Script (3:00)
 
 **0:00–0:12 · Hook**
-Visual: `01-game-title-live-case.png`, slow zoom on "$440.64".
+Visual: the Docket Pocket home or case screen with Priya's $440.64; slow zoom on the amount.
 VO: "Priya is an F-1 student working in her campus dining hall. Every paycheck, $55 comes out for taxes she doesn't owe. She's lost $440.64, and she has no idea."
 Caption: *Priya is synthetic. Our survey is real.*
 
@@ -72,22 +73,22 @@ VO: "Before we wrote any code, we surveyed 65 students. Seventy-four percent did
 Tags: *Microsoft · customer understanding* · *Anthropic · a named community: international students*
 
 **0:30–0:45 · Notice (Fetch.ai)**
-Visual: ASI:One screen recording: she types "check my pay"; the activity feed lights up.
+Visual: our ASI:One screen recording: she types "check my pay". Then the animated workflow diagram, with the Docket Pocket screen that shows the agents working (activity, or the finding appearing).
 VO: "Priya opens ASI:One and types: check my pay. Eight Fetch.ai agents go to work. One reads her paystubs and her bank. One runs the IRS rules in code."
 Tag: *Fetch.ai · 8 agents on Agentverse · Agent Chat Protocol*
 
 **0:45–1:10 · The Hearing and the proof (Fetch.ai, Anthropic, Apify)**
-Visual: `02-round1-hearing-card.png`, the IRS quote stamped "ADMITTED", the objection cards, then `03-hearing-claim-stands.png`.
+Visual: the Docket Pocket screen for the Hearing or the finding: the objections, the IRS quote stamped "ADMITTED", then the verdict "Claim stands, with a condition".
 VO: "Before she sees anything, two agents argue it. The Auditor objects for payroll: is she past five years? Can Medicare even be recovered? The Advocate answers from her file, and code rules. And the IRS sentence on screen isn't the AI's memory: Apify fetched the page, and code checked it word for word."
 Tags: *Fetch.ai · the Hearing* · *Apify · official sources* · *Anthropic · Claude writes, code decides*
 
 **1:10–1:20 · Approve (Fetch.ai Interactive Cards, responsible design)**
-Visual: the ASI:One review card with Approve; she replies "yes".
+Visual: the approval moment: the ASI:One review card from our recording, and/or the Docket Pocket screen where she approves.
 VO: "Nothing happens without her yes."
 Tag: *Fetch.ai · ASI:One Interactive Cards*
 
 **1:20–1:50 · The real call (Cartesia)**
-Visual: our **real phone call recording**, phone in frame, with subtitles. Then `06-call-logged.png`, or the dashboard call log.
+Visual: our **real phone call recording**, phone in frame, with subtitles. Then the Docket Pocket screen showing the logged call: who answered, the promised date and the reference number.
 VO before the call: "Docket's Cartesia voice agent calls payroll."
 Play 15–20 seconds of the call: Docket introduces itself as an AI calling with her permission, payroll agrees to refund, and Docket confirms the date.
 VO after: "It said it was an AI, never pretended to be her, and never mentioned her work hours, because payroll's slice of her file doesn't contain them. The promise is logged."
@@ -95,7 +96,7 @@ Caption: *A teammate plays the payroll office.*
 Tag: *Cartesia · voice agent*
 
 **1:50–2:10 · Remember (Nessie, Convex)**
-Visual: `07-round3-money-card.png` → `09-deposit-matched.png` → `10-case-closed.png` → `11-dashboard-refunded.png`.
+Visual: the Docket Pocket screens for the money: watching the bank for $440.64, then the deposit matched, then the case closed with "Recovered $440.64".
 VO: "Docket doesn't stop at a promise. The refund lands in her Capital One account. The Ledger matches it, the case closes, and Docket tells her, without being asked. Every step is one row in a shared Convex file, so every screen updates live."
 Tags: *Capital One Nessie* · *Convex · live student file*
 
@@ -105,46 +106,29 @@ VO: "On 25 synthetic students, plain Claude told one student he was owed money h
 Tags: *Anthropic · eval* · *Microsoft · responsible design*
 
 **2:25–2:40 · Path to production (Microsoft)**
-Visual: the waitlist form, then the waitlist responses (11 sign-ups; Penn State, Villanova, SFBU), then `docket-game.vercel.app` live in a browser.
+Visual: the waitlist form, then the waitlist counts (11 sign-ups; Penn State, Villanova, SFBU), then Docket Pocket open on a phone.
 VO: "Eleven students have already joined the waitlist, from Penn State, Villanova and SFBU. It's live today, and next it goes to international student offices, where one advisor could watch every case at once."
 Tag: *Microsoft · path to production*
 
 **2:40–2:52 · The Mana moment (Mana.space)**
-Visual: screen recording of our Mana chat and the **docket-pocket** app in Mana.
+Visual: this Mana chat building Docket Pocket, then the finished app.
 VO: "[FILL IN, one sentence, true: what Mana changed. For example: 'We built Docket Pocket in Mana, a pocket version a student can open and use, and Mana planned and produced this video.']"
 Tag: *Mana.space*
 
 **2:52–3:00 · Close**
-Visual: `10-case-closed.png` → Docket logo → "docket-game.vercel.app".
+Visual: the Docket Pocket "case closed" screen → Docket logo → the app's public Mana link.
 VO: "Claude can answer a question. Docket notices the one you didn't know to ask, and follows up until the money is back."
 End card: Docket · Built at Cal Hacks 13.0 · Fetch.ai · Cartesia · Capital One Nessie · Anthropic · Microsoft · Convex · Apify · Mana
 
-## Files
+## Visuals: where each one comes from
 
-Screenshots (uploaded with this prompt):
-
-| File | Shows |
-|---|---|
-| `01-game-title-live-case.png` | Game title; the "Live" case card selected |
-| `02-round1-hearing-card.png` | Round 1: "The hearing" |
-| `03-hearing-claim-stands.png` | Courtroom: Advocate vs Auditor; "Claim stands, with a condition · $440.64 · Priya decides" |
-| `04-hearing-verdict.png` | The Judge reads the verdict |
-| `05-round2-call-card.png` | Round 2: "The call" |
-| `06-call-logged.png` | Switchboard; Approved, Dialing, Connected; "Call logged… Promised by Nov 8, 2026". Crop the word "(rehearsal)", or use the real call's log instead |
-| `07-round3-money-card.png` | Round 3: "The money" |
-| `08-post-refund-to-bank.png` | Posting the refund to the bank |
-| `09-deposit-matched.png` | Ledger: "Deposit matched to the case" |
-| `10-case-closed.png` | "$440.64 is back with Priya." |
-| `11-dashboard-refunded.png` | Live dashboard: Recovered $440.64, case closed |
-| `12-dashboard-finding.png` | Live dashboard before the refund: $440.64 withheld in error |
-
-We also upload:
-- The survey charts.
-- The waitlist form and its responses.
-- The ASI:One chat recording.
-- The real phone call recording.
-- The Agentverse agent list.
-- The Mana chat and app recording.
+- **Product screens: from the Docket Pocket app in this Mana project.** Before building, list every screen the app has and match each script beat to one. If a beat has no matching screen, tell me which; don't invent one.
+- **Our uploads:**
+  - The survey charts and the waitlist form.
+  - The ASI:One chat recording ("check my pay", the Hearing, the cards, "yes").
+  - The real phone call recording.
+  - The Agentverse list of our 8 agents.
+- **The workflow diagram:** you draw it, animated, in the app's style.
 
 ## Never say or show
 
