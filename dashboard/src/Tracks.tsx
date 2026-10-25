@@ -1,6 +1,7 @@
 import type { Activity, Patterns, Snapshot } from "./data";
 import { actionLabel, time } from "./data";
-import { Suspense, lazy } from "react";
+import { lazy } from "react";
+import { Stage } from "./Guards";
 
 // three.js is large, so the 3D view loads only when this tab opens.
 const Constellation = lazy(() => import("./Constellation").then((m) => ({ default: m.Constellation })));
@@ -69,9 +70,9 @@ export function TracksView({ snap, feed, patterns, mode, onTab }: {
         </div>
       </section>
 
-      <Suspense fallback={<section className="panel constellation"><div className="cs-stage" /></section>}>
+      <Stage fallback={<section className="panel constellation"><div className="cs-stage" /></section>}>
         <Constellation feed={feed} />
-      </Suspense>
+      </Stage>
 
       <section className="panel pad flowmap" aria-label="How the agents connect">
         <div className="fm-col">

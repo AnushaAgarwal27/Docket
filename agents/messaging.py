@@ -6,10 +6,10 @@ import asyncio
 
 from uagents import Context, Model
 
-from agents.messages import PORTS, address_of
+from agents.messages import address_of, configured
 from agents.store import log
 
-NAMES = {address_of(key): key.lower() for key in PORTS}
+NAMES = {address_of(key): key.lower() for key in configured()}
 
 
 def name_of(address: str) -> str:

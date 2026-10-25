@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from agents.ledger.ledger import to_cents, to_hours
 
-MODEL = "claude-opus-5-5"
+MODEL = "claude-opus-5"
 
 PROMPT = """Transcribe this paystub into the fields of the schema.
 Copy every value exactly as printed, including "$" and commas. Do not calculate,

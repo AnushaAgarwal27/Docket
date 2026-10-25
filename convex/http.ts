@@ -2,13 +2,27 @@ import { httpRouter } from "convex/server";
 import { env, httpAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 
-// Webhook tools for the Cartesia voice agent that calls payroll (see docs/CARTESIA.md).
+// Webhook tools for Docket's two Cartesia voice agents (see docs/CARTESIA.md).
+//
+// The payroll caller:
 //   POST /cartesia/case-summary   body {case_id}                      -> plain-text facts for the call
 //   POST /cartesia/call-outcome   body {case_id, result, answered_by,  -> runs cases.logCallOutcome
 //                                       summary, promised_by?, reference_number?}
 //   result is one of promised, stalled, refused, needs_student
-// Both require "Authorization: Bearer <CARTESIA_TOOL_TOKEN>". Responses are short plain text because
-// Cartesia hands the body to the voice model as the tool result.
+//
+// The student line (both directions):
+//   POST /cartesia/identify       body {from_number}                  -> who is calling, by their number
+//   POST /cartesia/student-brief  body {profile_id}                   -> what is open on their file
+//   POST /cartesia/ask            body {profile_id, question}         -> answer now, or take the question
+//   POST /cartesia/decision       body {profile_id, subject, answer}  -> a yes or no said out loud
+//   POST /cartesia/student-call   body {profile_id, summary, ...}     -> log the call when it ends
+//
+// Every route requires "Authorization: Bearer <CARTESIA_TOOL_TOKEN>". Responses are short plain text
+// because Cartesia hands the body to the voice model as the tool result.
+//
+// What these routes will not do: look a student up by anything but the number that rang or the
+// profile id we placed the call with, return more than one student, or expose a bank row. A tool
+// that cannot identify one student answers with a sentence saying so and nothing else.
 
 const http = httpRouter();
 const RESULTS = ["promised", "stalled", "refused", "needs_student"] as const;
@@ -92,6 +106,128 @@ http.route({
       : result === "refused" ? "Recorded: payroll will not refund. A written request or an IRS claim will follow."
       : "Recorded: payroll needs the student on the line. A three-way call will be scheduled.";
     return text(`${next} Thank them and end the call.`);
+  }),
+});
+
+// ---------------------------------------------------------------------------
+// The student line
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: "/cartesia/identify",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!authorized(req)) return text("Unauthorized.", 401);
+    const body = await readObject(req);
+    const from = body && field(body, "from_number", "fromNumber", "caller", "from");
+    if (!from) return text("Missing from_number.", 400);
+    const who = await ctx.runQuery(internal.voice.identify, { fromNumber: from });
+    if (who === null) {
+      return text(
+        "I do not recognise this number, so I cannot discuss anyone's file. " +
+        "Say that Docket can only talk about an account from the number on it, offer to help them add " +
+        "this number from the Docket dashboard, and end the call politely.",
+      );
+    }
+    return text(
+      `This is ${who.name}. Greet her by her first name, ${who.firstName}. ` +
+      `Her profile_id is ${who.profileId}; use it for every other tool on this call.`,
+    );
+  }),
+});
+
+http.route({
+  path: "/cartesia/student-brief",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!authorized(req)) return text("Unauthorized.", 401);
+    const body = await readObject(req);
+    const profileId = body && field(body, "profile_id", "profileId");
+    if (!profileId) return text("Missing profile_id.", 400);
+    const found = await ctx.runQuery(internal.voice.studentBrief, { profileId });
+    if (found === null) return text("I could not find that file. Apologise and offer to call back.", 404);
+    return text(found.text);
+  }),
+});
+
+http.route({
+  path: "/cartesia/ask",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!authorized(req)) return text("Unauthorized.", 401);
+    const body = await readObject(req);
+    const profileId = body && field(body, "profile_id", "profileId");
+    const question = body && field(body, "question", "q", "text");
+    if (!profileId || !question) return text("Need profile_id and question.", 400);
+    // Answer from what we already hold and have already checked. Anything else becomes a real
+    // research job rather than a guess made up on the call.
+    const stored = await ctx.runQuery(internal.voice.storedAnswer, { profileId, question });
+    if (stored !== null) {
+      const hedge = stored.confidence === "high" ? "" :
+        " Say that this one is not certain and that she should confirm it with her international student office.";
+      return text(`${stored.answer}${hedge}`);
+    }
+    const requestId = await ctx.runMutation(internal.voice.askResearch, {
+      profileId, question, askedVia: "voice",
+    });
+    if (requestId === null) return text("I could not find that file. Apologise and offer to call back.", 404);
+    return text(
+      "You do not know the answer to this yet, and you must not guess. Tell her you are handing it to " +
+      "Docket's research agent, that it will look through the official sources and the latest news, and " +
+      "that she will get the answer as a message shortly. Then ask if there is anything else.",
+    );
+  }),
+});
+
+http.route({
+  path: "/cartesia/decision",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!authorized(req)) return text("Unauthorized.", 401);
+    const body = await readObject(req);
+    const profileId = body && field(body, "profile_id", "profileId");
+    const subject = body && field(body, "subject", "about");
+    const answer = body && field(body, "answer", "decision", "yes");
+    if (!profileId || !subject || !answer) return text("Need profile_id, subject and answer.", 400);
+    if (!["refund", "document", "group"].includes(subject)) {
+      return text("subject must be one of refund, document, group.", 400);
+    }
+    const said = answer.trim().toLowerCase();
+    const YES = ["yes", "y", "true", "approve", "approved", "join", "agree", "ok", "okay"];
+    const NO = ["no", "n", "false", "decline", "declined", "reject", "skip", "not now"];
+    if (!YES.includes(said) && !NO.includes(said)) {
+      // A half-heard answer must never be read as consent.
+      return text("I did not catch that clearly. Ask her to answer with just yes or no, then call this tool again.", 400);
+    }
+    const result = await ctx.runMutation(internal.voice.decide, {
+      profileId,
+      subject: subject as "refund" | "document" | "group",
+      yes: YES.includes(said),
+    });
+    return text(`${result} Read that back to her, then ask if there is anything else.`);
+  }),
+});
+
+http.route({
+  path: "/cartesia/student-call",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!authorized(req)) return text("Unauthorized.", 401);
+    const body = await readObject(req);
+    const profileId = body && field(body, "profile_id", "profileId");
+    const summary = body && field(body, "summary");
+    if (!profileId || !summary) return text("Need profile_id and summary.", 400);
+    const direction = (body && field(body, "direction")) === "inbound" ? "inbound" : "outbound";
+    await ctx.runMutation(internal.voice.logCall, {
+      profileId,
+      direction,
+      purpose: (body && field(body, "purpose")) ?? "student_call",
+      summary,
+      ...(body && field(body, "notification_id", "notificationId")
+        ? { notificationId: field(body, "notification_id", "notificationId") }
+        : {}),
+    });
+    return text("Recorded. Thank her and end the call.");
   }),
 });
 
