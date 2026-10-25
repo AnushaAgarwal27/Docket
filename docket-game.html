@@ -9,20 +9,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --night: #120E0B;
-    --panel: #1C1612;
-    --panel-2: #241C17;
-    --line: rgba(244, 236, 224, 0.16);
-    --line-strong: rgba(244, 236, 224, 0.32);
-    --ink: #F4ECE0;
-    --ink-2: #CBBFAE;
-    --muted: #9B8E7D;
-    --adv: #5B8CFF;
-    --counsel: #F07A3A;
-    --judge: #E9DCC4;
-    --win: #43D18A;
-    --warn: #F2B544;
+    --night: #F3EDE3;
+    --panel: #FBF8F3;
+    --panel-2: #FFFFFF;
+    --line: rgba(74, 56, 38, 0.12);
+    --line-strong: rgba(74, 56, 38, 0.22);
+    --ink: #2B231C;
+    --ink-2: #5F5347;
+    --muted: #8A7D6E;
+    --adv: #3F6FE0;
+    --counsel: #D4581C;
+    --judge: #8A7458;
+    --win: #1F8F55;
+    --warn: #B7791F;
     --paper: #F6F0E4;
+    --shadow: 0 1px 2px rgba(74, 56, 38, 0.08), 0 6px 18px rgba(74, 56, 38, 0.10);
     --display: 'Archivo', system-ui, sans-serif;
     --sans: 'Public Sans', system-ui, sans-serif;
     --mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -37,21 +38,21 @@
   .topbar {
     position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 20;
     display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 22px;
-    background: linear-gradient(var(--night), rgba(18,14,11,0));
+    background: linear-gradient(rgba(243,237,227,0.92), rgba(243,237,227,0));
   }
   .brand { font-family: var(--display); font-weight: 900; font-size: 20px; letter-spacing: -0.02em; }
   .brand small { font-family: var(--mono); font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 10px; letter-spacing: 0; }
   .rounds { display: flex; gap: 6px; }
   .rounds span {
     font-family: var(--mono); font-size: 12px; padding: 6px 10px; border-radius: 6px;
-    border: 1px solid var(--line); color: var(--muted); background: rgba(28,22,18,0.7);
+    border: 1px solid var(--line); color: var(--muted); background: rgba(255,255,255,0.85);
   }
   .rounds span.on { color: var(--night); background: var(--ink); border-color: var(--ink); font-weight: 600; }
-  .rounds span.done { color: var(--win); border-color: rgba(67,209,138,0.5); }
+  .rounds span.done { color: var(--win); border-color: rgba(31,143,85,0.45); }
   .controls { display: flex; gap: 8px; align-items: center; }
   .chip-btn {
-    white-space: nowrap; min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong);
-    background: rgba(28,22,18,0.85); font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+    white-space: nowrap; min-height: 36px; padding: 0 14px; border-radius: 999px; box-shadow: var(--shadow); border: 1px solid var(--line-strong);
+    background: rgba(255,255,255,0.92); font-family: var(--mono); font-size: 12px; color: var(--ink-2);
   }
   .chip-btn:hover { color: var(--ink); border-color: var(--ink-2); }
   .chip-btn[aria-pressed="true"] { color: var(--night); background: var(--ink); border-color: var(--ink); }
@@ -69,13 +70,13 @@
   .fighter.right .who { flex-direction: row-reverse; }
   .fighter .name { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -0.01em; }
   .fighter .role { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
-  .bar { width: min(420px, 38vw); height: 16px; border-radius: 4px; background: rgba(244,236,224,0.08); border: 1px solid var(--line-strong); overflow: hidden; position: relative; }
+  .bar { width: min(420px, 38vw); height: 16px; border-radius: 4px; background: rgba(74,56,38,0.08); border: 1px solid var(--line-strong); overflow: hidden; position: relative; }
   .bar i { position: absolute; inset: 0; transform-origin: left; transition: transform .6s cubic-bezier(.2,.8,.2,1), background .3s; }
   .fighter.right .bar i { transform-origin: right; }
-  .bar .ghost { background: rgba(244,236,224,0.35); transition-delay: .35s; }
+  .bar .ghost { background: rgba(74,56,38,0.18); transition-delay: .35s; }
   .bar .fill.adv { background: var(--adv); }
   .bar .fill.counsel { background: var(--counsel); }
-  .bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(18,14,11,0.9) calc(10% - 2px) 10%); }
+  .bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(251,248,243,0.95) calc(10% - 2px) 10%); }
   .meter-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .center-hud { text-align: center; padding-top: 2px; max-width: 34vw; }
   .center-hud .round { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
@@ -84,7 +85,7 @@
   .center-hud .claim.lose { color: var(--counsel); text-decoration: line-through; }
   .center-hud .claim.long { font-size: clamp(16px, 1.5vw, 21px); white-space: nowrap; }   /* "Social Security + Medicare" on one line */
   .conditions { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
-  .conditions span { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(242,181,68,0.6); color: var(--warn); background: rgba(18,14,11,0.7); }
+  .conditions span { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(183,121,31,0.5); color: var(--warn); background: rgba(255,255,255,0.9); }
 
   /* Call + money HUDs */
   .side-hud {
@@ -93,26 +94,27 @@
   }
   .side-hud.show { opacity: 1; }
   .call-steps { display: flex; gap: 8px; justify-content: center; }
-  .call-steps span { font-family: var(--mono); font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); background: rgba(28,22,18,0.85); }
+  .call-steps span { font-family: var(--mono); font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); background: rgba(255,255,255,0.92); }
   .call-steps span.on { color: var(--ink); border-color: var(--ink-2); }
-  .call-steps span.ok { color: var(--win); border-color: rgba(67,209,138,0.6); }
-  .call-steps span.warn { color: var(--warn); border-color: rgba(242,181,68,0.6); }
+  .call-steps span.ok { color: var(--win); border-color: rgba(31,143,85,0.5); }
+  .call-steps span.warn { color: var(--warn); border-color: rgba(183,121,31,0.5); }
   .money { font-family: var(--display); font-weight: 900; font-size: 56px; letter-spacing: -0.03em; line-height: 1; }
   .money small { display: block; font-family: var(--mono); font-weight: 400; font-size: 12px; color: var(--ink-2); letter-spacing: 0; margin-top: 6px; }
   .money.win { color: var(--win); }
-  .date-chip { display: inline-block; margin-top: 10px; font-family: var(--mono); font-size: 13px; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 6px; background: rgba(28,22,18,0.85); }
+  .date-chip { display: inline-block; margin-top: 10px; font-family: var(--mono); font-size: 13px; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 6px; background: rgba(255,255,255,0.92); }
 
   /* ---------- Dialogue box ---------- */
   .dialog {
     position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); z-index: 20;
     width: min(900px, calc(100vw - 32px)); max-height: calc(100vh - 150px); overflow-y: auto;
-    background: rgba(24,19,15,0.94); border: 1px solid var(--line-strong);
+    background: rgba(251,248,243,0.97); border: 1px solid var(--line); box-shadow: var(--shadow);
     border-radius: 14px; padding: 16px 22px 14px; opacity: 0; pointer-events: none;
     transition: opacity .3s ease, transform .3s ease;
     user-select: none; -webkit-user-select: none;   /* fast clicks on Next or a card shouldn't paint a text selection */
   }
   /* Between lines (while cards fly or a banner plays) the last line stays readable but steps back */
-  .dialog.show.stale { opacity: 0.55; }
+  .dialog.show.stale { opacity: 0.85; }
+  .dialog.show.stale .line, .dialog.show.stale .speaker { opacity: 0.6; }
   .dialog.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
   .speaker { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 800; font-size: 15px; margin-bottom: 6px; }
   .speaker::before { content: ""; width: 10px; height: 10px; border-radius: 2px; background: var(--dot, var(--ink)); }
@@ -129,18 +131,18 @@
   /* Reserved spot for a guide avatar that will hover over the right card. Empty and invisible for now;
      choose() keeps it on the right card's top-right corner. Add ?slot=show to the URL to see where it sits. */
   .avatar-slot { position: absolute; width: 56px; height: 56px; pointer-events: none; z-index: 2; }
-  body.show-slot .avatar-slot { border: 2px dashed rgba(245,231,200,0.6); border-radius: 50%; }
+  body.show-slot .avatar-slot { border: 2px dashed rgba(74,56,38,0.45); border-radius: 50%; }
   .choice {
     text-align: left; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line-strong);
-    background: var(--panel-2); display: flex; flex-direction: column; gap: 3px; min-height: 56px;
+    background: var(--panel-2); box-shadow: 0 1px 2px rgba(74,56,38,0.06); display: flex; flex-direction: column; gap: 3px; min-height: 56px;
     transition: transform .15s ease, border-color .15s ease, background .15s ease;
   }
   .choice:hover:not([disabled]) { transform: translateY(-2px); border-color: var(--ink-2); }
   .choice b { font-family: var(--display); font-weight: 700; font-size: 17px; }
   .choice span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
   .choice kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  .choice.right { border-color: var(--win); background: rgba(67,209,138,0.12); }
-  .choice.wrong { border-color: var(--counsel); background: rgba(240,122,58,0.12); opacity: .7; }
+  .choice.right { border-color: var(--win); background: rgba(31,143,85,0.10); }
+  .choice.wrong { border-color: var(--counsel); background: rgba(212,88,28,0.08); opacity: .7; }
   /* the result is spelled out too, not only colored */
   .choice.right b::after { content: " ✓ right"; color: var(--win); font-size: 14px; }
   .choice.wrong b::after { content: " ✗ not this"; color: var(--counsel); font-size: 14px; }
@@ -148,16 +150,16 @@
   .sign-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
   .sign-btn { min-height: 48px; padding: 0 22px; border-radius: 10px; border: 0; background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 16px; }
   .sig { width: 200px; height: 44px; }
-  .sig path { fill: none; stroke: #6F8CFF; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 400; stroke-dashoffset: 400; }
+  .sig path { fill: none; stroke: #3F6FE0; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 400; stroke-dashoffset: 400; }
   .sig.go path { transition: stroke-dashoffset .8s ease; stroke-dashoffset: 0; }
 
   /* ---------- Banners ---------- */
   .banner {
     position: fixed; left: 16px; right: 16px; top: 30%; z-index: 25; text-align: center; pointer-events: none;
     font-family: var(--display); font-weight: 900; font-size: clamp(40px, 6.5vw, 88px); letter-spacing: -0.03em; line-height: 1;
-    text-shadow: 0 2px 28px rgba(18,14,11,0.7); opacity: 0; transform: scale(1.25);
+    text-shadow: 0 2px 0 rgba(255,255,255,0.9), 0 2px 28px rgba(251,248,243,0.95); opacity: 0; transform: scale(1.25);
   }
-  .banner small { display: block; font-family: var(--sans); font-weight: 500; font-size: 18px; letter-spacing: 0; margin: 16px auto 0; max-width: 640px; width: fit-content; padding: 8px 14px; border-radius: 10px; background: rgba(18,14,11,0.82); line-height: 1.45; color: var(--ink); text-shadow: none; }
+  .banner small { display: block; font-family: var(--sans); font-weight: 500; font-size: 18px; letter-spacing: 0; margin: 16px auto 0; max-width: 640px; width: fit-content; padding: 8px 14px; border-radius: 10px; background: rgba(251,248,243,0.96); box-shadow: var(--shadow); line-height: 1.45; color: var(--ink); text-shadow: none; }
   .banner.go { animation: bannerIn 1.9s cubic-bezier(.2,.8,.2,1) forwards; }
   @keyframes bannerIn {
     0% { opacity: 0; transform: scale(1.35); }
@@ -173,30 +175,30 @@
   /* ---------- Round card ---------- */
   .roundcard {
     position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px;
-    background: rgba(18,14,11,0.0); pointer-events: none; opacity: 0;
+    background: rgba(243,237,227,0); pointer-events: none; opacity: 0;
   }
   .roundcard .k { font-family: var(--mono); font-size: 14px; color: var(--ink-2); }
   .roundcard .t { font-family: var(--display); font-weight: 900; font-size: clamp(48px, 9vw, 120px); letter-spacing: -0.03em; line-height: 1; }
   .roundcard .d { font-size: 17px; color: var(--ink-2); max-width: 560px; text-align: center; padding: 0 16px; }
   .roundcard.go { animation: rc 2.2s ease forwards; }
   /* A round card waits for the viewer: it stays up until Begin (or Space/Enter) */
-  .roundcard.hold { opacity: 1; background: rgba(18,14,11,0.82); pointer-events: auto; animation: rcIn .4s ease; }
+  .roundcard.hold { opacity: 1; background: rgba(243,237,227,0.9); pointer-events: auto; animation: rcIn .4s ease; }
   .roundcard.out { animation: rcOut .35s ease forwards; }
-  @keyframes rcIn { from { opacity: 0; background: rgba(18,14,11,0); } to { opacity: 1; background: rgba(18,14,11,0.82); } }
-  @keyframes rcOut { from { opacity: 1; background: rgba(18,14,11,0.82); } to { opacity: 0; background: rgba(18,14,11,0); } }
+  @keyframes rcIn { from { opacity: 0; background: rgba(243,237,227,0); } to { opacity: 1; background: rgba(243,237,227,0.9); } }
+  @keyframes rcOut { from { opacity: 1; background: rgba(243,237,227,0.9); } to { opacity: 0; background: rgba(243,237,227,0); } }
   .roundcard .next-btn { margin-top: 18px; }
   .roundcard:not(.hold) .next-btn { visibility: hidden; }
   @keyframes rc {
-    0% { opacity: 0; background: rgba(18,14,11,0); }
-    15% { opacity: 1; background: rgba(18,14,11,0.82); }
-    78% { opacity: 1; background: rgba(18,14,11,0.82); }
-    100% { opacity: 0; background: rgba(18,14,11,0); }
+    0% { opacity: 0; background: rgba(243,237,227,0); }
+    15% { opacity: 1; background: rgba(243,237,227,0.9); }
+    78% { opacity: 1; background: rgba(243,237,227,0.9); }
+    100% { opacity: 0; background: rgba(243,237,227,0); }
   }
 
   /* ---------- Title + results ---------- */
   .screen {
     position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; padding: 76px 6vw 32px; overflow-y: auto;
-    background: linear-gradient(90deg, rgba(18,14,11,0.96) 0%, rgba(18,14,11,0.86) 46%, rgba(18,14,11,0.15) 100%);
+    background: linear-gradient(90deg, rgba(243,237,227,0.97) 0%, rgba(243,237,227,0.9) 46%, rgba(243,237,227,0.1) 100%);
     transition: opacity .45s ease;
   }
   .screen.hide { opacity: 0; pointer-events: none; }
@@ -206,7 +208,7 @@
   .screen p { font-size: 17px; line-height: 1.6; color: var(--ink-2); }
   .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .case-card {
-    text-align: left; padding: 16px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--panel);
+    text-align: left; padding: 16px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--panel-2); box-shadow: var(--shadow);
     display: flex; flex-direction: column; gap: 6px; min-height: 132px; transition: border-color .15s, transform .15s;
   }
   .case-card:hover { transform: translateY(-2px); border-color: var(--ink-2); }
@@ -216,12 +218,12 @@
   .case-card em { font-style: normal; font-family: var(--display); font-weight: 900; font-size: 24px; margin-top: auto; }
   .case-card em.dim { font-size: 15px; font-weight: 700; color: var(--ink-2); }
   .modes { display: flex; gap: 8px; flex-wrap: wrap; }
-  .mode-btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--panel); font-family: var(--display); font-weight: 700; font-size: 15px; }
+  .mode-btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--panel-2); font-family: var(--display); font-weight: 700; font-size: 15px; }
   .mode-btn[aria-pressed="true"] { background: var(--ink); color: var(--night); border-color: var(--ink); }
   .start-btn { align-self: flex-start; min-height: 54px; padding: 0 28px; border-radius: 12px; border: 0; background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 900; font-size: 18px; }
   .screen .fine { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.6; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .stat { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+  .stat { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); box-shadow: 0 1px 2px rgba(74,56,38,0.06); }
   .stat b { display: block; font-family: var(--display); font-weight: 900; font-size: 24px; line-height: 1.15; letter-spacing: -0.02em; }
   .stat span { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -245,7 +247,7 @@
     .fighter .name { font-size: 16px; }
     .bar { width: 42vw; }
     .line { font-size: 17px; }
-    .screen { background: rgba(18,14,11,0.9); padding: 72px 18px 24px; overflow-y: auto; align-items: flex-start; }
+    .screen { background: rgba(243,237,227,0.94); padding: 72px 18px 24px; overflow-y: auto; align-items: flex-start; }
     .cases, .stats { grid-template-columns: 1fr; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -382,11 +384,11 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x120E0B);
-scene.fog = new THREE.Fog(0x120E0B, 18, 46);
+scene.background = new THREE.Color(0xF3EDE3);
+scene.fog = new THREE.Fog(0xF3EDE3, 22, 52);
 const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 200);
 
-scene.add(new THREE.HemisphereLight(0xFFF1DE, 0x2A2018, 1.5));
+scene.add(new THREE.HemisphereLight(0xFFF8EE, 0x8C7458, 1.7));
 const sun = new THREE.DirectionalLight(0xFFE6C4, 2.0);
 sun.position.set(-6, 14, 10);
 sun.castShadow = true;
@@ -396,7 +398,7 @@ sun.shadow.bias = -0.0004;
 sun.shadow.radius = 4;
 scene.add(sun);
 scene.add(sun.target);
-const warm = new THREE.PointLight(0xFFC98A, 30, 14, 2);
+const warm = new THREE.PointLight(0xFFE2B8, 18, 14, 2);
 warm.position.set(0, 6, -1);
 scene.add(warm);
 
@@ -433,11 +435,11 @@ function box(w, h, d, m, x = 0, y = 0, z = 0, parent = scene) {
 
 /* Floor: warm parquet that runs under all three arenas */
 const floorTex = tex(512, 512, (ctx, w, h) => {
-  ctx.fillStyle = "#3A2A20"; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#A8835F"; ctx.fillRect(0, 0, w, h);
   for (let y = 0; y < 8; y++) for (let x = 0; x < 4; x++) {
     const off = (y % 2) * 64;
-    const shade = 46 + ((x * 7 + y * 13) % 10);
-    ctx.fillStyle = `rgb(${shade + 12},${shade - 4},${shade - 18})`;
+    const shade = 204 + ((x * 7 + y * 13) % 10) * 2;
+    ctx.fillStyle = `rgb(${shade - 6},${shade - 40},${shade - 84})`;
     ctx.fillRect(x * 128 + off - 64 + 2, y * 64 + 2, 124, 60);
   }
 });
@@ -591,25 +593,27 @@ function plate(text, sub, w = 1.5, h = 0.42) {
 }
 
 /* ---------- Arena 1: courtroom (x = 0) ---------- */
-const wood = mat(0x4A3426, 0.75), woodDark = mat(0x2E2019, 0.8), brass = mat(0xB8925A, 0.35, 0.6);
+const wood = mat(0xB0835A, 0.75), woodDark = mat(0x84603F, 0.8), brass = mat(0xB8925A, 0.35, 0.6);
 const wallTex = tex(512, 512, (ctx, w, h) => {
-  ctx.fillStyle = "#2B1F18"; ctx.fillRect(0, 0, w, h);
-  for (let x = 0; x < 4; x++) { ctx.strokeStyle = "#3A2A20"; ctx.lineWidth = 10; ctx.strokeRect(x * 128 + 14, 30, 100, 300); ctx.strokeRect(x * 128 + 14, 360, 100, 130); }
+  ctx.fillStyle = "#E7DCCB"; ctx.fillRect(0, 0, w, h);
+  for (let x = 0; x < 4; x++) { ctx.strokeStyle = "#D8CAB4"; ctx.lineWidth = 10; ctx.strokeRect(x * 128 + 14, 30, 100, 300); ctx.strokeRect(x * 128 + 14, 360, 100, 130); }
 });
 wallTex.wrapS = THREE.RepeatWrapping; wallTex.repeat.set(5, 1);
-box(30, 9, 0.4, new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.85 }), 0, 4.5, -7);
+// one paper-panelled backdrop per arena, so the call and the vault sit in the same room as the hearing
+const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.85 });
+for (const x of [0, 60, 120]) box(30, 9, 0.4, wallMat, x, 4.5, -7);
 const bench = box(5.2, 1.9, 1.4, wood, 0, 0.95, -3.6);
 box(5.5, 0.14, 1.7, woodDark, 0, 1.97, -3.6);
 const benchPlate = plate("The Judge", "rules in code · Docket's Rules agent", 2.4, 0.66);
 benchPlate.position.set(0, 1.05, -2.88); scene.add(benchPlate);
 for (const s of [-1, 1]) box(0.5, 6.5, 0.5, woodDark, 7.2 * s, 3.25, -6.4);
-const railMat = mat(0x5A4030, 0.6);
+const railMat = mat(0x9C7350, 0.6);
 for (let i = -6; i <= 6; i++) if (Math.abs(i) > 1) box(0.08, 0.9, 0.08, railMat, i * 0.9, 0.45, 3.2);
 box(11.4, 0.1, 0.14, railMat, 0, 0.92, 3.2);
 // seal on the wall: an original geometric emblem (scales of a ledger), not any real seal.
 // Disc and sign share one group facing the room, clear of the wall, so neither can cut through the other.
 const sealGroup = new THREE.Group(); sealGroup.position.set(0, 5.2, -6.7); scene.add(sealGroup);
-const seal = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.08, 48), mat(0x7A5E38, 0.6, 0.45));   // duller than the gavel brass: the warm light made it glare behind the judge
+const seal = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.08, 48), mat(0xC9AE82, 0.6, 0.3));   // duller than the gavel brass: the warm light made it glare behind the judge
 seal.rotation.x = Math.PI / 2; sealGroup.add(seal);
 const sealFace = plate("Docket", "every claim gets a hearing", 1.7, 0.48);
 sealFace.position.z = 0.07; sealGroup.add(sealFace);
@@ -624,7 +628,7 @@ judge.group.position.set(0, 0.5, -4.5); judge.home = judge.group.position.clone(
 // Each side stands on a folded-paper pedestal with its name on the front
 function pedestal(x, z, rotY, name, sub, accent) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
-  const p = solid(new THREE.CylinderGeometry(0.9, 1.0, 0.5, 6), 0x3A2A20, g, 0, 0.25, 0); p.rotation.y = Math.PI / 6;
+  const p = solid(new THREE.CylinderGeometry(0.9, 1.0, 0.5, 6), 0xE4D8C4, g, 0, 0.25, 0); p.rotation.y = Math.PI / 6;
   const ring = solid(new THREE.CylinderGeometry(0.92, 0.92, 0.04, 6), accent, g, 0, 0.52, 0); ring.rotation.y = Math.PI / 6;
   const pl = plate(name, sub, 1.36, 0.38); pl.position.set(0, 0.27, 0.86); pl.rotation.x = -0.17; g.add(pl);
   return g;
@@ -644,7 +648,7 @@ box(0.5, 0.1, 0.5, woodDark, 0.45, 2.07, -3.2);
 // Exhibit table with the case folder
 const exhibit = new THREE.Group(); exhibit.position.set(0, 0, 0.9); scene.add(exhibit);
 box(2.2, 0.8, 1.0, wood, 0, 0.4, 0, exhibit);
-const folderMat = mat(0x262A31, 0.7);
+const folderMat = mat(0xC9A56E, 0.75);
 const folderBack = box(1.1, 0.04, 0.8, folderMat, 0, 0.83, 0, exhibit);
 const folderCoverPivot = new THREE.Group(); folderCoverPivot.position.set(-0.55, 0.86, 0); exhibit.add(folderCoverPivot);
 const folderCover = box(1.1, 0.03, 0.8, folderMat, 0.55, 0, 0, folderCoverPivot);
@@ -654,7 +658,7 @@ folderLabel.rotation.x = -Math.PI / 2; folderLabel.position.set(0.55, 0.02, 0); 
 /* ---------- Arena 2: the call (x = 60) ---------- */
 const CX = 60;
 box(9, 4.2, 0.4, woodDark, CX, 2.6, -3.4);
-const panelFace = box(7.6, 3.2, 0.1, mat(0x1E1A16, 0.6), CX, 2.7, -3.15);
+const panelFace = box(7.6, 3.2, 0.1, mat(0x4A3426, 0.7), CX, 2.7, -3.15);
 const jackMat = mat(0xC7A46A, 0.35, 0.7), holeMat = mat(0x0A0807, 0.9);
 for (let r = 0; r < 4; r++) for (let c = 0; c < 9; c++) {
   const jx = CX - 3.2 + c * 0.8, jy = 1.55 + r * 0.72;
@@ -688,7 +692,7 @@ const letterTex = tex(512, 660, (ctx, w, h) => {
   ctx.font = M(400, 19); ctx.fillStyle = "#3D332A";
   const body = "To: University Dining Services Payroll. Re: refund of Social Security and Medicare withheld in error, Priya Sharma. $357.12 + $83.52 = $440.64 across 8 paychecks, Jan 12 to May 3, 2026. Calendar year 3 of 5 on F-1. Docket will follow up by phone on Tue, Oct 27.";
   wrap(ctx, body, w - 80).forEach((l, i) => ctx.fillText(l, 40, 130 + i * 32));
-  ctx.strokeStyle = "#6F8CFF"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(40, 600); ctx.bezierCurveTo(90, 560, 120, 630, 170, 585); ctx.bezierCurveTo(200, 560, 220, 610, 260, 590); ctx.stroke();
+  ctx.strokeStyle = "#3F6FE0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(40, 600); ctx.bezierCurveTo(90, 560, 120, 630, 170, 585); ctx.bezierCurveTo(200, 560, 220, 610, 260, 590); ctx.stroke();
 });
 const letter = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.29), new THREE.MeshStandardMaterial({ map: letterTex, roughness: 0.85, side: THREE.DoubleSide }));
 letter.visible = false; scene.add(letter);
@@ -715,22 +719,22 @@ function roundedRect(w, h, r) {
 const cardFront = tex(1024, 640, () => {});
 function drawCard(refunded) {
   const { ctx, canvas: c } = cardFront.userData, w = c.width, h = c.height;
-  ctx.fillStyle = "#17191D"; ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = "#FFFFFF"; ctx.font = F(800, 52); ctx.fillText("Your bank", 64, 104);
-  ctx.fillStyle = "#A9ADB4"; ctx.font = M(400, 30); ctx.fillText("Checking · Priya Sharma", 64, 156);
-  ctx.font = M(400, 28); ctx.fillStyle = "#A9ADB4"; ctx.fillText("8 of 8 paychecks matched to a deposit", 64, 236);
+  ctx.fillStyle = "#FBF8F2"; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#2B231C"; ctx.font = F(800, 52); ctx.fillText("Your bank", 64, 104);
+  ctx.fillStyle = "#6F6357"; ctx.font = M(400, 30); ctx.fillText("Checking · Priya Sharma", 64, 156);
+  ctx.font = M(400, 28); ctx.fillStyle = "#6F6357"; ctx.fillText("8 of 8 paychecks matched to a deposit", 64, 236);
   if (refunded) {
-    ctx.fillStyle = "#43D18A"; ctx.font = F(900, 96); ctx.fillText("+$440.64", 64, 420);
-    ctx.fillStyle = "#CFD3D9"; ctx.font = M(400, 30); ctx.fillText("University Dining Payroll · matched exactly", 64, 474);
+    ctx.fillStyle = "#1F8F55"; ctx.font = F(900, 96); ctx.fillText("+$440.64", 64, 420);
+    ctx.fillStyle = "#4A4038"; ctx.font = M(400, 30); ctx.fillText("University Dining Payroll · matched exactly", 64, 474);
   } else {
-    ctx.fillStyle = "#CFD3D9"; ctx.font = M(400, 32); ctx.fillText("Watching for exactly $440.64", 64, 420);
+    ctx.fillStyle = "#4A4038"; ctx.font = M(400, 32); ctx.fillText("Watching for exactly $440.64", 64, 420);
   }
   cardFront.needsUpdate = true;
 }
 drawCard(false);
 cardFront.repeat.set(1 / 4.2, 1 / 2.6); cardFront.offset.set(0.5, 0.5);
 const cardGeo = new THREE.ExtrudeGeometry(roundedRect(4.2, 2.6, 0.22), { depth: 0.06, bevelEnabled: false, curveSegments: 10 });
-const bankCard = new THREE.Mesh(cardGeo, [new THREE.MeshStandardMaterial({ map: cardFront, roughness: 0.45 }), mat(0x2A2C31, 0.5)]);
+const bankCard = new THREE.Mesh(cardGeo, [new THREE.MeshStandardMaterial({ map: cardFront, roughness: 0.45 }), mat(0xE2D6C2, 0.6)]);
 bankCard.position.set(MX, 2.2, 0.4); bankCard.rotation.x = -0.18; bankCard.castShadow = true; scene.add(bankCard);
 const slipTex = tex(512, 220, (ctx, w, h) => {
   ctx.fillStyle = "#F6F0E4"; ctx.fillRect(0, 0, w, h);
@@ -894,13 +898,13 @@ let advanceResolve = null;
 let typing = null;
 const stats = { picks: 0, right: 0, wrong: 0, overruled: 0, sustained: 0, struck: 0, calls: 0, letters: 0 };
 const SPEAKERS = {
-  Judge: { color: "#E9DCC4", agent: () => judge },
-  Advocate: { color: "#5B8CFF", agent: () => adv },
-  "Payroll's Counsel": { color: "#F07A3A", agent: () => counsel },
-  Docket: { color: "#5B8CFF", agent: () => caller },
-  Payroll: { color: "#B8C0CA", agent: () => clerk },
-  Guardian: { color: "#43D18A", agent: () => guardian },
-  Ledger: { color: "#43D18A", agent: () => ledger }
+  Judge: { color: "#8A7458", agent: () => judge },
+  Advocate: { color: "#3F6FE0", agent: () => adv },
+  "Payroll's Counsel": { color: "#D4581C", agent: () => counsel },
+  Docket: { color: "#3F6FE0", agent: () => caller },
+  Payroll: { color: "#6E7782", agent: () => clerk },
+  Guardian: { color: "#1F8F55", agent: () => guardian },
+  Ledger: { color: "#1F8F55", agent: () => ledger }
 };
 // The dialog's state: the current line or choice is fully lit; between lines it steps back ("stale").
 function focusDialog(choosing = false) {
@@ -968,7 +972,7 @@ function waitAdvance() {
   });
 }
 // A choice: the viewer always picks. Nothing is pre-selected or picked for them (Skip round aside).
-function choose(prompt, options, speakerColor = "#5B8CFF") {
+function choose(prompt, options, speakerColor = "#3F6FE0") {
   return new Promise((resolve) => {
     const right = options.findIndex((o) => o.correct);
     if (skipping()) { resolve(options[right]); return; }
@@ -1055,8 +1059,8 @@ async function rule(result, reason, card) {
   gavelPivot.userData.strike = 1;
   shake(0.28);
   judge.arms[1].rotation.x = 0;
-  const colors = { Overruled: "#E9DCC4", Sustained: "#F2B544", Struck: "#F07A3A", Admitted: "#43D18A", Dismissed: "#F07A3A" };
-  const st = stampMesh(result, colors[result] || "#E9DCC4");
+  const colors = { Overruled: "#8A7458", Sustained: "#B7791F", Struck: "#D4581C", Admitted: "#1F8F55", Dismissed: "#D4581C" };
+  const st = stampMesh(result, colors[result] || "#8A7458");
   st.position.set(0, 3.7, -1.6); st.scale.setScalar(1.8); st.rotation.z = -0.06;
   // only one verdict stamp on screen at a time
   for (const old of stamps.splice(0)) drop(old);
@@ -1096,15 +1100,15 @@ async function roundHearing() {
 
   await say("Judge", `Case ${c.id}. ${c.name}, F-1, working for ${c.employer}. The claim: Social Security and Medicare withheld that she likely didn't owe${c.amount ? ", $440.64 in total" : ""}. Advocate, open.`, { shot: "judge" });
   await say("Advocate", `${c.first} is on an F-1 visa and works on campus. IRS Publication 519 says these taxes aren't withheld from F-1 students unless they're resident aliens.`, { shot: "adv", lean: true });
-  const exhibitA = await throwCard(adv, judge, "Exhibit A · IRS Publication 519", QUOTE, "#5B8CFF");
+  const exhibitA = await throwCard(adv, judge, "Exhibit A · IRS Publication 519", QUOTE, "#3F6FE0");
   await rule("Admitted", "The quote matches the stored IRS text word for word.", exhibitA);
   if (aborted) return;
 
   // Objection 1: residency
   shot("counsel");
   counsel.lean = 1;
-  await banner("Objection!", null, "#F07A3A");
-  const o1 = await throwCard(counsel, adv, "Payroll's Counsel", "After five calendar years, students can be taxed as residents.", "#F07A3A");
+  await banner("Objection!", null, "#D4581C");
+  const o1 = await throwCard(counsel, adv, "Payroll's Counsel", "After five calendar years, students can be taxed as residents.", "#D4581C");
   adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 8); shake(0.12);
   await say("Payroll's Counsel", "Objection. After five calendar years, F-1 students can be taxed as residents. She may owe these taxes.", { shot: "counsel" });
   counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
@@ -1121,7 +1125,7 @@ async function roundHearing() {
     damage("left", 100); drawFace(adv, "sad"); adv.slump = 1; counsel.joy = 1; drawFace(counsel, "joy");
     $("hud-claim").className = "claim long lose";
     shot("court", 1.8);
-    await banner("Claim dismissed", "Docket won't call payroll", "#F07A3A");
+    await banner("Claim dismissed", "Docket won't call payroll", "#D4581C");
     await say("Judge", "Claim dismissed. Nadia is likely a resident for tax purposes in 2026, so these taxes likely apply. Docket tells her honestly and doesn't call anyone.", { shot: "judge" });
     return "dismissed";
   }
@@ -1132,7 +1136,7 @@ async function roundHearing() {
     { label: "Medicare · $10.44", detail: "Per paycheck" }
   ], async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "Not relevant to residency. Answer the objection.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
   await say("Advocate", "She arrived August 15, 2024. That makes 2026 her calendar year 3 of 5. She's still in her exempt years.", { shot: "adv", lean: true });
-  await throwCard(adv, counsel, "Advocate", "Arrived Aug 15, 2024: year 3 of 5.", "#5B8CFF");
+  await throwCard(adv, counsel, "Advocate", "Arrived Aug 15, 2024: year 3 of 5.", "#3F6FE0");
   counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 25); stats.overruled++;
   await rule("Overruled", "She arrived Aug 15, 2024, so 2026 is calendar year 3 of 5.", o1);
   counsel.hurt = 0; drawFace(counsel, "idle");
@@ -1140,8 +1144,8 @@ async function roundHearing() {
 
   // Objection 2: is the job allowed?
   shot("counsel"); counsel.lean = 1;
-  await banner("Objection!", null, "#F07A3A");
-  const o2 = await throwCard(counsel, adv, "Payroll's Counsel", "This job may not be allowed under her visa.", "#F07A3A");
+  await banner("Objection!", null, "#D4581C");
+  const o2 = await throwCard(counsel, adv, "Payroll's Counsel", "This job may not be allowed under her visa.", "#D4581C");
   adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 6); shake(0.1);
   await say("Payroll's Counsel", "Objection. The exemption only covers work her visa allows. This job may not qualify.", { shot: "counsel" });
   counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
@@ -1151,7 +1155,7 @@ async function roundHearing() {
     { label: "Net pay · $664.92", detail: "Per paycheck" }
   ], async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "That doesn't show the job is allowed. Try again.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
   await say("Advocate", "Her employer is University Dining Services. It's an on-campus job, the kind F-1 students are allowed to do.", { shot: "adv", lean: true });
-  await throwCard(adv, counsel, "Advocate", "University Dining Services: on campus.", "#5B8CFF");
+  await throwCard(adv, counsel, "Advocate", "University Dining Services: on campus.", "#3F6FE0");
   counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 25); stats.overruled++;
   await rule("Overruled", "The employer is University Dining Services, an on-campus job.", o2);
   counsel.hurt = 0; drawFace(counsel, "idle");
@@ -1159,7 +1163,7 @@ async function roundHearing() {
 
   // Objection 3: a made-up quote gets struck
   shot("counsel"); counsel.lean = 1;
-  const o3 = await throwCard(counsel, judge, "Payroll's Counsel cites", "“All student wages are subject to FICA.”", "#F07A3A");
+  const o3 = await throwCard(counsel, judge, "Payroll's Counsel cites", "“All student wages are subject to FICA.”", "#D4581C");
   await say("Payroll's Counsel", "The rule is clear: “All student wages are subject to FICA.”", { shot: "counsel" });
   counsel.lean = 0;
   await present("Counsel quoted a rule. What does the Advocate do?", [
@@ -1170,13 +1174,13 @@ async function roundHearing() {
   await say("Advocate", "Your Honor, please check that quote against IRS Publication 519.", { shot: "adv", lean: true });
   counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 30); stats.struck++;
   await rule("Struck", "That sentence doesn't appear in IRS Publication 519. It's struck from the record.", o3);
-  await banner("Made-up rule caught", "An AI agent invented a quote. Docket's code checked it against the IRS text and threw it out.", "#F07A3A");
+  await banner("Made-up rule caught", "An AI agent invented a quote. Docket's code checked it against the IRS text and threw it out.", "#D4581C");
   counsel.hurt = 0; drawFace(counsel, "idle");
   if (aborted) return;
 
   // Objection 4: employer first (sustained — becomes a condition)
   shot("counsel"); counsel.lean = 1;
-  const o4 = await throwCard(counsel, adv, "Payroll's Counsel", "The refund has to be requested from the employer first.", "#F07A3A");
+  const o4 = await throwCard(counsel, adv, "Payroll's Counsel", "The refund has to be requested from the employer first.", "#D4581C");
   await say("Payroll's Counsel", "Objection. A refund like this has to be requested from the employer first, not the IRS.", { shot: "counsel" });
   counsel.lean = 0;
   await present("Counsel says: ask the employer first. How does the Advocate answer?", [
@@ -1194,7 +1198,7 @@ async function roundHearing() {
   $("hud-claim").className = "claim win";
   shot("duel", 1.8);
   burst(V(0, 3.4, 0.6), 0x43D18A, 40, 0.8);
-  await banner("Claim stands", "$440.64 · ask payroll first", "#43D18A");
+  await banner("Claim stands", "$440.64 · ask payroll first", "#1F8F55");
   await say("Judge", "The claim stands: $440.64. Docket may ask University Dining Services payroll for the refund.", { shot: "judge" });
   return "stands";
 }
@@ -1222,7 +1226,7 @@ async function roundCall() {
   await new Promise((resolve) => {
     focusDialog(true);
     $("speaker").textContent = "Your approval";
-    $("speaker").style.setProperty("--dot", "#6F8CFF");
+    $("speaker").style.setProperty("--dot", "#3F6FE0");
     $("line").textContent = "One approval places exactly one call.";
     $("sub").textContent = "";
     $("btn-next").disabled = true;
@@ -1272,7 +1276,7 @@ async function roundCall() {
   if (payrollWill === "agree") {
     await say("Payroll", "Understood. We'll refund it with the next pay run and stop the withholding.", { shot: "clerk" });
     stepState("cs4", "ok");
-    await banner("Payroll agreed", "Refund promised with the next pay run", "#43D18A");
+    await banner("Payroll agreed", "Refund promised with the next pay run", "#1F8F55");
   } else {
     await say("Payroll", "I'd need to check with our tax team. I can't commit to a date.", { shot: "clerk" });
     stepState("cs4", "warn");
@@ -1289,7 +1293,7 @@ async function roundCall() {
     await wait(500);
     await fly(envelope, envelope.position.clone(), V(CX + 2.6, 1.15, 0.5), 900, 1.4, 1.5);
     stats.letters++;
-    await banner("Payroll stalled", "Letter sent · follow-up Tue, Oct 27", "#F2B544");
+    await banner("Payroll stalled", "Letter sent · follow-up Tue, Oct 27", "#B7791F");
   }
 }
 
@@ -1308,7 +1312,7 @@ async function roundMoney() {
   await new Promise((resolve) => {
     focusDialog(true);
     $("speaker").textContent = "Your move";
-    $("speaker").style.setProperty("--dot", "#43D18A");
+    $("speaker").style.setProperty("--dot", "#1F8F55");
     $("line").textContent = "Time passes. Payroll's next pay run is in two weeks.";
     $("sub").textContent = "Simulated: the refund is posted to a Capital One Nessie test account";
     $("btn-next").disabled = true; $("hint").textContent = "Fast-forward when you're ready";
@@ -1344,7 +1348,7 @@ async function roundMoney() {
   shot("end", 1.6);
   closedStamp.userData.show = 1;
   burst(V(MX, 4.2, 1), 0xF2E8D5, 70, 1.2);
-  await banner("Case closed", "$440.64 recovered", "#43D18A");
+  await banner("Case closed", "$440.64 recovered", "#1F8F55");
 }
 
 /* ============================================================
