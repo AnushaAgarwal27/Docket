@@ -450,7 +450,7 @@ sent — field kinds, CTA shape, 64 KB payload cap — and the narration text ab
 the card is rejected, so a client that can't render cards still gets a usable message. Every number
 on a card is read from the student file; nothing there computes money.
 
-**ASI:One agentic models.** The Researcher's primary engine is `asi1-agentic` at `api.asi1.ai`
+**ASI:One agentic models.** The Researcher's primary engine is `asi1` at `api.asi1.ai`
 ([`agents/researcher/athena.py`](agents/researcher/athena.py)), which plans a research task and can
 discover and call other agents on Agentverse; Claude with web search is the fallback. Either way the
 answer has to earn its sources: **every URL is re-fetched in code and must actually contain the

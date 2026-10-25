@@ -2,12 +2,12 @@
 
 Two engines:
 
-    ASI:One agentic (api.asi1.ai)  Fetch.ai's deep-execution layer. Its agentic models plan a task,
-                                   discover agents on Agentverse and call them. This is the primary
-                                   engine, and the one the demo is about. Needs ASI_ONE_API_KEY.
+    ASI:One (api.asi1.ai)  Fetch.ai's deep-execution layer. The primary engine, and the one the
+                           demo is about. Needs ASI_ONE_API_KEY and a model the account serves
+                           (see ASI_MODEL below).
 
-    Claude + web search            The fallback when ASI:One is unavailable or returns nothing. Its
-                                   sources come back as tool results, so they are real by construction.
+    Claude + web search    The fallback when ASI:One is unavailable or returns nothing. Its
+                           sources come back as tool results, so they are real by construction.
 
 Whichever answered, the answer then has to earn its sources:
 
@@ -31,7 +31,12 @@ from rules.download_sources import HEADERS, page_text
 from rules.quote_checker import normalize, source_status
 
 ASI_BASE = "https://api.asi1.ai/v1"
-ASI_MODEL = os.environ.get("ASI_ONE_MODEL", "asi1-agentic")
+# asi1 is the model our ASI:One account actually serves. "asi1-agentic" appears in Fetch's docs but
+# 404s with model_not_found here, and a 404 is indistinguishable from any other failure at the call
+# site: research silently fell back to Claude and still looked like it worked. Override with
+# ASI_ONE_MODEL. `asi1-ultra` plans before it answers and needs a tool-call round trip this
+# single-shot client does not do, so it returns "I'll search for..." and nothing else.
+ASI_MODEL = os.environ.get("ASI_ONE_MODEL", "asi1")
 CLAUDE_MODEL = "claude-opus-5"
 WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search"}
 
