@@ -12,12 +12,15 @@ import os
 
 from uagents import Agent, Context
 
+from agents.agentverse import add_mailbox_check
 from agents.messages import (
+    PORTS,
     FindingsReady, LocalFirstResolver, PaystubsRecorded, RulesResult, RunRules, address_of, local_endpoint,
 )
 from agents.tax import engine
 
 agent = Agent(name="docket-tax", seed=os.environ["TAX_SEED"], port=8003, endpoint=local_endpoint("TAX"), resolve=LocalFirstResolver())
+add_mailbox_check(agent, "tax", PORTS["TAX"])
 
 
 @agent.on_message(RunRules, replies=RulesResult)

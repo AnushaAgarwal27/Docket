@@ -26,7 +26,9 @@ from uagents_core.contrib.protocols.chat import (
     chat_protocol_spec,
 )
 
-from agents.coordinator.intents import answer
+from agents.coordinator.intents import answer, answer_selection
+from agents.coordinator.selection import parse_selection
+from agents.agentverse import add_mailbox_check
 from agents.messages import PORTS, FindingsReady, LocalFirstResolver, RefundLanded, address_of
 from agents.store import dollars, log
 
@@ -39,6 +41,7 @@ agent = Agent(name="docket-coordinator", seed=os.environ["COORDINATOR_SEED"], po
                           "and Medicare tax, proves each issue with the official clause, and gets payroll to refund it.",
               readme_path=str(Path(__file__).with_name("AGENTVERSE.md")),
               publish_agent_details=True)
+add_mailbox_check(agent, "coordinator", PORTS["COORDINATOR"])
 chat = Protocol(spec=chat_protocol_spec)
 
 # Echo guard: ASI:One sometimes sends our own reply back as a new request.
@@ -46,6 +49,12 @@ recent_replies: dict[str, deque] = defaultdict(lambda: deque(maxlen=5))
 
 DOCKET_AGENTS = {address_of(name) for name in PORTS}
 STUDENT_KEY = "student_address"  # where proactive messages go; kept in the agent's storage
+
+# Per-session state, keyed by sender and chat session: when it was last active and what it asked last.
+sessions: dict[str, dict] = {}
+
+FAILED = ("Sorry, something went wrong on my side and I couldn't finish that. Nothing was sent and no one was "
+          "contacted. Please try again in a minute.")
 
 
 def reply(text: str) -> ChatMessage:
@@ -56,11 +65,21 @@ def reply(text: str) -> ChatMessage:
     )
 
 
+def session_state(ctx: Context, sender: str) -> dict:
+    key = f"{sender}:{ctx.session}"
+    state = sessions.setdefault(key, {"sender": sender, "session": str(ctx.session), "turns": 0})
+    state["turns"] += 1
+    state["last_active"] = datetime.now(timezone.utc).isoformat()
+    return state
+
+
 @chat.on_message(ChatMessage)
 async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
+    # Acknowledge first, always, so ASI:One knows the message arrived even if handling fails.
     await ctx.send(sender, ChatAcknowledgement(timestamp=datetime.now(timezone.utc), acknowledged_msg_id=msg.msg_id))
     if sender not in DOCKET_AGENTS:
         ctx.storage.set(STUDENT_KEY, sender)
+    state = session_state(ctx, sender)
     for item in msg.content:
         if not isinstance(item, TextContent):
             continue
@@ -71,9 +90,27 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
         if any(r in text for r in recent_replies[sender]) or text.startswith("[docket-coordinator]"):
             ctx.logger.info("echo ignored")
             continue
-        response = await answer(ctx, text)
+        response = await handle(ctx, text, state)
         recent_replies[sender].append(response)
         await ctx.send(sender, reply(response))
+
+
+async def handle(ctx: Context, text: str, state: dict) -> str:
+    """Answer one message. Never raises: a Claude or Convex failure becomes a plain fallback reply,
+    and the failure is logged to activity."""
+    try:
+        selection = parse_selection(text)
+        state["last_selection"] = selection
+        if selection is not None:
+            return await answer_selection(ctx, selection)
+        return await answer(ctx, text)
+    except Exception as e:  # noqa: BLE001 - the student always gets a reply
+        ctx.logger.exception("handling a chat message failed")
+        try:
+            await asyncio.to_thread(log, "coordinator", "chat_failed", f"{type(e).__name__}: {e}"[:300])
+        except Exception:  # noqa: BLE001 - Convex itself may be the failure
+            ctx.logger.warning("could not log chat_failed to activity")
+        return FAILED
 
 
 @chat.on_message(ChatAcknowledgement)

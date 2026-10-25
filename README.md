@@ -1,3 +1,6 @@
+![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3)
+![tag:hackathon](https://img.shields.io/badge/hackathon-5F43F1)
+
 # Docket
 
 **A caseworker for F-1 students.** Docket finds money and deadlines students don't know about, proves every rule with the exact official clause, and follows up until the problem is fixed.
@@ -46,10 +49,10 @@ No agent tells another what to do. Each one reacts to what the others wrote in t
                  Priya (ASI:One)  <──>  Coordinator agent
                                            │ routes work, asks approval
          ┌──────────────┬──────────────────┼──────────────┐
-      Ledger         Tax & status      Caseworker       Price
-   Nessie bank,     rules run in      cases, approvals,  Apify prices,
-   paystubs,        code; clause      Cartesia calls     budget from
-   Claude reads     checked in code   payroll            ledger
+      Ledger         Tax (Advocate)     Auditor          Caseworker
+   Nessie bank,     rules run in      objections and     cases, approvals,
+   paystubs,        code; clause      the verdict,       Cartesia calls
+   Claude reads     checked in code   in code            payroll
          └──────────────┴────────┬─────────┴──────────────┘
                  Shared student file on Convex
    profiles · transactions · paystubs · sources · flags · cases · calls · activity
@@ -58,16 +61,16 @@ No agent tells another what to do. Each one reacts to what the others wrote in t
                   (activity feed, cases, money)
 ```
 
-- 5 agents, each a **Fetch.ai uAgent** in Python 3.12/3.13. Only the Coordinator speaks the chat protocol to ASI:One.
+- 5 agents (Coordinator, Ledger, Tax, Auditor, Caseworker), each a **Fetch.ai uAgent** in Python 3.12/3.13. Only the Coordinator speaks the chat protocol to ASI:One.
 - **Convex** is the shared student file. The dashboard shows every row the moment it lands.
-- **Nessie** feeds the Ledger, **Apify** fetches official sources and prices, and **Cartesia** makes the calls.
+- **Nessie** feeds the Ledger, official sources are fetched into `sources`, and **Cartesia** makes the calls.
 
 ### The shared file ([`convex/schema.ts`](convex/schema.ts))
 
 | Table | Holds | Written by | Read by |
 |---|---|---|---|
 | `profiles` | Visa, arrival date, school, home country/currency, work auth, masked phone | Coordinator | Every agent |
-| `transactions` | Every Nessie deposit, purchase, and transfer | Ledger | Tax, Price, Caseworker, dashboard |
+| `transactions` | Every Nessie deposit, purchase, and transfer | Ledger | Tax, Caseworker, dashboard |
 | `paystubs` | Period, gross, hours by week, SS/Medicare withheld, net, employer | Ledger | Tax, dashboard |
 | `sources` | Official page URL, fetched text, fetch time, content hash | Apify collector | Tax, quote checker |
 | `flags` | Rule id, amount, explanation, quoted clause, source id, status | Tax | Caseworker, dashboard |
@@ -97,7 +100,7 @@ Money is stored in **integer cents everywhere**. No floats, and no numbers writt
 - The call goes through a Cartesia Managed Agent with two webhook tools: `get_case_summary` and `log_call_outcome`. The agent says it's an AI calling with Priya's permission and that the call may be recorded, and it never pretends to be Priya.
 - Follow-ups are a Convex scheduled function. A "simulate 2 weeks" button jumps the clock for the demo.
 
-**5. Price** (should-have) answers "is this normal, and can I afford it?" Apify gives price ranges and the ledger gives the budget. For family transfers it also computes the INR markup against the market rate.
+**5. Auditor** argues the employer's side of every finding before it reaches the student (the Hearing), and issues the verdict in code. The Price agent from the original plan was cut.
 
 ## Rules engine and source verification
 

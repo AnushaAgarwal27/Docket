@@ -10,10 +10,12 @@ import os
 from uagents import Agent, Context
 
 from agents.caseworker import engine
-from agents.messages import CaseDecision, CasesResult, DecisionResult, OpenCases, LocalFirstResolver, local_endpoint
+from agents.agentverse import add_mailbox_check
+from agents.messages import PORTS, CaseDecision, CasesResult, DecisionResult, OpenCases, LocalFirstResolver, local_endpoint
 
 agent = Agent(name="docket-caseworker", seed=os.environ["CASEWORKER_SEED"], port=8004,
               endpoint=local_endpoint("CASEWORKER"), resolve=LocalFirstResolver())
+add_mailbox_check(agent, "caseworker", PORTS["CASEWORKER"])
 
 
 @agent.on_message(OpenCases, replies=CasesResult)

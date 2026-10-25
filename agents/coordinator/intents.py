@@ -225,6 +225,18 @@ async def respond_to_approval(ctx: Context, approved: bool) -> str:
     return "Okay, I won't contact payroll. The issue stays on your file; say **check my pay** any time to reopen it."
 
 
+async def answer_selection(ctx: Context, selection: dict) -> str:
+    """A card button or form. Approve/Decline on the review card are explicit choices, so they act directly."""
+    action = selection["action"]
+    await asyncio.to_thread(log, AGENT, "card_selection", f"{action}", inputIds=[str(v) for k, v in selection.items()
+                                                                                  if k.endswith("_id")])
+    if action == "approve_refund":
+        return await respond_to_approval(ctx, True)
+    if action == "decline_refund":
+        return await respond_to_approval(ctx, False)
+    return f"I got your {action.replace('_', ' ')} selection, but I can't act on it yet."
+
+
 async def answer(ctx: Context, text: str) -> str:
     t = text.lower().strip()
     words = set(re.findall(r"[a-z']+", t))

@@ -9,7 +9,7 @@ from uagents.resolver import GlobalResolver, Resolver
 
 load_dotenv()
 
-PORTS = {"COORDINATOR": 8001, "LEDGER": 8002, "TAX": 8003, "CASEWORKER": 8004}
+PORTS = {"COORDINATOR": 8001, "LEDGER": 8002, "TAX": 8003, "CASEWORKER": 8004, "AUDITOR": 8006}
 
 
 def address_of(name: str) -> str:

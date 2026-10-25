@@ -16,7 +16,8 @@ from uagents import Agent, Context
 
 from agents import store
 from agents.convex_files import upload_and_attach
-from agents.messages import LocalFirstResolver, PaystubsRecorded, RefundLanded, address_of, local_endpoint
+from agents.agentverse import add_mailbox_check
+from agents.messages import PORTS, LocalFirstResolver, PaystubsRecorded, RefundLanded, address_of, local_endpoint
 from agents.ledger.service import match_refunds, process_paystubs, sync_bank
 from seed.nessie import Nessie
 from seed.reset import IDS_FILE
@@ -60,6 +61,7 @@ class ConvexLedgerStore:
 
 agent = Agent(name="docket-ledger", seed=os.environ["LEDGER_SEED"], port=8002,
               endpoint=local_endpoint("LEDGER"), resolve=LocalFirstResolver())
+add_mailbox_check(agent, "ledger", PORTS["LEDGER"])
 ledger_store = ConvexLedgerStore()
 nessie = Nessie() if os.environ.get("NESSIE_API_KEY") else None
 done_files: set[str] = set()
