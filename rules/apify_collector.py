@@ -108,7 +108,8 @@ def collect(rules: list[dict], client=None, fallback=_http_text) -> tuple[list[P
     if left:
         try:
             run_id, crawled = _run(client, RAW_ACTOR, raw_input(left))
-        except RuntimeError:
+        except Exception as e:  # e.g. the Actor's permissions not yet approved in Apify Console
+            print(f"WARN     {VIA[RAW_ACTOR]} run failed, fetching {len(left)} page(s) directly: {e}")
             crawled = []
         for rule_id, url in fetch.items():
             if rule_id not in found and (text := _match(url, crawled)):

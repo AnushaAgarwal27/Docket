@@ -130,3 +130,16 @@ def test_page_the_crawler_skips_comes_through_cheerio_scraper():
     assert [(p.rule_id, p.via) for p in pages] == [("FICA_EXEMPT_F1", "Website Content Crawler"),
                                                    ("ONCAMPUS_20_HOURS", "Cheerio Scraper")]
     assert missing == [] and pages[1].text == rule["quote"]
+
+
+def test_second_actor_error_falls_back_instead_of_crashing():
+    class Refusing(TwoActorApify):
+        def call(self, run_input):
+            if self.calls[-1] == "apify/cheerio-scraper":
+                raise Exception("This Actor requires full access to your account")
+            return super().call(run_input)
+
+    rule = next(r for r in RULES if r["id"] == "ONCAMPUS_20_HOURS")
+    fake = Refusing({"apify/website-content-crawler": [], "apify/cheerio-scraper": []})
+    pages, missing = collect([rule], client=fake, fallback=lambda url: rule["quote"])
+    assert missing == [] and pages[0].via == "direct HTTP"
