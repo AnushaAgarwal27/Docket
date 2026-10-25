@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npx vite build dashboard",
+  "outputDirectory": "dashboard/dist",
+  "rewrites": [{ "source": "/game", "destination": "/game.html" }, { "source": "/waitlist", "destination": "/waitlist.html" }]
+}
