@@ -196,6 +196,7 @@
   .choice span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
   .choice kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .choice.right { border-color: var(--win); background: rgba(31,143,85,0.10); }
+  .choice.asked { opacity: .6; }
   .choice.wrong { border-color: #B3262E; background: rgba(179,38,46,0.06); opacity: .75; box-shadow: inset 5px 0 0 #B3262E; }
   .choice.wrong b, .choice.wrong span { text-decoration: line-through; text-decoration-color: #B3262E; text-decoration-thickness: 2px; }
   /* the result is spelled out too, not only colored */
@@ -1745,6 +1746,59 @@ function resetWorld() {
   Object.keys(stats).forEach((k) => (stats[k] = 0));
   clearBanner();
 }
+/* ============================================================
+   Between rounds: questions for the Judge
+   ============================================================ */
+// Fixed questions with answers written from the official text Docket already stores (rules/rules.yaml).
+// No AI and no network: where no stored quote covers an answer, the Judge says so instead of quoting.
+const frag = (url, quote) => url + "#:~:text=" + encodeURIComponent(quote).replace(/-/g, "%2D");
+const ECFR_214_2 = "https://www.ecfr.gov/current/title-8/section-214.2";
+const QUESTIONS = [
+  { q: "What if Priya worked for a contractor, not the school?",
+    a: "Who signs the paycheck doesn't decide it. The exemption covers work her F-1 visa allows. A company that serves students on campus can still count as on-campus work, but Docket's stored rules don't settle that case, so it would send her to her school's international office rather than guess.",
+    proof: { href: IRS_QUOTE_LINK, label: "The exemption, in IRS Publication 519" } },
+  { q: "What if Priya was on a different visa before F-1?",
+    a: "Only years as a student, teacher or trainee, on F, J, M or Q status, count toward her five exempt years, and earlier F or J years use some of them up. Time on another visa doesn't make her exempt. Docket would recount from her full travel history.",
+    proof: { href: frag("https://www.irs.gov/forms-pubs/about-form-8843", "file Form 8843 to explain the basis of your claim"), label: "Claiming exempt days, IRS Form 8843" } },
+  { q: "Shouldn't the IRS refund this, not the employer?",
+    a: "Not first. She asks the employer to refund it. If payroll refuses or won't answer, she can claim it from the IRS with Forms 843 and 8316. That's why the court made asking payroll first a condition.",
+    sub: "Docket hasn't stored this rule word for word yet, so there's no quote to show." },
+  { q: "What if Priya plans to stay in the US after graduating?",
+    a: "If she stays on OPT, the exemption keeps applying while she's within her five years as a nonresident. One new limit starts: she can't be out of work for more than 90 days in total.",
+    proof: { href: ECFR_214_2, label: "The 90-day limit, 8 CFR 214.2(f)(10)", note: "opens the regulation on ecfr.gov" } }
+];
+async function askJudge() {
+  if (skipping()) return;
+  const asked = new Set();
+  shot("judge", 2);
+  for (;;) {
+    const i = await new Promise((resolve) => {
+      focusDialog(true); liveIsFrame = false; updateBack(); $("proof").innerHTML = "";
+      $("speaker").textContent = "Your move"; $("speaker").style.setProperty("--dot", "#2B7A78");
+      $("line").textContent = "Any questions for the Judge before Docket calls payroll?";
+      $("sub").textContent = "";
+      const area = $("choice-area"); area.innerHTML = "";
+      const grid = document.createElement("div"); grid.className = "choices"; area.append(grid);
+      QUESTIONS.forEach((item, k) => {
+        const b = document.createElement("button"); b.type = "button"; b.className = "choice" + (asked.has(k) ? " asked" : "");
+        b.innerHTML = `<kbd>${k + 1}</kbd><b></b><span></span>`;
+        b.querySelector("b").textContent = item.q;
+        b.querySelector("span").textContent = asked.has(k) ? "Asked" : "";
+        b.addEventListener("click", () => { advanceResolve = null; resolve(k); });
+        grid.append(b);
+      });
+      $("btn-next").disabled = false;
+      advanceResolve = () => resolve(-1);
+      $("hint").textContent = "Pick a question, or Next ▸ to go to the call";
+    });
+    $("choice-area").innerHTML = "";
+    if (i < 0 || aborted) return;
+    asked.add(i);
+    const item = QUESTIONS[i];
+    await say("Judge", item.a, { shot: "judge", proof: item.proof, sub: item.sub });
+  }
+}
+
 async function play() {
   if (running) return;
   running = true; aborted = false;
@@ -1758,6 +1812,7 @@ async function play() {
   const verdict = await roundHearing();
   $("dialog").classList.remove("show");
   if (verdict === "dismissed") { end("dismissed"); running = false; return; }
+  await askJudge();
   await roundCall();
   $("dialog").classList.remove("show");
   await roundMoney();
