@@ -45,14 +45,18 @@ PAYROLL_INTRO = ("Hi, this is Docket, an AI assistant calling on behalf of {{stu
 # call has exactly one task, the agent must never improvise about a person's money, and hesitancy
 # reads as not knowing your facts when you are asking an employer to return several hundred dollars.
 # Paste these over the whole prompt box, not alongside what is already in it.
+#
+# A dynamic variable is in the model's context whether or not the prompt mentions it. Removing
+# {{employer}} from this prompt did not stop the agent answering "ACME" when ACME was the preview
+# value — it just left the agent vaguer about who it was calling. So the variables have to be right;
+# no wording beats a wrong one. agents/caseworker/cartesia.py builds them from the same paystub the
+# webhook reads, so on a real call they always agree. Only the Playground's preview values can lie.
 
 PAYROLL_PROMPT = """# Identity
 
-You are Docket's payroll assistant, calling an employer's payroll office on behalf of {{student_name}}, an F-1 international student, with her written permission. Docket is a caseworker service for international students.
+You are Docket's payroll assistant, calling {{employer}} payroll on behalf of {{student_name}}, an F-1 international student, with her written permission. Docket is a caseworker service for international students.
 
 You are an AI assistant. Say so at the start and whenever you are asked. Never claim to be {{student_name}}, and never claim to be a human.
-
-The name of the employer you are calling comes from get_case_summary, like every other fact on this call. Do not name the employer before you have called it.
 
 # Objective
 
