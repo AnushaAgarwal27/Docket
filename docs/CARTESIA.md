@@ -55,7 +55,13 @@ Whoever runs `npx convex dev` for the shared deployment:
 openssl rand -hex 24                         # copy the output
 npx convex env set CARTESIA_TOOL_TOKEN <that value>
 ```
-Webhook base URL for the shared deployment: `https://basic-magpie-317.convex.site`
+Your webhook base URL is your **own** deployment's site URL — not a teammate's. Print it with:
+```
+.venv/bin/python -m scripts.check_voice
+```
+It is your `CONVEX_URL` with `.convex.cloud` swapped for `.convex.site`. Pasting someone
+else's here is the most common way to lose an hour: the tools return 401 or talk to the wrong
+student file, and nothing in Cartesia says why.
 
 ### 2. Agent in the Cartesia dashboard
 Create a managed agent, for example "Docket payroll caller". English, any clear voice. Turn on the **End call** system tool.
@@ -87,7 +93,7 @@ Create both as webhook tools and attach them to the agent. Auth: **Bearer**, tok
 | | get_case_summary | log_call_outcome |
 |---|---|---|
 | Description | Get the facts of this refund request: amount, pay periods, the rule, and what to ask for. Call once, right after payroll answers. | Record what payroll agreed to. Call once, before ending the call. |
-| Method, URL | POST `https://basic-magpie-317.convex.site/cartesia/case-summary` | POST `https://basic-magpie-317.convex.site/cartesia/call-outcome` |
+| Method, URL | POST `<your site URL>/cartesia/case-summary` | POST `<your site URL>/cartesia/call-outcome` |
 | Body | `case_id` ← dynamic variable `case_id` | `case_id` ← dynamic variable `case_id`; `result` (string, model, enum): `promised`, `stalled`, `refused`, `needs_student`; `answered_by` (string, model): name or role of the person; `summary` (string, model): one sentence on what payroll said; `promised_by` (string, model, optional): refund date as YYYY-MM-DD; `reference_number` (string, model, optional) |
 | Pre-tool speech | off | auto |
 | Execution | immediate | immediate |
@@ -114,8 +120,7 @@ for the real call. With a real call, the rehearsal setting is only an instructio
 1. Playground: in the Cartesia dashboard, set the sample dynamic variable `case_id` to a real case id (copy it from the Convex dashboard, `cases` table) and talk to the agent. Both tools should return text, and the case should move to `awaiting_response`.
 2. Webhooks alone:
    ```
-   curl -X POST https://basic-magpie-317.convex.site/cartesia/case-summary \
-     -H "Authorization: Bearer $CARTESIA_TOOL_TOKEN" -H "Content-Type: application/json" -d '{"case_id":"<case id>"}'
+   .venv/bin/python -m scripts.check_voice --probe
    ```
 3. Full call: `python -m seed.reset`, let the Ledger read the paystubs, say "check my pay" then "yes" in ASI:One (or click Approve on the dashboard). The phone rings within about 5 seconds. The dashboard shows "Placing the call", then "On the phone with payroll", then the call log.
 
