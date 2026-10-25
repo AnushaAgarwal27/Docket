@@ -17,6 +17,7 @@ import type * as dashboard from "../dashboard.js";
 import type * as documents from "../documents.js";
 import type * as files from "../files.js";
 import type * as flags from "../flags.js";
+import type * as game from "../game.js";
 import type * as groups from "../groups.js";
 import type * as hearings from "../hearings.js";
 import type * as http from "../http.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   documents: typeof documents;
   files: typeof files;
   flags: typeof flags;
+  game: typeof game;
   groups: typeof groups;
   hearings: typeof hearings;
   http: typeof http;

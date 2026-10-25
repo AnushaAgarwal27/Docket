@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import re
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -66,6 +67,9 @@ def transcript_to_paystub(t: PaystubTranscript, profile_id: str, source_file: st
         "netCents": to_cents(t.netPay),
         "sourceFile": source_file,
     }
-    rate = to_cents(t.hourlyRate) if t.hourlyRate.strip() else None
+    # The rate is printed with its unit ("$18.00 per hour", "$18.00/hr"), and Claude sometimes copies the unit.
+    # Drop only that unit; anything else that isn't an amount still fails, as every money field does.
+    rate_text = re.sub(r"\s*(/\s*(hr|hour)|(per|an|a)\s+hour)\s*$", "", t.hourlyRate.strip(), flags=re.I)
+    rate = to_cents(rate_text) if rate_text else None
     federal = to_cents(t.federalIncomeTaxWithheld or "0")
     return stub, rate, federal

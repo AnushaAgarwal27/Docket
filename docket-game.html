@@ -218,6 +218,8 @@
   .screen h1 { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 5vw, 64px); letter-spacing: -0.035em; line-height: 0.98; }
   .screen p { font-size: 17px; line-height: 1.6; color: var(--ink-2); }
   .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cases.three { grid-template-columns: 1fr 1fr 1fr; }
+  .case-card.live .k { color: var(--file); }
   /* Case cards look like the label on a Docket case file: cream paper, a dark green edge, a serif name */
   .case-card {
     position: relative; text-align: left; padding: 14px 16px 16px 22px; border-radius: 6px; border: 1.5px solid transparent; background: var(--card);
@@ -352,6 +354,12 @@
         <span>F-1 · arrived Jan 7, 2019 · calendar year 8<br>Example student from our test set</span>
         <em class="dim">Can this claim survive?</em>
       </button>
+      <button class="case-card live" id="case-live" aria-pressed="false" hidden>
+        <span class="k">Live</span><span class="pick" aria-hidden="true">Choose</span>
+        <b id="live-name">Live case</b>
+        <span id="live-facts"></span>
+        <em id="live-claim"></em>
+      </button>
     </div>
     <div class="modes" role="group" aria-label="How do you want to play?">
       <button class="mode-btn" id="mode-watch" aria-pressed="true">Watch the agents</button>
@@ -376,7 +384,7 @@
   </div>
 </section>
 
-<div class="proto">Prototype · scripted from the case file · no real call placed</div>
+<div class="proto" id="proto-note">Prototype · scripted from the case file · no real call placed</div>
 
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
@@ -753,17 +761,18 @@ function roundedRect(w, h, r) {
   s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s;
 }
 const cardFront = tex(1024, 640, () => {});
+var BANK = { name: "Priya Sharma", amount: "$440.64", from: "University Dining Payroll" };
 function drawCard(refunded) {
   const { ctx, canvas: c } = cardFront.userData, w = c.width, h = c.height;
   ctx.fillStyle = "#FBF8F2"; ctx.fillRect(0, 0, w, h);
   ctx.fillStyle = "#2B231C"; ctx.font = F(800, 52); ctx.fillText("Your bank", 64, 104);
-  ctx.fillStyle = "#6F6357"; ctx.font = M(400, 30); ctx.fillText("Checking · Priya Sharma", 64, 156);
+  ctx.fillStyle = "#6F6357"; ctx.font = M(400, 30); ctx.fillText(`Checking · ${BANK.name}`, 64, 156);
   ctx.font = M(400, 28); ctx.fillStyle = "#6F6357"; ctx.fillText("8 of 8 paychecks matched to a deposit", 64, 236);
   if (refunded) {
-    ctx.fillStyle = "#1F8F55"; ctx.font = F(900, 96); ctx.fillText("+$440.64", 64, 420);
-    ctx.fillStyle = "#4A4038"; ctx.font = M(400, 30); ctx.fillText("University Dining Payroll · matched exactly", 64, 474);
+    ctx.fillStyle = "#1F8F55"; ctx.font = F(900, 96); ctx.fillText(`+${BANK.amount}`, 64, 420);
+    ctx.fillStyle = "#4A4038"; ctx.font = M(400, 30); ctx.fillText(`${BANK.from} · matched`, 64, 474);
   } else {
-    ctx.fillStyle = "#4A4038"; ctx.font = M(400, 32); ctx.fillText("Watching for exactly $440.64", 64, 420);
+    ctx.fillStyle = "#4A4038"; ctx.font = M(400, 32); ctx.fillText(`Watching for exactly ${BANK.amount}`, 64, 420);
   }
   cardFront.needsUpdate = true;
 }
@@ -943,6 +952,7 @@ const SPEAKERS = {
   Judge: { color: "#8A7458", agent: () => judge },
   Advocate: { color: "#3F6FE0", agent: () => adv },
   "Payroll's Counsel": { color: "#D4581C", agent: () => counsel },
+  Auditor: { color: "#D4581C", agent: () => counsel },
   Docket: { color: "#3F6FE0", agent: () => caller },
   Payroll: { color: "#6E7782", agent: () => clerk },
   Guardian: { color: "#1F8F55", agent: () => guardian },
@@ -1136,10 +1146,12 @@ async function roundHearing() {
   $("hud-claim").className = c.amount ? "claim" : "claim long";
   $("hud-conditions").innerHTML = "";
   $("f-left-role").textContent = `argues for ${c.first}`;
+  $("f-right-name").textContent = c.live ? "Auditor" : "Payroll's Counsel";
   shot("court", 1.6);
   await roundCard("Round 1", "The hearing", "Before Docket asks anyone for money, the claim is argued. Models argue. Code rules.");
   showHud("fight");
   folderCoverPivot.userData.open = 1;
+  if (c.live) return liveHearing(c);
 
   await say("Judge", `Case ${c.id}. ${c.name}, F-1, working for ${c.employer}. The claim: Social Security and Medicare withheld that she likely didn't owe${c.amount ? ", $440.64 in total" : ""}. Advocate, open.`, { shot: "judge" });
   await say("Advocate", `${c.first} is on an F-1 visa and works on campus. IRS Publication 519 says these taxes aren't withheld from F-1 students unless they're resident aliens.`, { shot: "adv", lean: true });
@@ -1258,6 +1270,7 @@ function plugCord() {
 }
 function stepState(id, cls) { const el = $(id); el.className = cls; }
 async function roundCall() {
+  if (current.live) return liveCall(current);
   setRounds(2); showHud(null);
   for (const old of stamps.splice(0)) drop(old);
   shot("call", 1.4);
@@ -1344,6 +1357,7 @@ async function roundCall() {
    Round 3: the money
    ============================================================ */
 async function roundMoney() {
+  if (current.live) return liveMoney(current);
   setRounds(3); showHud(null);
   shot("money", 1.4);
   await roundCard("Round 3", "The money", "Docket doesn't stop at a promise. It watches the bank until the exact amount lands.");
@@ -1395,6 +1409,289 @@ async function roundMoney() {
 }
 
 /* ============================================================
+   Live case: the student file in Convex, as Docket's agents left it.
+   The hearing below is the one the Tax and Auditor agents actually held (hearings table);
+   the approval, the payroll call and the refund are the real case moving through its states.
+   Read and written through Convex's HTTP API, so this page needs no client library.
+   ============================================================ */
+const CONVEX = (document.querySelector('meta[name="convex-url"]')?.content || params.get("convex") || "").replace(/\/$/, "");
+const OBJECTION = {
+  missing_visa_or_arrival_data: "Missing visa or arrival date",
+  employer_is_contractor: "Is this contractor work?",
+  year_count_boundary: "Past the 5 exempt years?",
+  student_exception_applies: "A different exemption may apply",
+  medicare_recovery_uncertain: "Can Medicare be recovered?",
+  school_in_session: "Was school in session that week?"
+};
+async function convex(kind, path, args = {}) {
+  const r = await fetch(`${CONVEX}/api/${kind}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path, args, format: "json" }) });
+  const j = await r.json();
+  if (j.status !== "success") throw new Error(j.errorMessage || `${path} failed`);
+  return j.value;
+}
+const dollars = (cents) => `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const longDate = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const realWait = (ms) => new Promise((r) => setTimeout(r, ms));
+// Ask Convex until `done(file)` holds or time runs out; `onTick` gets each fresh file.
+async function pollFile(done, seconds, onTick) {
+  const stop = Date.now() + seconds * 1000;
+  for (;;) {
+    let file = null;
+    try { file = await convex("query", "game:caseFile"); } catch (e) { console.warn("Docket live:", e); }
+    if (file) { current.file = file; onTick && onTick(file); if (done(file)) return file; }
+    if (Date.now() > stop || !running) return file;
+    await realWait(2000);
+  }
+}
+function liveCase(file) {
+  const s = file.student, f = file.finding;
+  const arrivalYear = Number(s.arrivalDate.slice(0, 4));
+  const payYear = f?.payYear || new Date().getFullYear();
+  return {
+    key: "live", live: true, id: "LIVE", name: s.name, first: s.name.split(" ")[0],
+    arrival: longDate(s.arrivalDate), year: payYear - arrivalYear + 1, visa: s.visa,
+    employer: f?.employer || s.employer || "the employer",
+    claim: f ? dollars(f.amountCents) : "No finding yet", amount: f ? f.amountCents / 100 : 0, file
+  };
+}
+async function loadLive() {
+  if (!CONVEX) return;
+  let file;
+  try { file = await convex("query", "game:caseFile"); } catch (e) { console.warn("Docket live:", e); return; }
+  if (!file) return;
+  const keep = current && current.key === "live";
+  CASES.live = liveCase(file);
+  if (keep) current = CASES.live;
+  const c = CASES.live, h = file.hearing;
+  $("case-live").hidden = false;
+  document.querySelector(".cases").classList.add("three");
+  $("live-name").textContent = c.name;
+  $("live-facts").innerHTML = "";
+  $("live-facts").append(`${c.visa} · arrived ${c.arrival} · calendar year ${c.year} of 5`, document.createElement("br"),
+    h ? `Hearing held by the agents: ${h.verdict.replace("_", " ")}` : "No hearing yet: ask Docket “check my pay”");
+  $("live-claim").textContent = file.finding ? `${c.claim} withheld` : "Waiting for the agents";
+}
+const liveVerdictLabel = { upheld: "Claim stands", downgraded: "Claim stands, with a condition", needs_human: "Needs a person", defeated: "Claim dismissed" };
+
+async function liveHearing(c) {
+  const f = c.file.finding, h = c.file.hearing;
+  if (!f || !h) {
+    await say("Judge", `Nothing to hear yet. Ask Docket “check my pay” in ASI:One. The Tax and Auditor agents hold the hearing, and it appears here.`, { shot: "judge" });
+    return "pending";
+  }
+  await say("Judge", `Case file for ${c.name}, ${c.visa}, working for ${c.employer}. The claim: Social Security and Medicare withheld that ${c.first} likely didn't owe, ${c.claim} in total. This is the hearing Docket's agents held on ${longDate(h.at.slice(0, 10))}. Advocate, open.`, { shot: "judge" });
+  const [opening, ...rest] = h.rounds;
+  await say("Advocate", opening.argument, { shot: "adv", lean: true });
+  const exhibit = await throwCard(adv, judge, `Exhibit A · ${(f.sourceTitle || "IRS source").split(",")[0]}`, f.quote, "#3F6FE0");
+  await rule("Admitted", "The quote matches the stored IRS text word for word.", exhibit);
+  if (aborted) return;
+  for (let i = 0; i < rest.length; i++) {
+    const o = rest[i];
+    if (o.side !== "auditor") continue;
+    const reply = rest[i + 1] && rest[i + 1].side === "advocate" && rest[i + 1].objectionId === o.objectionId ? rest[i + 1] : null;
+    const label = OBJECTION[o.objectionId] || o.objectionId;
+    shot("counsel"); counsel.lean = 1;
+    await banner("Objection!", null, "#D4581C");
+    const card = await throwCard(counsel, adv, "The Auditor objects", label, "#D4581C");
+    adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 8); shake(0.12);
+    await say("Auditor", `Objection. ${o.argument}`, { shot: "counsel" });
+    counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
+    const m = reply ? reply.argument.match(/^(.*?)\s*\[(rebutted|conceded|unresolved)\]$/s) : null;
+    const answer = m ? m[1] : reply?.argument, outcome = m ? m[2] : "unresolved";
+    if (answer) await say("Advocate", answer, { shot: "adv", lean: true });
+    if (outcome === "rebutted") {
+      counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 22); stats.overruled++;
+      await rule("Overruled", "The Advocate answered it from the student file.", card);
+      counsel.hurt = 0; drawFace(counsel, "idle");
+    } else {
+      damage("left", outcome === "conceded" ? 12 : 18); stats.sustained++;
+      await rule("Sustained", outcome === "conceded" ? "The Advocate conceded it. It stays on the record as a condition." : "The file can't answer it. A person needs to check.", card);
+      const chip = document.createElement("span"); chip.textContent = label; $("hud-conditions").append(chip);
+    }
+    if (aborted) return;
+  }
+  const win = h.verdict === "upheld" || h.verdict === "downgraded";
+  if (win) {
+    drawFace(counsel, "sad"); counsel.slump = 1; adv.joy = 1; drawFace(adv, "joy");
+    $("hud-claim").className = "claim win"; shot("duel", 1.8); burst(V(0, 3.4, 0.6), 0x43D18A, 40, 0.8);
+  } else {
+    drawFace(adv, "sad"); adv.slump = 1; counsel.joy = 1; drawFace(counsel, "joy");
+    $("hud-claim").className = "claim long lose"; shot("court", 1.8);
+  }
+  await banner(liveVerdictLabel[h.verdict], win ? `${c.claim} · ${h.verdict === "upheld" ? "ask payroll first" : `${c.first} decides`}` : "Docket won't call payroll", win ? "#1F8F55" : "#D4581C");
+  await say("Judge", `${liveVerdictLabel[h.verdict]}. ${h.reason}${win ? ` Docket may ask ${c.employer} payroll for the refund, with ${c.first}'s approval.` : ""}`, { shot: "judge" });
+  return win ? "stands" : h.verdict === "defeated" ? "dismissed" : "needs_human";
+}
+
+async function liveCall(c) {
+  setRounds(2); showHud(null);
+  for (const old of stamps.splice(0)) drop(old);
+  shot("call", 1.4);
+  await roundCard("Round 2", "The call", "With the ruling in hand, Docket calls payroll. Only with approval, and it says it's an AI.");
+  showHud("call");
+  ["cs1", "cs2", "cs3", "cs4"].forEach((id) => stepState(id, ""));
+  let file = await pollFile(() => true, 0);
+  const k = file?.case;
+  if (!k) {
+    await say("Docket", `There's no case open for this finding yet. Once ${c.first} answers the review card in ASI:One, the Caseworker opens one.`, { shot: "caller" });
+    return "no_case";
+  }
+  if (k.state === "closed" && k.outcome === "declined_by_student") {
+    await say("Docket", `${c.first} said no to contacting payroll, so Docket didn't call. Nothing was sent.`, { shot: "caller" });
+    return "declined";
+  }
+  if (k.state === "awaiting_approval") {
+    await say("Docket", `The court said: ask payroll first. May I call ${c.employer} payroll for you?`, { shot: "caller", lean: true });
+    const approved = await new Promise((resolve) => {
+      focusDialog(true);
+      $("speaker").textContent = "Your approval";
+      $("speaker").style.setProperty("--dot", "#3F6FE0");
+      $("line").textContent = "This is the real case. Approving places one real payroll call through Cartesia.";
+      $("sub").textContent = "The same approval as the review card in ASI:One or the dashboard button";
+      $("btn-next").disabled = true;
+      $("hint").textContent = "Approve to place the call";
+      $("choice-area").innerHTML = `<div class="sign-row"><button class="sign-btn" id="btn-sign" type="button">Approve the call</button><button class="mode-btn" id="btn-hold" type="button">Not now</button><svg class="sig" id="sig" viewBox="0 0 200 44" aria-hidden="true"><path d="M6 30 C 26 6, 36 40, 56 22 S 82 10, 96 28 S 126 36, 140 18 S 170 12, 194 26"/></svg></div>`;
+      let signed = false;
+      $("btn-sign").addEventListener("click", async () => {
+        if (signed) return; signed = true;
+        $("btn-sign").disabled = true; $("btn-hold").disabled = true;
+        try { await convex("mutation", "cases:approve", { caseId: k.id }); }
+        catch (e) { $("sub").textContent = `Couldn't approve: ${e.message}`; signed = false; $("btn-sign").disabled = false; $("btn-hold").disabled = false; return; }
+        $("sig").classList.add("go"); stats.calls++;
+        realWait(900).then(() => resolve(true));
+      });
+      $("btn-hold").addEventListener("click", () => resolve(false));
+      $("btn-sign").focus({ preventScroll: true });
+    });
+    if (!approved) {
+      await say("Docket", "Understood. Nothing is sent. The case waits for your approval.", { shot: "caller" });
+      return "held";
+    }
+  }
+  else await say("Docket", `${c.first} already approved contacting payroll, in ASI:One or on the dashboard.`, { shot: "caller" });
+  stepState("cs1", "ok");
+  shot("board", 2.2);
+  stepState("cs2", "on");
+  plugCord();
+  lamps[0].material.color.set(0x43D18A);
+  handsetPivot.userData.ring = 1;
+  focusDialog();
+  $("speaker").textContent = "Docket"; $("speaker").style.setProperty("--dot", "#3F6FE0");
+  $("line").textContent = `Calling ${c.employer} payroll. The Cartesia agent logs what payroll says when the call ends.`;
+  $("sub").textContent = "Waiting for the call record…"; $("choice-area").innerHTML = ""; $("btn-next").disabled = true; $("hint").textContent = "";
+  file = await pollFile((x) => x.call || x.case?.callError || ["written_request", "escalate_irs", "awaiting_response", "closed"].includes(x.case?.state) && x.call, 180);
+  handsetPivot.userData.ring = 0;
+  const kk = file?.case, call = file?.call;
+  if (kk?.callError && !call) {
+    stepState("cs2", "warn");
+    await say("Docket", `The call couldn't start: ${kk.callError}`, { shot: "caller", sub: "Nothing reached payroll. The case stays approved; the Caseworker can retry." });
+    return "call_failed";
+  }
+  if (!call) {
+    stepState("cs2", "warn");
+    await say("Docket", "The call is still going. The dashboard shows the outcome the moment it's logged.", { shot: "caller" });
+    return "call_pending";
+  }
+  lamps[1].material.color.set(0x43D18A); handsetPivot.userData.lift = 1;
+  stepState("cs2", "ok"); stepState("cs3", "ok");
+  await say("Docket", `Call logged. ${call.answeredBy}: ${call.summary}`, { shot: "caller", sub: [call.promisedBy && `Promised by ${longDate(call.promisedBy)}`, call.referenceNo && `Reference ${call.referenceNo}`].filter(Boolean).join(" · ") });
+  if (kk.state === "awaiting_response" || kk.state === "closed") {
+    stepState("cs4", "ok");
+    await banner("Payroll agreed", call.promisedBy ? `Refund promised by ${longDate(call.promisedBy)}` : "Refund promised", "#1F8F55");
+    return "ok";
+  }
+  stepState("cs4", "warn");
+  if (kk.state === "written_request") {
+    letter.visible = true; letter.position.set(CX - 1.2, 2.6, 1.6); letter.rotation.set(0, 0.2, 0); letter.scale.set(1, 1, 1);
+    shot("call", 2.4); await wait(900); letter.userData.fold = 1; await wait(900);
+    envelope.visible = true; envelope.position.set(CX - 1.2, 2.2, 1.6); flapPivot.rotation.x = -2.6;
+    await fly(letter, letter.position.clone(), V(CX - 1.2, 2.25, 1.62), 400, 0.1);
+    letter.visible = false; flapPivot.userData.close = 1; await wait(500);
+    await fly(envelope, envelope.position.clone(), V(CX + 2.6, 1.15, 0.5), 900, 1.4, 1.5);
+    stats.letters++;
+    await banner("Payroll stalled", "Docket prepared the written request", "#B7791F");
+    return "ok";
+  }
+  await banner(kk.state === "escalate_irs" ? "Escalated" : "Needs the student", kk.state === "escalate_irs" ? "Forms 843 + 8316 checklist is next" : `Payroll wants to talk to ${c.first}`, "#B7791F");
+  return kk.state;
+}
+
+async function liveMoney(c) {
+  setRounds(3); showHud(null);
+  shot("money", 1.4);
+  await roundCard("Round 3", "The money", "Docket doesn't stop at a promise. The Ledger watches the bank until the amount lands.");
+  showHud("money");
+  drawCard(false);
+  $("money").innerHTML = `$0.00<small>recovered of ${c.claim}</small>`; $("money").className = "money";
+  $("date-chip").textContent = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const closed = (x) => x.case?.state === "closed" && x.case?.outcome === "refunded";
+  let file = await pollFile(() => true, 0);
+  if (!closed(file)) {
+    await say("Ledger", `Watching ${c.first}'s Capital One account for a deposit of ${c.claim} from ${c.employer}.`, { shot: "money", lean: true });
+    const released = await new Promise((resolve) => {
+      focusDialog(true);
+      $("speaker").textContent = "Your move"; $("speaker").style.setProperty("--dot", "#1F8F55");
+      $("line").textContent = "Payroll's next pay run is in about two weeks.";
+      $("sub").textContent = "Sandbox: this posts the refund to the Capital One Nessie test account; the Ledger finds it on its own";
+      $("btn-next").disabled = true; $("hint").textContent = "";
+      $("choice-area").innerHTML = `<div class="sign-row"><button class="sign-btn" id="btn-ff" type="button">Post the refund to the test bank ▸▸</button></div>`;
+      $("btn-ff").addEventListener("click", async () => {
+        $("btn-ff").disabled = true;
+        try { const r = await fetch("/__docket/release-refund", { method: "POST" }); if (!r.ok) throw new Error(await r.text()); resolve(true); }
+        catch (e) { $("sub").textContent = `Couldn't post it from here (${e.message}). Run: python -m seed.release_refund ${new Date().toISOString().slice(0, 10)}`; resolve(false); }
+      });
+      $("btn-ff").focus({ preventScroll: true });
+    });
+    focusDialog();
+    $("speaker").textContent = "Ledger"; $("speaker").style.setProperty("--dot", "#1F8F55");
+    $("sub").textContent = "";
+    $("line").textContent = released ? "Deposit posted. The Ledger checks the bank every 30 seconds and matches it to the case." : "Waiting for the deposit…";
+    $("choice-area").innerHTML = ""; $("btn-next").disabled = true;
+    file = await pollFile(closed, 150, () => { wheel.userData.spin = 1; });
+    wheel.userData.spin = 0;
+    if (!closed(file)) {
+      await say("Ledger", "No matching deposit yet. I keep watching, and Docket messages the student the moment it lands.", { shot: "money" });
+      return "watching";
+    }
+  }
+  shot("card", 2.2);
+  slip.visible = true; slip.position.set(MX, 6.5, 1.4); slip.rotation.set(0.2, 0, 0.3);
+  await fly(slip, slip.position.clone(), V(MX, 2.25, 0.55), 1100, 0.8, 2.2);
+  slip.visible = false;
+  drawCard(true); shake(0.12); burst(V(MX, 2.6, 0.8), 0x43D18A, 36, 0.7);
+  $("money").innerHTML = `${c.claim}<small>recovered of ${c.claim}</small>`; $("money").className = "money win";
+  ledger.joy = 1; drawFace(ledger, "joy");
+  await say("Ledger", `Deposit matched to the case from ${c.employer}. The Caseworker closed it and Docket told ${c.first}.`, { shot: "card", mood: "joy" });
+  shot("end", 1.6);
+  closedStamp.userData.show = 1;
+  burst(V(MX, 4.2, 1), 0xF2E8D5, 70, 1.2);
+  await banner("Case closed", `${c.claim} recovered`, "#1F8F55");
+  return "closed";
+}
+
+function endLive(kind) {
+  const c = current, statHtml = (b, s) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`;
+  const text = {
+    closed: [`Case closed`, `${c.claim} is back with ${c.first}.`, "Argued by the agents, approved by the student, called, and confirmed in the bank. Every step is a row in the Convex student file."],
+    watching: ["Still open", `Docket is watching for ${c.claim}.`, "The Ledger checks the bank every 30 seconds. When the deposit lands, the case closes and the student gets a message."],
+    call_pending: ["Calling", "The payroll call is still going.", "The Cartesia agent logs the outcome when it hangs up; the dashboard shows it live."],
+    call_failed: ["Call didn't start", "Approved, but the call couldn't start.", "Nothing reached payroll. The reason is on the dashboard and the case stays approved."],
+    held: ["Waiting on you", "Nothing was sent.", "Docket never contacts payroll without the student's yes. The case waits for approval."],
+    declined: ["Declined", "The student said no, so nobody was called.", "Docket respects the answer and keeps the finding on file."],
+    no_case: ["No case yet", "The finding is waiting for the student.", "Answer the review card in ASI:One to open the case."],
+    pending: ["No hearing yet", "Ask Docket to check the pay.", "Type “check my pay” to the Coordinator in ASI:One. The agents hold the hearing and it appears here."],
+    dismissed: ["Claim dismissed", "The Auditor won this one.", c.file.hearing?.reason || ""],
+    needs_human: ["Needs a person", "The file can't settle this alone.", c.file.hearing?.reason || ""]
+  }[kind] || ["Live case", kind, ""];
+  $("end-kicker").textContent = text[0]; $("end-title").textContent = text[1]; $("end-text").textContent = text[2];
+  const h = c.file.hearing;
+  $("end-stats").innerHTML = (h ? statHtml(`${stats.overruled} / ${stats.overruled + stats.sustained}`, "objections answered in the agents' hearing") : "") +
+    (c.file.finding ? statHtml(c.claim, kind === "closed" ? "recovered, matched in the bank" : "withheld, per the paystubs") : "") +
+    statHtml("Live", "from Docket's agents and the Convex student file");
+  $("btn-other").textContent = "Play Priya's sample case";
+}
+
+/* ============================================================
    Game flow
    ============================================================ */
 let running = false;
@@ -1413,6 +1710,7 @@ function resetWorld() {
   envelope.visible = false; flapPivot.userData = {}; flapPivot.rotation.x = 0;
   closedStamp.userData.show = 0; closedStamp.material.opacity = 0;
   folderCoverPivot.userData.open = 0;
+  Object.assign(BANK, current.live ? { name: current.name, amount: current.claim, from: current.employer } : { name: "Priya Sharma", amount: "$440.64", from: "University Dining Payroll" });
   drawCard(false);
   Object.keys(stats).forEach((k) => (stats[k] = 0));
   clearBanner();
@@ -1427,12 +1725,14 @@ async function play() {
   $("case-label").textContent = `Case ${current.id} · ${current.name}`;
   const verdict = await roundHearing();
   $("dialog").classList.remove("show");
-  if (verdict === "dismissed") { end("dismissed"); running = false; return; }
-  await roundCall();
+  if (verdict === "dismissed" && !current.live) { end("dismissed"); running = false; return; }
+  if (current.live && verdict !== "stands") { end(verdict || "pending"); running = false; return; }
+  const called = await roundCall();
   $("dialog").classList.remove("show");
-  await roundMoney();
+  if (current.live && called !== "ok") { end(called); running = false; return; }
+  const money = await roundMoney();
   $("dialog").classList.remove("show");
-  end("closed");
+  end(current.live ? money : "closed");
   running = false;
 }
 function end(kind) {
@@ -1440,7 +1740,8 @@ function end(kind) {
   document.body.classList.add("menu");
   const es = $("end-screen");
   const statHtml = (b, s) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`;
-  if (kind === "dismissed") {
+  if (current.live) endLive(kind);
+  else if (kind === "dismissed") {
     $("end-kicker").textContent = "Claim dismissed";
     $("end-title").textContent = "The hearing can lose. That's the point.";
     $("end-text").textContent = "Nadia is in calendar year 8, past the five exempt years, so these taxes likely apply to her. Docket tells her plainly and doesn't call payroll or send a letter. A claim only moves forward if it survives the other side.";
@@ -1463,7 +1764,9 @@ function end(kind) {
 /* Title + controls */
 function setCase(key) {
   current = CASES[key];
-  for (const k of ["priya", "nadia"]) {
+  $("proto-note").textContent = current.live ? "Live · from Docket's agents and the Convex student file · real approval, real call" : "Prototype · scripted from the case file · no real call placed";
+  for (const k of ["priya", "nadia", "live"]) {
+    if (!$("case-" + k) || $("case-" + k).hidden) continue;
     $("case-" + k).setAttribute("aria-pressed", key === k);
     $("case-" + k).querySelector(".pick").textContent = key === k ? "✓ Selected" : "Choose";
   }
@@ -1477,6 +1780,7 @@ function setMode(m) {
 }
 $("case-priya").addEventListener("click", () => setCase("priya"));
 $("case-nadia").addEventListener("click", () => setCase("nadia"));
+$("case-live").addEventListener("click", () => setCase("live"));
 $("mode-watch").addEventListener("click", () => setMode("watch"));
 $("mode-play").addEventListener("click", () => setMode("play"));
 $("btn-mode").addEventListener("click", () => setMode(mode === "watch" ? "play" : "watch"));
@@ -1486,6 +1790,10 @@ $("btn-other").addEventListener("click", () => { setCase(current.key === "priya"
 $("btn-skip").addEventListener("click", () => { if (!running) return; boost = 8; onAdvance(); if (skipHook) skipHook(); });
 if (params.get("payroll") === "agree") payrollWill = "agree";
 if (params.get("case") === "nadia") setCase("nadia");
+// The live case appears once Convex answers, and refreshes while the menu is up, so a hearing the agents
+// hold while this page is open shows up without a reload.
+loadLive().then(() => { if (params.get("case") === "live" && CASES.live) setCase("live"); });
+setInterval(() => { if (!running) loadLive(); }, 5000);
 if (params.get("mode") === "play") setMode("play");
 if (params.get("slot") === "show") document.body.classList.add("show-slot");
 

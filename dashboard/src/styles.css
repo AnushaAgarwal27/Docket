@@ -62,6 +62,8 @@ code { font-family: var(--mono); font-size: 0.92em; background: var(--panel-2); 
 h1, h2, p { margin: 0; }
 
 /* Nav */
+.nav-game { margin-left: auto; flex-shrink: 0; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--fg); text-decoration: none; white-space: nowrap; }
+.nav-game:hover { border-color: var(--fg); }
 .nav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
 .nav-in, .page { max-width: 1320px; margin: 0 auto; padding: 0 max(20px, env(safe-area-inset-left)); }
 .nav-in { display: flex; align-items: center; gap: 24px; height: 60px; }
