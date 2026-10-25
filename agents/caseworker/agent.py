@@ -13,6 +13,7 @@ from uagents import Agent, Context
 
 from agents.caseworker import call_record, engine
 from agents.agentverse import add_mailbox_check
+from agents.chat import add_chat, no_student, student
 from agents.messages import (
     PORTS, CaseDecision, CaseOpened, CasesResult, DecisionResult, LocalFirstResolver, OpenCases, RefundMatched,
     Verdict, WatchRefund, address_of,
@@ -128,6 +129,38 @@ async def recover_unreported_calls(ctx: Context):
             ctx.logger.info(f"recorded {recovered} call outcome(s) from Cartesia's call record")
     except Exception:
         ctx.logger.exception("recovering call outcomes failed")
+
+
+# --- ASI:One ------------------------------------------------------------------
+# Where each case stands and what payroll actually said. States change only through the machine.
+def answer(question: str) -> str:
+    from agents.store import dollars, query
+    p = student()
+    if p is None:
+        return no_student()
+    cases = query("cases:listByProfile", {"profileId": p["_id"]})
+    if not cases:
+        return ("No case is open. I only open one when a finding survives the Auditor's objections, "
+                "and I only act on it after the student says yes.")
+    snap = query("dashboard:snapshot", {"profileId": p["_id"]}) or {}
+    joined = {c["_id"]: c for c in snap.get("cases", [])}
+    out = ["I'm Docket's Caseworker. I run a refund case from the student's approval to the money "
+           "landing, and I don't contact anyone without it.\n"]
+    for c in cases:
+        out.append(f"**{dollars(c['amountCents'])} - {c['state'].replace('_', ' ')}**")
+        if c.get("nextFollowUp"):
+            out.append(f"- next follow-up {c['nextFollowUp']}")
+        for call in (joined.get(c["_id"], {}).get("calls") or []):
+            out.append(f"- call answered by {call.get('answeredBy', 'payroll')}: "
+                       f"{(call.get('summary') or '')[:200]}")
+            if call.get("promisedBy"):
+                out.append(f"  promised {call['promisedBy']}"
+                           f"{', reference ' + call['referenceNo'] if call.get('referenceNo') else ''}")
+        out.append("")
+    return "\n".join(out)
+
+
+add_chat(agent, "caseworker", answer)
 
 
 if __name__ == "__main__":

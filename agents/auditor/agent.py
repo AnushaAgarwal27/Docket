@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from uagents import Agent, Context
 
 from agents.agentverse import add_mailbox_check
+from agents.chat import add_chat, no_student, student
 from agents.auditor.objections import argument, objections
 from agents.auditor.verdict import decide
 from agents.messages import PORTS, Claim, LocalFirstResolver, Objection, Rebuttal, Verdict, address_of
@@ -83,6 +84,37 @@ async def on_rebuttal(ctx: Context, sender: str, msg: Rebuttal):
                       verdict=result["verdict"], reason=result["reason"], amount_cents=claim.get("amount_cents", 0))
     await tell(ctx, "auditor", "TAX", verdict, f"{msg.rule_id}: {result['verdict']}")
     await tell(ctx, "auditor", "CASEWORKER", verdict, f"{msg.rule_id}: {result['verdict']}")
+
+
+# --- ASI:One ------------------------------------------------------------------
+# The objections this agent raised and how each was answered. Verdicts are decided in code.
+def answer(question: str) -> str:
+    from agents.store import query
+    p = student()
+    if p is None:
+        return no_student()
+    hearings = query("hearings:latestForProfile", {"profileId": p["_id"], "limit": 3}) or []
+    if not hearings:
+        return ("No hearing has been held yet. I argue the employer's side of a finding before the "
+                "student ever sees it, so there is nothing for me to report until the Tax agent "
+                "claims something.")
+    out = ["I'm Docket's Auditor. I argue the employer's side of every finding before it reaches "
+           "the student, and the verdict is decided in code, not by a model.\n"]
+    for h in hearings:
+        out.append(f"**{h.get('ruleId', 'a finding')} - {h.get('verdict', 'pending').replace('_', ' ')}**")
+        for r in (h.get("rounds") or [])[:6]:
+            objection = (r.get("objection") or r.get("question") or "").strip()
+            answered = (r.get("rebuttal") or r.get("answer") or "").strip()
+            if objection:
+                out.append(f"- *{objection[:150]}*")
+                if answered:
+                    out.append(f"  {answered[:180]} [{r.get('result', 'answered')}]")
+        out.append("")
+    out.append("A finding I can't be talked out of is one worth showing her. One I can is not.")
+    return "\n".join(out)
+
+
+add_chat(agent, "auditor", answer)
 
 
 if __name__ == "__main__":

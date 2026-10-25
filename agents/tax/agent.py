@@ -15,6 +15,7 @@ from pathlib import Path
 from uagents import Agent, Context
 
 from agents.agentverse import add_mailbox_check
+from agents.chat import add_chat, no_student, student
 from agents.messages import (
     PORTS,
     Claim,
@@ -110,6 +111,36 @@ async def on_new_paystubs(ctx: Context, sender: str, msg: NewPaystub):
     await tell(ctx, "tax", "COORDINATOR", FindingsReady(
         profile_id=msg.profile_id, paystub_count=msg.count, flags_json=json.dumps(flags)),
         f"{len(flags)} findings on {msg.count} new paystubs")
+
+
+# --- ASI:One ------------------------------------------------------------------
+# Which rules fired, and the clause each one stands on. Rules run in code; nothing here is recalled.
+def answer(question: str) -> str:
+    from agents.store import dollars, query
+    p = student()
+    if p is None:
+        return no_student()
+    flags = query("flags:listByProfile", {"profileId": p["_id"]})
+    if not flags:
+        return ("I've run the rules and nothing fired for this student. No finding means no case: "
+                "I don't raise anything I can't quote a source for.")
+    lines = []
+    for f in flags:
+        amount = f" - {dollars(f['amountCents'])}" if f.get("amountCents") else ""
+        lines.append(f"- **{f['ruleId']}**{amount} ({f.get('status', 'open')})")
+        quote = (f.get("quote") or "").strip()
+        if quote:
+            lines.append(f"  > {quote[:240]}")
+    return (
+        "I'm Docket's Tax and status agent. I run the F-1 rules against the student's own file, in "
+        "code, and a finding only ships if I can quote the official clause word for word.\n\n"
+        + "\n".join(lines) +
+        "\n\nEach quote is checked against the stored copy of the source page before it is shown. "
+        "If a page changes and the sentence is no longer on it, I hold that rule's findings back."
+    )
+
+
+add_chat(agent, "tax", answer)
 
 
 if __name__ == "__main__":

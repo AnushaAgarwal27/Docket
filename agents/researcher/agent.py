@@ -24,6 +24,7 @@ from dotenv import load_dotenv
 from uagents import Agent, Context
 
 from agents.agentverse import add_mailbox_check
+from agents.chat import add_chat, no_student, student
 from agents.messages import (
     PORTS, LocalFirstResolver, ResearchAnswer, ResearchQuestion, address_of,
 )
@@ -99,6 +100,34 @@ async def watch(ctx: Context):
             ctx.logger.info(f"{found} watch finding(s) worth telling the student about")
     except Exception:
         ctx.logger.exception("the watch run failed")
+
+
+# --- ASI:One ------------------------------------------------------------------
+# Research this agent has done. Every source was re-fetched and had to contain the claim's wording.
+def answer(question: str) -> str:
+    from agents.store import query
+    p = student()
+    rows = query("research:forProfile", {"profileId": p["_id"], "limit": 4}) if p else []
+    out = ["I'm Athena, Docket's research agent. I answer what the student's own file can't, on "
+           "ASI:One's agentic models, and then every source I cite is fetched again in code and "
+           "has to actually contain what I said. One that doesn't is dropped, and an answer left "
+           "with no surviving source is marked low confidence and never stated as fact.\n"]
+    if not rows:
+        out.append("I haven't been asked anything yet for this student.")
+    else:
+        for r in rows:
+            out.append(f"**{(r.get('question') or 'a question')[:160]}**")
+            out.append(f"{(r.get('answer') or '')[:320]}")
+            srcs = r.get("sources") or []
+            for s in srcs[:3]:
+                url = s.get("url") if isinstance(s, dict) else str(s)
+                out.append(f"- {url}")
+            out.append(f"*confidence: {r.get('confidence', 'unknown')}, {len(srcs)} verified sources*\n")
+    out.append("Ask **docket-coordinator** an F-1 pay, tax or status question and it reaches me.")
+    return "\n".join(out)
+
+
+add_chat(agent, "researcher", answer)
 
 
 if __name__ == "__main__":
