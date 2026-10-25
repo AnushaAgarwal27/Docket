@@ -146,7 +146,13 @@ async def handle(ctx: Context, text: str, state: dict) -> list:
 
 @chat.on_message(ChatAcknowledgement)
 async def on_ack(ctx: Context, sender: str, msg: ChatAcknowledgement):
-    pass
+    # Did the student's chat acknowledge a message we sent unprompted? Log it, so we know whether
+    # ASI:One delivers proactive messages at all.
+    pending = ctx.storage.get("proactive_pending") or {}
+    detail = pending.pop(str(msg.acknowledged_msg_id), None)
+    if detail:
+        ctx.storage.set("proactive_pending", pending)
+        await asyncio.to_thread(log, "coordinator", "proactive_message_acknowledged", detail)
 
 
 async def tell_student(ctx: Context, text: str, action: str, detail: str, **ids) -> None:
@@ -156,8 +162,12 @@ async def tell_student(ctx: Context, text: str, action: str, detail: str, **ids)
         await asyncio.to_thread(log, "coordinator", "proactive_message_skipped",
                                 f"{detail}; Priya has not chatted with Docket yet", **ids)
         return
-    await ctx.send(to, reply(text))
+    message = reply(text)
+    await ctx.send(to, message)
     recent_replies[to].append(text)
+    pending = ctx.storage.get("proactive_pending") or {}
+    pending[str(message.msg_id)] = detail
+    ctx.storage.set("proactive_pending", pending)
     await asyncio.to_thread(log, "coordinator", action, detail, **ids)
 
 

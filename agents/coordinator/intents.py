@@ -266,6 +266,26 @@ async def respond_to_approval(ctx: Context, approved: bool) -> str:
     return "Okay, I won't contact payroll. The issue stays on your file; say **check my pay** any time to reopen it."
 
 
+def latest_news() -> str:
+    """'any update?': the same news a proactive message would have carried, read from Convex, so it works
+    even if the chat never showed the unprompted message."""
+    profile = demo_profile()
+    if profile is None:
+        return "I don't have a student file yet."
+    cases = query("cases:listByProfile", {"profileId": profile["_id"]})
+    log(AGENT, "update_requested", f"{len(cases)} cases on file", inputIds=[profile["_id"]])
+    if not cases:
+        return "No open cases. Say **check my pay** and I'll look at your latest paystubs."
+    case = max(cases, key=lambda c: c["_creationTime"])
+    amount = dollars(case["amountCents"])
+    if case["state"] == "closed" and case.get("outcome") == "refunded":
+        return (f"Good news: your **{amount}** refund landed in your account. It matched your refund case, "
+                "so I've closed it.")
+    if case["state"] == "awaiting_response":
+        return f"Payroll promised your **{amount}** refund by {case['nextFollowUp']}. I'm watching your bank for it."
+    return f"Your **{amount}** refund case is {CASE_STATUS.get(case['state'], case['state'])}."
+
+
 def give_ok(profile_id: str) -> bool:
     """A downgraded refund finding waits for the student's OK; record it so the Caseworker can open the case."""
     for flag in query("flags:listByProfile", {"profileId": profile_id}):
@@ -316,6 +336,8 @@ async def answer(ctx: Context, text: str) -> str:
         return await respond_to_approval(ctx, False)
     if re.fullmatch(r"(why|why\?|why is that\??|explain the hearing)", t):
         return await replay_hearing()
+    if re.search(r"\bany (update|news)s?\b|\bwhat'?s new\b|\bcase status\b|\bstatus of my (case|refund)\b", t):
+        return await asyncio.to_thread(latest_news)
 
     try:
         intent = (await asyncio.to_thread(brain.classify, text)).intent
