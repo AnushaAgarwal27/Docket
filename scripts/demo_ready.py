@@ -50,10 +50,21 @@ def main() -> None:
         return
 
     case = max(cases, key=lambda c: c["_creationTime"])
+    # cases:listByProfile returns the case rows alone; only the dashboard snapshot joins the calls
+    # onto them. Reading case["calls"] here always said zero, whether or not a call had been
+    # recorded — which is worse than not showing it at all.
+    snapshot = query("dashboard:snapshot", {"profileId": profile["_id"]}) or {}
+    joined = next((c for c in snapshot.get("cases", []) if c["_id"] == case["_id"]), {})
+    calls = joined.get("calls") or []
+
     print(f"\n{BOLD}{profile['name']}{OFF}  case {case['_id']}")
     print(f"  amount  {dollars(case['amountCents'])}")
     print(f"  state   {case['state']}")
-    print(f"  calls   {len(case.get('calls') or [])} recorded")
+    print(f"  calls   {len(calls)} recorded")
+    for call in calls:
+        print(f"    - {call.get('answeredBy')}: {(call.get('summary') or '')[:70]}")
+        print(f"      promised {call.get('promisedBy') or '(no date)'}"
+              f"   reference {call.get('referenceNo') or '(none)'}")
 
     if case["state"] == READY:
         print(f"\n  {GREEN}Ready.{OFF} A payroll call can record its outcome now.")
