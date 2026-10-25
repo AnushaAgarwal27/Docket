@@ -11,8 +11,15 @@ def sources_with_rule_quotes():
     return {r["source_id"]: f"Header text.\n{r['quote']}\nFooter text." for r in load_rules()}
 
 
+# These tests are about the FICA and 20-hour rules. Priya's own seed deliberately leaves a Form
+# 8843 outstanding -- she has filed 2024 and not 2025 -- which is right for the demo but would add
+# a third flag here and change what every assertion below is counting. Give them a student who is
+# up to date on 8843, so the rules under test are the only ones that can fire.
+FILED_8843 = {**d.PROFILE, "filed8843Years": [2024, 2025]}
+
+
 def run(**kw):
-    return evaluate(d.PROFILE, d.paystubs(), d.SCHOOL_CALENDAR, AS_OF, kw.pop("sources", sources_with_rule_quotes()), **kw)
+    return evaluate(FILED_8843, d.paystubs(), d.SCHOOL_CALENDAR, AS_OF, kw.pop("sources", sources_with_rule_quotes()), **kw)
 
 
 def test_priya_gets_exactly_two_flags():

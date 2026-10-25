@@ -45,8 +45,17 @@ def test_exactly_20_is_fine():
     assert over_20_hours_in_session(d.PROFILE, [stub], CAL, AS_OF) is None
 
 
-def test_priya_already_filed_8843():
-    assert needs_8843(d.PROFILE, d.paystubs(), CAL, AS_OF) is None
+def test_a_student_who_already_filed_is_not_flagged():
+    # Priya's own seed leaves 2025 outstanding on purpose, so the Filer has a form to fill in the
+    # demo. What this test is actually about is the rule not nagging someone who has already filed,
+    # so it states that student outright instead of borrowing one.
+    filed = {**d.PROFILE, "filed8843Years": [2024, 2025]}
+    assert needs_8843(filed, d.paystubs(), CAL, AS_OF) is None
+
+
+def test_priya_still_owes_8843_for_the_latest_year():
+    hit = needs_8843(d.PROFILE, d.paystubs(), CAL, AS_OF)
+    assert hit is not None and hit["taxYear"] == 2025
 
 
 def test_no_income_still_needs_8843_due_june():
