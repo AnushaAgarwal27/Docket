@@ -471,7 +471,7 @@ const braceTex = (ch) => tex(128, 128, (ctx, w, h) => {
   ctx.fillStyle = "#F5E7C8"; ctx.font = M(600, 86); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(ch, 64, 60);
 });
 
-function makeAgent({ kind, color, scale = 1, label }) {
+function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
   const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
   const headPivot = new THREE.Group(); body.add(headPivot);
   const eyes = []; let arms = [];
@@ -491,10 +491,25 @@ function makeAgent({ kind, color, scale = 1, label }) {
     paper([[[-0.035, 0, 0], [0.035, 0, 0], [0, 0.72, 0.2]], [[0.035, 0, 0], [0, 0.05, -0.06], [0, 0.72, 0.2]], [[0, 0.05, -0.06], [-0.035, 0, 0], [0, 0.72, 0.2]]], color, headPivot);
     paper([[[0, 0.75, 0.2], [-0.04, 0.63, 0.2], [0, 0.67, 0.5]], [[0, 0.75, 0.2], [0, 0.67, 0.5], [0.04, 0.63, 0.2]]], color, headPivot);
     eye(0.03, -0.038, 0.69, 0.27); eye(0.03, 0.038, 0.69, 0.27);
-  } else if (kind === "fox") {       // Payroll's Counsel: a paper fox
+    if (outfit === "student") {      // casual school clothes: a grey hoodie with its hood down, drawstrings, a backpack
+      const hoodie = 0x8E949C, pack = 0x2B3F7A;
+      const torso = solid(new THREE.CylinderGeometry(0.2, 0.24, 0.3, 6), hoodie, body, 0, 0.07, 0.02); torso.scale.z = 1.45;
+      solid(new THREE.CylinderGeometry(0.25, 0.25, 0.05, 6), 0x7A8088, body, 0, -0.09, 0.02).scale.z = 1.45;   // ribbed hem
+      const hood = solid(new THREE.TorusGeometry(0.1, 0.045, 6, 10), hoodie, body, 0, 0.18, 0.24); hood.rotation.x = Math.PI / 2 - 0.5;
+      for (const x of [-0.035, 0.035]) solid(new THREE.CylinderGeometry(0.008, 0.008, 0.12, 4), 0xF2EEE6, body, x, 0.13, 0.33);
+      box(0.26, 0.2, 0.12, flatMat(pack), 0, 0.3, -0.1, body);                                                   // backpack on its back
+      box(0.2, 0.08, 0.02, flatMat(0x23346A), 0, 0.27, -0.165, body);                                            // front pocket
+      for (const x of [-0.09, 0.09]) box(0.03, 0.03, 0.34, flatMat(0x1D2A55), x, 0.22, 0.06, body);              // straps
+    }
+  } else if (kind === "fox") {       // Payroll's Counsel, the prosecutor: a paper fox in a charcoal suit and tie
+    const suit = 0x2C303A, lapel = 0x3A3F4B, shirt = 0xF4F1EA, tie = 0xB3262E;
     const BL = [-0.42, 0, -0.3], BR = [0.42, 0, -0.3], F = [0, 0, 0.42], T = [0, 1.05, -0.05], C = [0, 0.8, 0.22];
-    paper([[BL, BR, T], [BL, F, C], [BL, C, T], [BR, C, F], [BR, T, C], [F, BR, BL]], color, body);
-    paper([[[-0.15, 0.22, 0.37], [0.15, 0.22, 0.37], [0, 0.74, 0.26]]], 0xFFF1E4, body);
+    paper([[BL, BR, T], [BL, F, C], [BL, C, T], [BR, C, F], [BR, T, C], [F, BR, BL]], suit, body);
+    paper([[[-0.16, 0.8, 0.25], [0.16, 0.8, 0.25], [0, 0.3, 0.36]]], shirt, body);                                       // shirt in the jacket's V
+    const lap = [[[-0.16, 0.8, 0.26], [-0.02, 0.32, 0.37], [-0.27, 0.62, 0.27]]];
+    paper(lap, lapel, body); paper(mirror(lap), lapel, body);                                                         // lapels
+    paper([[[-0.05, 0.79, 0.27], [0.05, 0.79, 0.27], [0, 0.7, 0.29]], [[0, 0.72, 0.29], [-0.055, 0.44, 0.35], [0.055, 0.44, 0.35]], [[-0.055, 0.44, 0.35], [0, 0.36, 0.37], [0.055, 0.44, 0.35]]], tie, body);
+    for (const y of [0.24, 0.14]) solid(new THREE.SphereGeometry(0.022, 8, 6), 0x15171C, body, 0, y, 0.39);           // jacket buttons
     paper([[[0.28, 0.14, -0.25], [0.95, 0.78, -0.55], [0.82, 0.1, -0.6]]], color, body);
     paper([[[0.86, 0.52, -0.57], [0.95, 0.78, -0.55], [1.04, 0.48, -0.62]]], 0xFFF1E4, body);
     headPivot.position.set(0, 1.0, 0.05);
@@ -506,10 +521,13 @@ function makeAgent({ kind, color, scale = 1, label }) {
     solid(new THREE.SphereGeometry(0.05, 12, 8), 0x15110E, headPivot, 0, 0.03, 0.56);
     const pl = pivot(-0.2, 0.5, 0.24), pr = pivot(0.2, 0.5, 0.24);
     const paw = [[[-0.07, 0, 0], [0.07, 0, 0], [0, -0.48, 0.14]]];
-    paper(paw, color, pl); paper(paw, color, pr); arms = [pl, pr];
-  } else if (kind === "owl") {       // the Judge: a paper owl whose eyes are { }
-    const b = solid(new THREE.CylinderGeometry(0.45, 0.62, 1.4, 6), color, body, 0, 0.7, 0); b.rotation.y = Math.PI / 6;
-    paper([[[-0.28, 0.15, 0.56], [0.28, 0.15, 0.56], [0, 1.15, 0.42]]], light, body);
+    paper(paw, suit, pl); paper(paw, suit, pr); arms = [pl, pr];                                                       // suit sleeves
+  } else if (kind === "owl") {       // the Judge: a paper owl whose eyes are { }, in a black judicial robe
+    const robe = 0x17171B;
+    const b = solid(new THREE.CylinderGeometry(0.45, 0.62, 1.4, 6), robe, body, 0, 0.7, 0); b.rotation.y = Math.PI / 6;
+    b.material.roughness = 0.6;
+    paper([[[-0.24, 1.38, 0.43], [0.24, 1.38, 0.43], [0, 1.02, 0.5]]], 0xF4F1EA, body);                                // white collar
+    paper([[[-0.05, 1.04, 0.5], [0.05, 1.04, 0.5], [0, 0.18, 0.6]]], 0x2A2A30, body);                                 // front seam
     headPivot.position.set(0, 1.4, 0);
     const hd = solid(new THREE.CylinderGeometry(0.56, 0.5, 0.62, 6), color, headPivot, 0, 0.31, 0); hd.rotation.y = Math.PI / 6;
     const tuft = [[[-0.52, 0.6, 0.1], [-0.2, 0.6, 0.12], [-0.46, 1.0, -0.04]], [[-0.52, 0.6, 0.1], [-0.46, 1.0, -0.04], [-0.42, 0.6, -0.22]]];
@@ -521,7 +539,7 @@ function makeAgent({ kind, color, scale = 1, label }) {
     const beak = solid(new THREE.ConeGeometry(0.07, 0.2, 4), 0xE0A040, headPivot, 0, 0.18, 0.5); beak.rotation.x = Math.PI / 2 + 0.35;
     const wl = pivot(-0.55, 1.2, 0), wr = pivot(0.55, 1.2, 0);
     const wing = [[[0, 0, 0.18], [0, 0, -0.22], [0.14, -0.95, 0.0]]];
-    paper(wing, color, wr); paper(mirror(wing), color, wl); arms = [wl, wr];
+    paper(wing, robe, wr); paper(mirror(wing), robe, wl); arms = [wl, wr];                                              // robe sleeves
   } else if (kind === "turtle") {    // the Guardian: a paper turtle that protects her status
     const sh = solid(new THREE.CylinderGeometry(0.18, 0.78, 0.5, 6), color, body, 0, 0.4, 0); sh.rotation.y = Math.PI / 6;
     const rim = solid(new THREE.CylinderGeometry(0.84, 0.84, 0.08, 6), light, body, 0, 0.14, 0); rim.rotation.y = Math.PI / 6;
@@ -596,7 +614,7 @@ seal.rotation.x = Math.PI / 2; sealGroup.add(seal);
 const sealFace = plate("Docket", "every claim gets a hearing", 1.7, 0.48);
 sealFace.position.z = 0.07; sealGroup.add(sealFace);
 
-const adv = makeAgent({ kind: "crane", color: 0x4F7CF0, scale: 1.45, label: "Advocate" });
+const adv = makeAgent({ kind: "crane", color: 0x4F7CF0, scale: 1.45, label: "Advocate", outfit: "student" });
 adv.group.position.set(-3.2, 0.9, 0.8); adv.group.rotation.y = 0.5; adv.home = adv.group.position.clone();
 const counsel = makeAgent({ kind: "fox", color: 0xE8743B, scale: 1.15, label: "Payroll's Counsel" });
 counsel.group.position.set(3.2, 0.5, 0.8); counsel.group.rotation.y = -0.5; counsel.home = counsel.group.position.clone();
