@@ -263,23 +263,25 @@
   .kicker { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
   .screen h1 { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 5vw, 64px); letter-spacing: -0.035em; line-height: 0.98; }
   .screen p { font-size: 17px; line-height: 1.6; color: var(--ink-2); }
-  .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .cases.three { grid-template-columns: 1fr 1fr 1fr; }
+  .cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; max-width: 760px; }
+  .cases.three { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .case-card.live .k { color: var(--file); }
   /* Case cards look like the label on a Docket case file: cream paper, a dark green edge, a serif name */
   .case-card {
-    position: relative; text-align: left; padding: 14px 16px 16px 22px; border-radius: 6px; border: 1.5px solid transparent; background: var(--card);
+    position: relative; text-align: left; padding: 18px 20px 20px 26px; border-radius: 6px; border: 1.5px solid transparent; background: var(--card);
     box-shadow: inset 6px 0 0 var(--file), 0 1px 0 rgba(60,40,20,0.06), 0 14px 28px -18px rgba(60,40,20,0.6);
-    display: flex; flex-direction: column; gap: 6px; min-height: 140px; transition: border-color .15s, transform .15s;
+    display: flex; flex-direction: column; gap: 8px; min-height: 164px; transition: border-color .15s, transform .15s;
   }
   .case-card:hover { transform: translateY(-2px); border-color: rgba(47,93,80,0.45); }
   .case-card[aria-pressed="true"] { border-color: var(--file); }
   .case-card .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
-  .case-card .pick { position: absolute; top: 12px; right: 14px; font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--muted); }
+  .case-card .pick { position: absolute; top: 14px; right: 16px; font-family: var(--sans); font-size: 15px; font-weight: 700; color: transparent; }
   .case-card[aria-pressed="true"] .pick { color: var(--file); }
-  .case-card b { font-family: var(--serif); font-weight: 600; font-size: 24px; line-height: 1.1; letter-spacing: -0.01em; }
+  .case-card .pick { font-size: 0; }
+  .case-card[aria-pressed="true"] .pick::before { content: "✓"; font-size: 17px; }
+  .case-card b { font-family: var(--serif); font-weight: 600; font-size: 27px; line-height: 1.1; letter-spacing: -0.01em; }
   .case-card span { font-family: var(--sans); font-size: 14px; color: var(--ink-2); line-height: 1.5; }
-  .case-card em { font-style: normal; font-family: var(--serif); font-weight: 700; font-size: 20px; margin-top: auto; }
+  .case-card em { font-style: normal; font-family: var(--serif); font-weight: 700; font-size: 22px; margin-top: auto; line-height: 1.25; }
   .case-card em.dim { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--ink-2); }
   .modes { display: flex; gap: 8px; flex-wrap: wrap; }
   .mode-btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--panel-2); font-family: var(--display); font-weight: 700; font-size: 15px; }
@@ -334,7 +336,7 @@
 <canvas id="gl" role="img" aria-label="A 3D courtroom where Docket's agents argue a student's case."></canvas>
 
 <header class="topbar">
-  <div class="brand">Docket<small id="case-label"></small></div>
+  <div class="brand">Docket</div>
   <nav class="rounds" aria-label="Rounds">
     <span id="r1">1 The Hearing</span><span id="r2">2 The Call</span><span id="r3">3 The Money</span>
   </nav>
@@ -379,8 +381,8 @@
   <div id="choice-area"></div>
   <div id="review" aria-live="polite"></div>
   <div class="dialog-foot">
-    <span class="hint" id="hint">Space or Enter to continue</span>
     <div class="foot-btns">
+    <span class="hint" id="hint"></span>
       <button class="back-btn" id="btn-back" type="button" title="Go back a line (←)" disabled>◂ Back</button>
       <button class="next-btn" id="btn-next" type="button">Next ▸</button>
     </div>
@@ -1259,7 +1261,6 @@ function waitAdvance() {
   return new Promise((resolve) => {
     if (skipping()) { resolve(); return; }
     advanceResolve = resolve;
-    $("hint").textContent = "Next ▸, Space or Enter to continue";
   });
 }
 // A choice: the viewer always picks. Nothing is pre-selected or picked for them (Skip round aside).
@@ -2079,7 +2080,6 @@ async function play() {
   $("title-screen").classList.add("hide");
   $("end-screen").classList.add("hide");
   document.body.classList.remove("menu");
-  $("case-label").textContent = `Case ${current.id} · ${current.name}`;
   const verdict = await roundHearing();
   $("dialog").classList.remove("show");
   if (verdict === "dismissed" && !current.live) { end("dismissed"); running = false; return; }
