@@ -78,6 +78,7 @@ export const ACTION_LABEL: Record<string, string> = {
   call_outcome_rejected: "Call outcome NOT recorded",
   case_summary_read: "Payroll call read the case",
   case_summary_missing: "Call asked for a case that does not exist",
+  tool_call_unauthorized: "Tool call REJECTED: bad token",
   refund_matched: "Refund deposit matched",
   case_open: "Case opened",
   case_awaiting_approval: "Waiting for approval",
