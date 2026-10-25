@@ -6,7 +6,7 @@
 <title>Docket · The Hearing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;700;800;900&family=Libre+Caslon+Text:wght@400;700&family=Courier+Prime:wght@400;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700;800;900&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --night: #F3EDE3;
@@ -24,10 +24,10 @@
     --warn: #B7791F;
     --paper: #F6F0E4;
     --shadow: 0 1px 2px rgba(74, 56, 38, 0.08), 0 6px 18px rgba(74, 56, 38, 0.10);
-    --display: 'Libre Franklin', system-ui, sans-serif;
-    --sans: 'Source Sans 3', system-ui, sans-serif;
-    --mono: 'Courier Prime', ui-monospace, monospace;
-    --serif: 'Libre Caslon Text', Georgia, serif;
+    --display: 'Bitter', Georgia, serif;
+    --sans: 'Nunito', system-ui, sans-serif;
+    --mono: 'Nunito', system-ui, sans-serif;
+    --serif: 'Newsreader', Georgia, serif;
     --file: #2F5D50;      /* the dark green edge on Docket's case files */
     --card: #FBF7EF;
   }
@@ -485,8 +485,8 @@ function tex(w, h, draw) {
   return t;
 }
 function redrawTex(t) { const r = texRegistry.find((x) => x.t === t); if (!r) return; r.ctx.clearRect(0, 0, r.w, r.h); r.draw(r.ctx, r.w, r.h); t.needsUpdate = true; }
-const F = (w, s, fam = "Libre Franklin") => `${w} ${s}px "${fam}", system-ui, sans-serif`;
-const M = (w, s) => `${w} ${s}px "Courier Prime", ui-monospace, monospace`;
+const F = (w, s, fam = "Bitter") => `${w} ${s}px "${fam}", Georgia, serif`;
+const M = (w, s) => `${w} ${s}px "Nunito", system-ui, sans-serif`;
 function wrap(ctx, text, maxW) {
   const words = text.split(" "), lines = [];
   let cur = "";
@@ -785,8 +785,8 @@ const folderLabelTex = tex(640, 300, (ctx, w, h) => {
   ctx.fillStyle = "#FBF7EF"; ctx.fillRect(0, 0, w, h);
   ctx.fillStyle = "#2F5D50"; ctx.fillRect(0, 0, 22, h);
   ctx.fillStyle = "#8A7D6E"; ctx.font = M(600, 24); ctx.fillText("C A S E   F I L E", 56, 58);
-  ctx.fillStyle = "#17120E"; ctx.font = F(600, 64, "Libre Caslon Text"); ctx.fillText(current.name, 56, 140);
-  ctx.fillStyle = "#3D332A"; ctx.font = F(500, 26, "Source Sans 3");
+  ctx.fillStyle = "#17120E"; ctx.font = F(600, 64, "Newsreader"); ctx.fillText(current.name, 56, 140);
+  ctx.fillStyle = "#3D332A"; ctx.font = F(500, 26, "Nunito");
   ctx.fillText(`${current.id} · F-1 · arrived ${current.arrival}`, 56, 194);
   ctx.fillText(`${current.employer} · calendar year ${current.year}`, 56, 234);
 });
@@ -940,7 +940,7 @@ function argCard(title, body, color) {
     ctx.fillText(kick, 72, 84);
     // shrink the text until every line fits on the card
     let size = 76, lines;
-    for (;;) { ctx.font = F(600, size, "Libre Caslon Text"); lines = wrap(ctx, body, w - 130); if (lines.length * size * 1.18 <= h - 150 || size <= 30) break; size -= 2; }
+    for (;;) { ctx.font = F(600, size, "Newsreader"); lines = wrap(ctx, body, w - 130); if (lines.length * size * 1.18 <= h - 150 || size <= 30) break; size -= 2; }
     ctx.fillStyle = "#17120E";
     lines.forEach((l, i) => ctx.fillText(l, 72, 130 + size + i * size * 1.18));
   });
@@ -1890,7 +1890,8 @@ function animate() {
 
   renderer.render(scene, camera);
 }
-document.fonts.ready.then(() => {
+// canvas-only fonts don't load on their own, so ask for them before redrawing
+Promise.all(["800 30px Bitter", "900 30px Bitter", "600 30px Newsreader", "500 20px Nunito", "600 20px Nunito"].map(f => document.fonts.load(f))).catch(() => {}).then(() => document.fonts.ready).then(() => {
   // redraw canvas textures that used web fonts
   for (const r of texRegistry) { r.ctx.clearRect(0, 0, r.w, r.h); r.draw(r.ctx, r.w, r.h); r.t.needsUpdate = true; }
   for (const a of [adv, counsel, caller, clerk, guardian, ledger]) drawFace(a, "idle");
