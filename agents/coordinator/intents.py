@@ -15,6 +15,7 @@ from datetime import date
 
 from uagents import Context
 
+from agents import messaging
 from agents.coordinator import brain
 from agents.coordinator.cards import Card, profile_form, refund_review
 from agents.coordinator.profile_form import form_changes
@@ -71,8 +72,9 @@ UNAVAILABLE = "Sorry, part of Docket isn't responding right now. Please try agai
 
 
 async def ask(ctx: Context, agent: str, message, response_type):
-    """Send a typed message to another Docket agent and wait for its reply (None on failure)."""
-    reply, status = await ctx.send_and_receive(address_of(agent), message, response_type=response_type, timeout=25)
+    """Send a typed message to another Docket agent and wait for its reply (None on failure). Both are logged."""
+    reply, status = await messaging.ask(ctx, AGENT, agent, message, response_type,
+                                        f"{type(message).__name__} for the student", timeout=90)
     if reply is None or getattr(reply, "error", ""):
         ctx.logger.error(f"{agent} failed: {getattr(reply, 'error', '') or status}")
         return None

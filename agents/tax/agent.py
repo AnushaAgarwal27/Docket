@@ -17,8 +17,9 @@ from uagents import Agent, Context
 from agents.agentverse import add_mailbox_check
 from agents.messages import (
     PORTS,
-    FindingsReady, LocalFirstResolver, PaystubsRecorded, RulesResult, RunRules, address_of,
+    FindingsReady, LocalFirstResolver, NewPaystub, RulesResult, RunRules, address_of,
 )
+from agents.messaging import heard, tell
 from agents.tax import engine
 
 agent = Agent(name="docket-tax", seed=os.environ["TAX_SEED"], port=PORTS["TAX"], mailbox=True,
@@ -39,17 +40,19 @@ async def run_rules(ctx: Context, sender: str, msg: RunRules):
         await ctx.send(sender, RulesResult(flags_json="[]", error=str(e)))
 
 
-@agent.on_message(PaystubsRecorded)
-async def on_new_paystubs(ctx: Context, sender: str, msg: PaystubsRecorded):
+@agent.on_message(NewPaystub)
+async def on_new_paystubs(ctx: Context, sender: str, msg: NewPaystub):
     if sender != address_of("LEDGER"):
         return
+    await heard("tax", sender, msg, f"{msg.count} new paystubs to check")
     try:
         flags = await asyncio.to_thread(engine.run, msg.profile_id)
     except Exception:
         ctx.logger.exception("rules run on new paystubs failed")
         return
-    await ctx.send(address_of("COORDINATOR"), FindingsReady(
-        profile_id=msg.profile_id, paystub_count=msg.count, flags_json=json.dumps(flags)))
+    await tell(ctx, "tax", "COORDINATOR", FindingsReady(
+        profile_id=msg.profile_id, paystub_count=msg.count, flags_json=json.dumps(flags)),
+        f"{len(flags)} findings on {msg.count} new paystubs")
 
 
 if __name__ == "__main__":

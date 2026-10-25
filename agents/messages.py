@@ -64,15 +64,16 @@ class DecisionResult(Model):
     error: str = ""
 
 
-class RefundLanded(Model):
-    """Ledger -> Coordinator: a deposit matched an open refund case, which is now closed."""
+class RefundMatched(Model):
+    """Ledger -> Caseworker: a deposit matches a case's refund. Caseworker -> Coordinator: the case is closed."""
     profile_id: str
     case_id: str
+    transaction_id: str
     amount_cents: int  # the case amount, from Convex
     counterparty: str
 
 
-class PaystubsRecorded(Model):
+class NewPaystub(Model):
     """Ledger -> Tax: new paystubs are in the student file, so run the rules."""
     profile_id: str
     count: int
@@ -83,3 +84,57 @@ class FindingsReady(Model):
     profile_id: str
     paystub_count: int
     flags_json: str  # flags written this run
+
+
+# ---------- The Hearing (Tax as Advocate vs. Auditor) and the case that follows ----------
+# Lists of objections and answers travel as JSON, like the other results, so rows pass through unchanged.
+
+class Claim(Model):
+    """Tax -> Auditor: a finding Tax will argue for, with the facts it rests on (computed in code)."""
+    profile_id: str
+    rule_id: str
+    flag_id: str  # "" when the rule did not fire and Tax argues the claim anyway (it can lose)
+    claim_json: str
+
+
+class Objection(Model):
+    """Auditor -> Tax: every reason the claim might be wrong."""
+    profile_id: str
+    rule_id: str
+    objections_json: str  # [{id, severity, part, evidence_ids, message_facts}]
+
+
+class Rebuttal(Model):
+    """Tax -> Auditor: an answer to each objection from the facts: rebutted, conceded or unresolved."""
+    profile_id: str
+    rule_id: str
+    flag_id: str
+    claim_json: str
+    objections_json: str
+    rebuttals_json: str  # [{objection_id, outcome, argument, evidence_ids}]
+
+
+class Verdict(Model):
+    """Auditor -> Tax and Caseworker: the outcome, decided in code and stored in the hearings table."""
+    profile_id: str
+    rule_id: str
+    flag_id: str
+    hearing_id: str
+    verdict: str  # upheld | downgraded | needs_human | defeated
+    reason: str
+    amount_cents: int
+
+
+class CaseOpened(Model):
+    """Caseworker -> Coordinator: an upheld refund finding now has a case waiting for the student's approval."""
+    profile_id: str
+    case_id: str
+    flag_id: str
+    amount_cents: int
+
+
+class WatchRefund(Model):
+    """Caseworker -> Ledger: payroll was asked for this refund, so watch the bank for it."""
+    profile_id: str
+    case_id: str
+    amount_cents: int

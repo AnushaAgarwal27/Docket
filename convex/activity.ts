@@ -10,6 +10,10 @@ export const log = mutation({
     sourceId: v.optional(v.id("sources")),
     inputIds: v.optional(v.array(v.string())),
     outputIds: v.optional(v.array(v.string())),
+    kind: v.optional(v.string()),
+    sender: v.optional(v.string()),
+    receiver: v.optional(v.string()),
+    summary: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("activity", { ...args, at: new Date().toISOString() });

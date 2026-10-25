@@ -15,9 +15,10 @@ from dotenv import load_dotenv
 from uagents import Agent, Context
 
 from agents import store
+from agents.messaging import heard, tell
 from agents.convex_files import upload_and_attach
 from agents.agentverse import add_mailbox_check
-from agents.messages import PORTS, LocalFirstResolver, PaystubsRecorded, RefundLanded, address_of
+from agents.messages import PORTS, LocalFirstResolver, NewPaystub, RefundMatched, WatchRefund
 from agents.ledger.service import match_refunds, process_paystubs, sync_bank
 from seed.nessie import Nessie
 from seed.reset import IDS_FILE
@@ -52,7 +53,8 @@ class ConvexLedgerStore:
         return store.query("cases:listByProfile", {"profileId": profile_id})
 
     def refund_received(self, case_id: str, transaction_id: str) -> None:
-        store.mutation("cases:refundReceived", {"caseId": case_id, "transactionId": transaction_id})
+        # The Caseworker owns the case: the tick sends it RefundMatched, and it closes the case.
+        pass
 
     def log(self, agent, action, detail, input_ids=None, output_ids=None) -> None:
         extra = {k: v for k, v in (("inputIds", input_ids), ("outputIds", output_ids)) if v}
@@ -95,16 +97,32 @@ async def tick(ctx: Context):
         return  # reset while this tick ran; the next tick starts over with the new profile
     if new_stubs:
         # Tax checks them right away, before Priya asks.
-        await ctx.send(address_of("TAX"), PaystubsRecorded(profile_id=pid, count=len(new_stubs)))
+        await tell(ctx, "ledger", "TAX", NewPaystub(profile_id=pid, count=len(new_stubs)),
+                   f"{len(new_stubs)} new paystubs recorded", inputIds=new_stubs)
     matches = match_refunds(ledger_store, pid, new_txns)
     for case_id, txn_id in matches:
-        # Tell the Coordinator, so Priya hears about her refund without asking.
+        # The Caseworker closes the case and tells the Coordinator, who tells Priya.
         case = store.query("cases:get", {"caseId": case_id})
         txn = next(t for t in new_txns if t["_id"] == txn_id)
-        await ctx.send(address_of("COORDINATOR"), RefundLanded(
-            profile_id=pid, case_id=case_id, amount_cents=case["amountCents"], counterparty=txn["counterparty"]))
+        await tell(ctx, "ledger", "CASEWORKER", RefundMatched(
+            profile_id=pid, case_id=case_id, transaction_id=txn_id, amount_cents=case["amountCents"],
+            counterparty=txn["counterparty"]), f"deposit of {store.dollars(txn['amountCents'])} matches case {case_id}",
+            inputIds=[txn_id, case_id])
+        watching = ctx.storage.get("watching") or {}
+        watching.pop(case_id, None)
+        ctx.storage.set("watching", watching)
     if new_txns or new_stubs or matches:
         ctx.logger.info(f"{len(new_txns)} transactions, {len(new_stubs)} paystubs, {len(matches)} refunds matched")
+
+
+@agent.on_message(WatchRefund)
+async def on_watch(ctx: Context, sender: str, msg: WatchRefund):
+    """The Caseworker asked payroll for a refund; remember to look for it in the bank feed."""
+    await heard("ledger", sender, msg, f"watch for a {store.dollars(msg.amount_cents)} refund (case {msg.case_id})",
+                inputIds=[msg.case_id])
+    watching = ctx.storage.get("watching") or {}
+    watching[msg.case_id] = msg.amount_cents
+    ctx.storage.set("watching", watching)
 
 
 if __name__ == "__main__":

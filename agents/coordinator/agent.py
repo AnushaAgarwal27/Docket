@@ -31,7 +31,8 @@ from agents.coordinator.cards import Card, validate
 from agents.coordinator.intents import answer, answer_selection
 from agents.coordinator.selection import parse_selection
 from agents.agentverse import add_mailbox_check
-from agents.messages import PORTS, FindingsReady, LocalFirstResolver, RefundLanded, address_of
+from agents.messages import PORTS, CaseOpened, FindingsReady, LocalFirstResolver, RefundMatched, address_of
+from agents.messaging import heard
 from agents.store import dollars, log
 
 load_dotenv()
@@ -160,10 +161,17 @@ async def tell_student(ctx: Context, text: str, action: str, detail: str, **ids)
     await asyncio.to_thread(log, "coordinator", action, detail, **ids)
 
 
-@agent.on_message(RefundLanded)
-async def on_refund(ctx: Context, sender: str, msg: RefundLanded):
-    if sender != address_of("LEDGER"):
-        return  # only the Ledger can report a refund
+@agent.on_message(CaseOpened)
+async def on_case_opened(ctx: Context, sender: str, msg: CaseOpened):
+    if sender == address_of("CASEWORKER"):
+        await heard("coordinator", sender, msg, f"case {msg.case_id} waiting for approval", inputIds=[msg.case_id])
+
+
+@agent.on_message(RefundMatched)
+async def on_refund(ctx: Context, sender: str, msg: RefundMatched):
+    if sender != address_of("CASEWORKER"):
+        return  # only the Caseworker closes a case
+    await heard("coordinator", sender, msg, f"case {msg.case_id} closed, refund received", inputIds=[msg.case_id])
     amount = dollars(msg.amount_cents)
     await tell_student(
         ctx,
@@ -177,6 +185,7 @@ async def on_refund(ctx: Context, sender: str, msg: RefundLanded):
 async def on_findings(ctx: Context, sender: str, msg: FindingsReady):
     if sender != address_of("TAX"):
         return
+    await heard("coordinator", sender, msg, f"rules ran on {msg.paystub_count} new paystubs")
     flags = json.loads(msg.flags_json)
     if not flags:
         text = f"I just read {msg.paystub_count} new paystubs. Nothing looks wrong."
