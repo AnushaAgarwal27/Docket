@@ -26,7 +26,7 @@ COORDINATOR = os.environ.get(
     "COORDINATOR_ADDRESS", "agent1qwj0e7jf5gu6lw3tael5ld2v8xeg4jrzgs8wx7yg22a82du6dcqeqtr0686"
 )
 MESSAGES = sys.argv[1:] or ["check my pay", "what's wrong?", "yes, contact payroll"]
-REPLY_TIMEOUT = 30
+REPLY_TIMEOUT = 90  # Claude plus Convex round trips can be slow on venue Wi-Fi
 
 tester = Agent(name="docket-tester", seed="docket-tester-local-only", port=8009,
                endpoint=["http://127.0.0.1:8009/submit"])

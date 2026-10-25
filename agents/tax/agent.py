@@ -10,16 +10,22 @@ import asyncio
 import json
 import os
 
+from pathlib import Path
+
 from uagents import Agent, Context
 
 from agents.agentverse import add_mailbox_check
 from agents.messages import (
     PORTS,
-    FindingsReady, LocalFirstResolver, PaystubsRecorded, RulesResult, RunRules, address_of, local_endpoint,
+    FindingsReady, LocalFirstResolver, PaystubsRecorded, RulesResult, RunRules, address_of,
 )
 from agents.tax import engine
 
-agent = Agent(name="docket-tax", seed=os.environ["TAX_SEED"], port=8003, endpoint=local_endpoint("TAX"), resolve=LocalFirstResolver())
+agent = Agent(name="docket-tax", seed=os.environ["TAX_SEED"], port=PORTS["TAX"], mailbox=True,
+              resolve=LocalFirstResolver(),
+              description="Applies F-1 FICA, 20-hour and Form 8843 rules in code and argues the student's side in Docket's Hearing.",
+              readme_path=str(Path(__file__).with_name("AGENTVERSE.md")),
+              publish_agent_details=True)
 add_mailbox_check(agent, "tax", PORTS["TAX"])
 
 

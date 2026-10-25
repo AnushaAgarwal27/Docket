@@ -7,14 +7,19 @@ import asyncio
 import json
 import os
 
+from pathlib import Path
+
 from uagents import Agent, Context
 
 from agents.caseworker import engine
 from agents.agentverse import add_mailbox_check
-from agents.messages import PORTS, CaseDecision, CasesResult, DecisionResult, OpenCases, LocalFirstResolver, local_endpoint
+from agents.messages import PORTS, CaseDecision, CasesResult, DecisionResult, OpenCases, LocalFirstResolver
 
-agent = Agent(name="docket-caseworker", seed=os.environ["CASEWORKER_SEED"], port=8004,
-              endpoint=local_endpoint("CASEWORKER"), resolve=LocalFirstResolver())
+agent = Agent(name="docket-caseworker", seed=os.environ["CASEWORKER_SEED"], port=PORTS["CASEWORKER"], mailbox=True,
+              resolve=LocalFirstResolver(),
+              description="Runs F-1 FICA refund cases from the student's approval to the refund deposit.",
+              readme_path=str(Path(__file__).with_name("AGENTVERSE.md")),
+              publish_agent_details=True)
 add_mailbox_check(agent, "caseworker", PORTS["CASEWORKER"])
 
 

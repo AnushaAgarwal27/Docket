@@ -13,14 +13,15 @@ from dotenv import load_dotenv
 from uagents import Agent
 
 from agents.agentverse import add_mailbox_check
-from agents.messages import PORTS, LocalFirstResolver, local_endpoint
+from agents.messages import PORTS, LocalFirstResolver
 
 load_dotenv()
 
-# Swap this line for the Agentverse snippet (mailbox=True, readme, publish_agent_details) when you connect it.
-agent = Agent(name="docket-auditor", seed=os.environ["AUDITOR_SEED"], port=PORTS["AUDITOR"],
-              endpoint=local_endpoint("AUDITOR"), resolve=LocalFirstResolver())
-README = Path(__file__).with_name("AGENTVERSE.md")
+agent = Agent(name="docket-auditor", seed=os.environ["AUDITOR_SEED"], port=PORTS["AUDITOR"], mailbox=True,
+              resolve=LocalFirstResolver(),
+              description="Argues the employer's side of every F-1 tax finding in Docket's Hearing; the verdict is decided in code.",
+              readme_path=str(Path(__file__).with_name("AGENTVERSE.md")),
+              publish_agent_details=True)
 add_mailbox_check(agent, "auditor", PORTS["AUDITOR"])
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ Addresses are derived from the seeds in .env; the seeds themselves are never pri
 import sys
 from pathlib import Path
 
-from agents.agentverse import ROSTER, inspector_url, mailbox_status
+from agents.agentverse import ROSTER, inspector_url
 from agents.messages import PORTS, address_of
 
 OUT = Path("docs/AGENTS.md")
@@ -26,15 +26,14 @@ def main() -> None:
         "Five Fetch.ai uAgents (uagents 0.26.1). Addresses come from each agent's seed in `.env`, so they stay",
         "the same as long as the seeds do. Regenerate this file with `python -m scripts.print_agents`.",
         "",
-        "| Agent | Role | Port | Address | Mailbox | Inspector |",
-        "|---|---|---|---|---|---|",
+        "| Agent | Role | Port | Address | Inspector |",
+        "|---|---|---|---|---|",
     ]
     for _, name, role, port, address in rows:
-        lines.append(f"| {name} | {role} | {port} | `{address}` | {mailbox_status(address)} | "
-                     f"[open]({inspector_url(address, port)}) |")
+        lines.append(f"| {name} | {role} | {port} | `{address}` | [open]({inspector_url(address, port)}) |")
     lines += [
         "",
-        "Mailbox status is read from Agentverse's Almanac API when this file is generated.",
+        "Each agent logs `Agentverse mailbox: connected` (or how to fix it) about 20 seconds after it starts.",
         "Agentverse profile URL for docket-coordinator: TODO paste from Agentverse (Agent Profile page).",
         "",
     ]
