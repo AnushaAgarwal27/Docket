@@ -6,7 +6,7 @@
 <title>Docket · The Hearing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --night: #F3EDE3;
@@ -27,6 +27,9 @@
     --display: 'Archivo', system-ui, sans-serif;
     --sans: 'Public Sans', system-ui, sans-serif;
     --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --serif: 'Fraunces', Georgia, serif;
+    --file: #2F5D50;      /* the dark green edge on Docket's case files */
+    --card: #FBF7EF;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; overflow: hidden; background: var(--night); color: var(--ink); font-family: var(--sans); }
@@ -42,13 +45,17 @@
   }
   .brand { font-family: var(--display); font-weight: 900; font-size: 20px; letter-spacing: -0.02em; }
   .brand small { font-family: var(--mono); font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 10px; letter-spacing: 0; }
-  .rounds { display: flex; gap: 6px; }
-  .rounds span {
-    font-family: var(--mono); font-size: 12px; padding: 6px 10px; border-radius: 6px;
-    border: 1px solid var(--line); color: var(--muted); background: rgba(255,255,255,0.85);
+  /* Round tabs: one cream panel, a bar over each round (dark = now, green = done) */
+  .rounds {
+    display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 10px; width: min(430px, 40vw); margin-top: 6px;
+    padding: 8px 12px 9px; border-radius: 10px; background: rgba(251,247,239,0.95); box-shadow: 0 8px 20px -12px rgba(60,40,20,0.55);
   }
-  .rounds span.on { color: var(--night); background: var(--ink); border-color: var(--ink); font-weight: 600; }
-  .rounds span.done { color: var(--win); border-color: rgba(31,143,85,0.45); }
+  .rounds span { display: block; min-width: 0; font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rounds span::before { content: ""; display: block; height: 4px; border-radius: 4px; margin-bottom: 6px; background: rgba(74,56,38,0.14); transition: background .4s; }
+  .rounds span.on { color: var(--ink); font-weight: 700; }
+  .rounds span.on::before { background: var(--ink); }
+  .rounds span.done { color: var(--file); }
+  .rounds span.done::before { background: var(--file); }
   .controls { display: flex; gap: 8px; align-items: center; }
   .chip-btn {
     white-space: nowrap; min-height: 36px; padding: 0 14px; border-radius: 999px; box-shadow: var(--shadow); border: 1px solid var(--line-strong);
@@ -56,6 +63,9 @@
   }
   .chip-btn:hover { color: var(--ink); border-color: var(--ink-2); }
   .chip-btn[aria-pressed="true"] { color: var(--night); background: var(--ink); border-color: var(--ink); }
+  a.chip-btn { display: inline-flex; align-items: center; text-decoration: none; }
+  .asi-btn { color: var(--night); background: var(--file); border-color: var(--file); font-weight: 600; }
+  .asi-btn:hover { color: var(--night); background: #234A3F; border-color: #234A3F; }
 
   /* ---------- Fighter HUD ---------- */
   .fighters {
@@ -133,12 +143,13 @@
   .avatar-slot { position: absolute; width: 56px; height: 56px; pointer-events: none; z-index: 2; }
   body.show-slot .avatar-slot { border: 2px dashed rgba(74,56,38,0.45); border-radius: 50%; }
   .choice {
-    text-align: left; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line-strong);
-    background: var(--panel-2); box-shadow: 0 1px 2px rgba(74,56,38,0.06); display: flex; flex-direction: column; gap: 3px; min-height: 56px;
+    text-align: left; padding: 10px 14px 10px 18px; border-radius: 6px; border: 1px solid rgba(74,56,38,0.14);
+    background: var(--card); box-shadow: inset 5px 0 0 var(--file), 0 1px 0 rgba(60,40,20,0.06), 0 10px 22px -16px rgba(60,40,20,0.55);
+    display: flex; flex-direction: column; gap: 3px; min-height: 56px;
     transition: transform .15s ease, border-color .15s ease, background .15s ease;
   }
   .choice:hover:not([disabled]) { transform: translateY(-2px); border-color: var(--ink-2); }
-  .choice b { font-family: var(--display); font-weight: 700; font-size: 17px; }
+  .choice b { font-family: var(--serif); font-weight: 600; font-size: 18px; }
   .choice span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
   .choice kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .choice.right { border-color: var(--win); background: rgba(31,143,85,0.10); }
@@ -207,16 +218,21 @@
   .screen h1 { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 5vw, 64px); letter-spacing: -0.035em; line-height: 0.98; }
   .screen p { font-size: 17px; line-height: 1.6; color: var(--ink-2); }
   .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* Case cards look like the label on a Docket case file: cream paper, a dark green edge, a serif name */
   .case-card {
-    text-align: left; padding: 16px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--panel-2); box-shadow: var(--shadow);
-    display: flex; flex-direction: column; gap: 6px; min-height: 132px; transition: border-color .15s, transform .15s;
+    position: relative; text-align: left; padding: 14px 16px 16px 22px; border-radius: 6px; border: 1.5px solid transparent; background: var(--card);
+    box-shadow: inset 6px 0 0 var(--file), 0 1px 0 rgba(60,40,20,0.06), 0 14px 28px -18px rgba(60,40,20,0.6);
+    display: flex; flex-direction: column; gap: 6px; min-height: 140px; transition: border-color .15s, transform .15s;
   }
-  .case-card:hover { transform: translateY(-2px); border-color: var(--ink-2); }
-  .case-card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-  .case-card b { font-family: var(--display); font-weight: 800; font-size: 19px; }
-  .case-card span { font-family: var(--mono); font-size: 12px; color: var(--ink-2); line-height: 1.5; }
-  .case-card em { font-style: normal; font-family: var(--display); font-weight: 900; font-size: 24px; margin-top: auto; }
-  .case-card em.dim { font-size: 15px; font-weight: 700; color: var(--ink-2); }
+  .case-card:hover { transform: translateY(-2px); border-color: rgba(47,93,80,0.45); }
+  .case-card[aria-pressed="true"] { border-color: var(--file); }
+  .case-card .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .case-card .pick { position: absolute; top: 12px; right: 14px; font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--muted); }
+  .case-card[aria-pressed="true"] .pick { color: var(--file); }
+  .case-card b { font-family: var(--serif); font-weight: 600; font-size: 24px; line-height: 1.1; letter-spacing: -0.01em; }
+  .case-card span { font-family: var(--sans); font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+  .case-card em { font-style: normal; font-family: var(--serif); font-weight: 700; font-size: 20px; margin-top: auto; }
+  .case-card em.dim { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--ink-2); }
   .modes { display: flex; gap: 8px; flex-wrap: wrap; }
   .mode-btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--panel-2); font-family: var(--display); font-weight: 700; font-size: 15px; }
   .mode-btn[aria-pressed="true"] { background: var(--ink); color: var(--night); border-color: var(--ink); }
@@ -231,9 +247,11 @@
   .proto { position: fixed; left: 22px; bottom: 6px; z-index: 18; font-family: var(--mono); font-size: 11px; color: var(--muted); pointer-events: none; }
   /* On the title and end screens, the game-only controls step aside */
   body.menu .rounds, body.menu #btn-skip, body.menu .proto { visibility: hidden; }
+  body.menu .topbar { z-index: 45; }   /* keeps the ASI1 button above the title and end screens */
 
   @media (max-width: 760px) {
     .rounds { display: none; }
+    .controls .chip-btn { padding: 0 11px; }
     .topbar { padding: 0 16px; }
     .brand small { display: none; }
     .fighters { left: 16px; right: 16px; top: 58px; }
@@ -267,11 +285,12 @@
 <header class="topbar">
   <div class="brand">Docket<small id="case-label"></small></div>
   <nav class="rounds" aria-label="Rounds">
-    <span id="r1">1 · Hearing</span><span id="r2">2 · Call</span><span id="r3">3 · Money</span>
+    <span id="r1">1 The Hearing</span><span id="r2">2 The Call</span><span id="r3">3 The Money</span>
   </nav>
   <div class="controls">
     <button class="chip-btn" id="btn-mode" aria-pressed="false" title="Switch between watching the agents and choosing the evidence yourself" hidden>Mode: Watch</button>
     <button class="chip-btn" id="btn-skip" title="Skip to the next round">Skip round ▸</button>
+    <a class="chip-btn asi-btn" id="btn-asi" href="https://asi1.ai/" target="_blank" rel="noopener noreferrer" title="Talk to Docket's agents on ASI:One (opens in a new tab)">ASI1 ↗</a>
   </div>
 </header>
 
@@ -319,14 +338,16 @@
   <div class="screen-inner">
     <span class="kicker">Docket · a caseworker for international students</span>
     <h1>Payroll took $440.64 from Priya by mistake.</h1>
-    <p>Watch Docket's paper agents fight for it. The crane argues for Priya, the fox argues for payroll, and the owl judges in code, using only her file and the IRS's own words. Win the hearing, and Docket makes the call.</p>
+    <p>Watch Docket's paper agents fight for it. The Advocate argues for Priya, Payroll's Counsel argues for the employer, and the Judge rules in code, using only her file and the IRS's own words. Win the hearing, and Docket makes the call.</p>
     <div class="cases" role="group" aria-label="Choose a case">
       <button class="case-card" id="case-priya" aria-pressed="true">
+        <span class="k">Case file</span><span class="pick" aria-hidden="true">✓ Selected</span>
         <b>Priya Sharma</b>
         <span>F-1 · arrived Aug 15, 2024 · calendar year 3 of 5<br>University Dining Services · 8 paystubs</span>
         <em>$440.64 withheld</em>
       </button>
       <button class="case-card" id="case-nadia" aria-pressed="false">
+        <span class="k">Case file</span><span class="pick" aria-hidden="true">Choose</span>
         <b>Nadia Petrova</b>
         <span>F-1 · arrived Jan 7, 2019 · calendar year 8<br>Example student from our test set</span>
         <em class="dim">Can this claim survive?</em>
@@ -468,10 +489,6 @@ function paper(tris, color, parent) { const m = new THREE.Mesh(paperGeo(tris), f
 function solid(geo, color, parent, x = 0, y = 0, z = 0) { const m = new THREE.Mesh(geo, flatMat(color)); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m; }
 const mirror = (tris) => tris.map((t) => t.map((v) => [-v[0], v[1], v[2]]).reverse());
 const eyeMat = new THREE.MeshStandardMaterial({ color: 0x15110E, roughness: 0.3 });
-const braceTex = (ch) => tex(128, 128, (ctx, w, h) => {
-  ctx.fillStyle = "#1B1612"; ctx.beginPath(); ctx.arc(64, 64, 62, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#F5E7C8"; ctx.font = M(600, 86); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(ch, 64, 60);
-});
 
 function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
   const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
@@ -481,7 +498,75 @@ function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
   const eye = (r, x, y, z, parent = headPivot) => { const e = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), eyeMat); e.position.set(x, y, z); parent.add(e); eyes.push(e); return e; };
   const pivot = (x, y, z, parent = body) => { const p = new THREE.Group(); p.position.set(x, y, z); parent.add(p); return p; };
 
-  if (kind === "crane") {            // the Advocate (and Docket on the phone): a paper crane
+  if (kind === "person") {           // the hearing's people, folded from paper: judge, prosecutor, student
+    const skin = 0xE2B48C, skinDk = 0xC9946A;
+    const look = {
+      judge:   { top: 0x17171B, legs: 0x17171B, shoe: 0x0F0F12, hair: 0xCFCBC4, sleeve: 0x17171B },
+      counsel: { top: 0x2C303A, legs: 0x2C303A, shoe: 0x111114, hair: 0x2A1E16, sleeve: 0x2C303A },
+      student: { top: 0x8E949C, legs: 0x3E5C8A, shoe: 0xF2EEE6, hair: 0x1E1612, sleeve: 0x8E949C }
+    }[outfit] || {};
+    // legs and shoes (the judge's robe covers them)
+    if (outfit !== "judge") for (const x of [-0.1, 0.1]) {
+      solid(new THREE.CylinderGeometry(0.075, 0.065, 0.66, 6), look.legs, body, x, 0.37, 0);
+      const sh = solid(new THREE.BoxGeometry(0.13, 0.08, 0.24), look.shoe, body, x, 0.04, 0.04);
+      if (outfit === "student") solid(new THREE.BoxGeometry(0.135, 0.025, 0.245), 0xD9D2C4, body, x, 0.012, 0.04);   // sneaker soles
+      sh.castShadow = true;
+    }
+    // torso
+    if (outfit === "judge") {        // a black judicial robe to the floor, white collar, dark front seam
+      const robe = solid(new THREE.CylinderGeometry(0.25, 0.36, 1.22, 7), look.top, body, 0, 0.62, 0); robe.material.roughness = 0.6;
+      paper([[[-0.15, 1.22, 0.2], [0.15, 1.22, 0.2], [0, 1.02, 0.27]]], 0xF4F1EA, body);                              // white collar
+      paper([[[-0.03, 1.02, 0.27], [0.03, 1.02, 0.27], [0, 0.12, 0.37]]], 0x2A2A30, body);                            // front seam
+    } else {
+      const t = solid(new THREE.CylinderGeometry(0.22, 0.2, 0.58, 7), look.top, body, 0, 0.95, 0); t.scale.z = 0.72;
+      if (outfit === "counsel") {    // charcoal suit, white shirt in the V, lapels, red tie, buttons
+        paper([[[-0.09, 1.22, 0.16], [0.09, 1.22, 0.16], [0, 0.9, 0.17]]], 0xF4F1EA, body);
+        const lap = [[[-0.1, 1.22, 0.165], [-0.01, 0.88, 0.175], [-0.16, 1.07, 0.15]]];
+        paper(lap, 0x3A3F4B, body); paper(mirror(lap), 0x3A3F4B, body);
+        paper([[[-0.03, 1.21, 0.172], [0.03, 1.21, 0.172], [0, 1.16, 0.175]], [[0, 1.17, 0.175], [-0.035, 0.97, 0.178], [0.035, 0.97, 0.178]], [[-0.035, 0.97, 0.178], [0, 0.92, 0.18], [0.035, 0.97, 0.178]]], 0xB3262E, body);
+        for (const y of [0.84, 0.76]) solid(new THREE.SphereGeometry(0.014, 8, 6), 0x15171C, body, 0, y, 0.15);
+        solid(new THREE.CylinderGeometry(0.205, 0.205, 0.04, 7), 0x23262E, body, 0, 0.68, 0).scale.z = 0.74;          // jacket hem
+      } else {                       // student: grey hoodie, hood down, drawstrings, kangaroo pocket, backpack
+        solid(new THREE.CylinderGeometry(0.21, 0.21, 0.05, 7), 0x7A8088, body, 0, 0.68, 0).scale.z = 0.74;             // ribbed hem
+        const hood = solid(new THREE.TorusGeometry(0.1, 0.045, 6, 10), look.top, body, 0, 1.23, -0.06); hood.rotation.x = Math.PI / 2 - 0.35;
+        for (const x of [-0.035, 0.035]) solid(new THREE.CylinderGeometry(0.006, 0.006, 0.12, 4), 0xF2EEE6, body, x, 1.12, 0.15);
+        box(0.22, 0.1, 0.02, flatMat(0x7F858D), 0, 0.8, 0.14, body);                                                  // pocket
+        box(0.3, 0.36, 0.14, flatMat(0x2B3F7A), 0, 0.98, -0.22, body);                                                 // backpack
+        box(0.22, 0.1, 0.03, flatMat(0x23346A), 0, 0.9, -0.3, body);                                                   // its front pocket
+        for (const x of [-0.12, 0.12]) box(0.04, 0.42, 0.03, flatMat(0x1D2A55), x, 1.0, 0.13, body);                   // straps
+      }
+    }
+    // arms: pivots at the shoulders, hanging down, so throwCard / rule can swing them forward
+    const sw = outfit === "judge" ? 0.27 : 0.25, al = outfit === "judge" ? 0.5 : 0.48;
+    const ar = [pivot(-sw, 1.18, 0), pivot(sw, 1.18, 0)];
+    ar.forEach((p, i) => {
+      const sl = solid(new THREE.CylinderGeometry(outfit === "judge" ? 0.07 : 0.055, outfit === "judge" ? 0.11 : 0.05, al, 6), look.sleeve, p, 0, -al / 2, 0);
+      sl.rotation.z = (i ? -1 : 1) * 0.08;
+      if (outfit === "counsel") solid(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 6), 0xF4F1EA, p, (i ? 1 : -1) * 0.02, -al + 0.01, 0);   // shirt cuffs
+      solid(new THREE.IcosahedronGeometry(0.05, 0), skin, p, (i ? 1 : -1) * 0.02, -al - 0.04, 0);
+    });
+    arms = ar;
+    solid(new THREE.CylinderGeometry(0.05, 0.06, 0.08, 6), skin, body, 0, 1.25, 0);                                     // neck
+    // head
+    headPivot.position.set(0, 1.28, 0);
+    const head = solid(new THREE.IcosahedronGeometry(0.15, 1), skin, headPivot, 0, 0.15, 0); head.scale.set(0.95, 1.08, 1);
+    solid(new THREE.IcosahedronGeometry(0.03, 0), skinDk, headPivot, -0.148, 0.14, 0); solid(new THREE.IcosahedronGeometry(0.03, 0), skinDk, headPivot, 0.148, 0.14, 0);   // ears
+    solid(new THREE.ConeGeometry(0.022, 0.05, 4), skinDk, headPivot, 0, 0.13, 0.155).rotation.x = Math.PI / 2;          // nose
+    eye(0.018, -0.055, 0.18, 0.135); eye(0.018, 0.055, 0.18, 0.135);
+    box(0.06, 0.01, 0.01, flatMat(0x8A4E3A), 0, 0.07, 0.143, headPivot);                                               // mouth
+    // hair
+    const cap = solid(new THREE.SphereGeometry(0.162, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2.1), look.hair, headPivot, 0, 0.17, -0.012);
+    cap.scale.set(1, 0.95, 1.04);
+    if (outfit === "judge") {        // grey, a little fuller at the sides, and reading glasses
+      for (const x of [-0.13, 0.13]) solid(new THREE.IcosahedronGeometry(0.055, 0), look.hair, headPivot, x, 0.16, -0.05);
+      for (const x of [-0.055, 0.055]) { const r = solid(new THREE.TorusGeometry(0.03, 0.006, 4, 12), 0x2A2420, headPivot, x, 0.18, 0.148); r.material.metalness = 0.3; }
+      box(0.05, 0.006, 0.006, flatMat(0x2A2420), 0, 0.185, 0.15, headPivot);
+    } else if (outfit === "counsel") {   // short, side-parted
+      solid(new THREE.BoxGeometry(0.24, 0.05, 0.12), look.hair, headPivot, 0.02, 0.27, 0.06).rotation.z = -0.12;
+    } else {                         // student: a messier fringe
+      for (const [x, rz] of [[-0.07, 0.4], [0, 0.1], [0.07, -0.3]]) { const f = solid(new THREE.ConeGeometry(0.05, 0.1, 4), look.hair, headPivot, x, 0.25, 0.1); f.rotation.set(1.9, 0, rz); }
+    }
+  } else if (kind === "crane") {     // Docket on the phone: a paper crane
     const T = [0, 0.32, 0], B = [0, -0.12, 0], Fr = [0, 0.08, 0.34], Bk = [0, 0.08, -0.34], L = [-0.17, 0.08, 0], R = [0.17, 0.08, 0];
     paper([[T, Fr, L], [T, L, Bk], [T, Bk, R], [T, R, Fr], [B, L, Fr], [B, Bk, L], [B, R, Bk], [B, Fr, R]], color, body);
     const wl = pivot(-0.1, 0.16, 0), wr = pivot(0.1, 0.16, 0);
@@ -493,55 +578,6 @@ function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
     paper([[[-0.035, 0, 0], [0.035, 0, 0], [0, 0.72, 0.2]], [[0.035, 0, 0], [0, 0.05, -0.06], [0, 0.72, 0.2]], [[0, 0.05, -0.06], [-0.035, 0, 0], [0, 0.72, 0.2]]], color, headPivot);
     paper([[[0, 0.75, 0.2], [-0.04, 0.63, 0.2], [0, 0.67, 0.5]], [[0, 0.75, 0.2], [0, 0.67, 0.5], [0.04, 0.63, 0.2]]], color, headPivot);
     eye(0.03, -0.038, 0.69, 0.27); eye(0.03, 0.038, 0.69, 0.27);
-    if (outfit === "student") {      // casual school clothes: a grey hoodie with its hood down, drawstrings, a backpack
-      const hoodie = 0x8E949C, pack = 0x2B3F7A;
-      const torso = solid(new THREE.CylinderGeometry(0.2, 0.24, 0.3, 6), hoodie, body, 0, 0.07, 0.02); torso.scale.z = 1.45;
-      solid(new THREE.CylinderGeometry(0.25, 0.25, 0.05, 6), 0x7A8088, body, 0, -0.09, 0.02).scale.z = 1.45;   // ribbed hem
-      const hood = solid(new THREE.TorusGeometry(0.1, 0.045, 6, 10), hoodie, body, 0, 0.18, 0.24); hood.rotation.x = Math.PI / 2 - 0.5;
-      for (const x of [-0.035, 0.035]) solid(new THREE.CylinderGeometry(0.008, 0.008, 0.12, 4), 0xF2EEE6, body, x, 0.13, 0.33);
-      box(0.26, 0.2, 0.12, flatMat(pack), 0, 0.3, -0.1, body);                                                   // backpack on its back
-      box(0.2, 0.08, 0.02, flatMat(0x23346A), 0, 0.27, -0.165, body);                                            // front pocket
-      for (const x of [-0.09, 0.09]) box(0.03, 0.03, 0.34, flatMat(0x1D2A55), x, 0.22, 0.06, body);              // straps
-    }
-  } else if (kind === "fox") {       // Payroll's Counsel, the prosecutor: a paper fox in a charcoal suit and tie
-    const suit = 0x2C303A, lapel = 0x3A3F4B, shirt = 0xF4F1EA, tie = 0xB3262E;
-    const BL = [-0.42, 0, -0.3], BR = [0.42, 0, -0.3], F = [0, 0, 0.42], T = [0, 1.05, -0.05], C = [0, 0.8, 0.22];
-    paper([[BL, BR, T], [BL, F, C], [BL, C, T], [BR, C, F], [BR, T, C], [F, BR, BL]], suit, body);
-    paper([[[-0.16, 0.8, 0.25], [0.16, 0.8, 0.25], [0, 0.3, 0.36]]], shirt, body);                                       // shirt in the jacket's V
-    const lap = [[[-0.16, 0.8, 0.26], [-0.02, 0.32, 0.37], [-0.27, 0.62, 0.27]]];
-    paper(lap, lapel, body); paper(mirror(lap), lapel, body);                                                         // lapels
-    paper([[[-0.05, 0.79, 0.27], [0.05, 0.79, 0.27], [0, 0.7, 0.29]], [[0, 0.72, 0.29], [-0.055, 0.44, 0.35], [0.055, 0.44, 0.35]], [[-0.055, 0.44, 0.35], [0, 0.36, 0.37], [0.055, 0.44, 0.35]]], tie, body);
-    for (const y of [0.24, 0.14]) solid(new THREE.SphereGeometry(0.022, 8, 6), 0x15171C, body, 0, y, 0.39);           // jacket buttons
-    paper([[[0.28, 0.14, -0.25], [0.95, 0.78, -0.55], [0.82, 0.1, -0.6]]], color, body);
-    paper([[[0.86, 0.52, -0.57], [0.95, 0.78, -0.55], [1.04, 0.48, -0.62]]], 0xFFF1E4, body);
-    headPivot.position.set(0, 1.0, 0.05);
-    const L = [-0.36, 0.18, 0.02], R = [0.36, 0.18, 0.02], HT = [0, 0.36, -0.06], HB = [0, -0.12, 0.05], S = [0, 0.02, 0.56];
-    paper([[L, HT, S], [HT, R, S], [L, S, HB], [S, R, HB], [HT, L, HB], [R, HT, HB]], color, headPivot);
-    const ear = [[[-0.34, 0.2, 0.0], [-0.1, 0.33, -0.02], [-0.32, 0.68, -0.08]], [[-0.1, 0.33, -0.02], [-0.24, 0.22, -0.14], [-0.32, 0.68, -0.08]], [[-0.24, 0.22, -0.14], [-0.34, 0.2, 0.0], [-0.32, 0.68, -0.08]]];
-    paper(ear, color, headPivot); paper(mirror(ear), color, headPivot);
-    eye(0.05, -0.14, 0.21, 0.14); eye(0.05, 0.14, 0.21, 0.14);
-    solid(new THREE.SphereGeometry(0.05, 12, 8), 0x15110E, headPivot, 0, 0.03, 0.56);
-    const pl = pivot(-0.2, 0.5, 0.24), pr = pivot(0.2, 0.5, 0.24);
-    const paw = [[[-0.07, 0, 0], [0.07, 0, 0], [0, -0.48, 0.14]]];
-    paper(paw, suit, pl); paper(paw, suit, pr); arms = [pl, pr];                                                       // suit sleeves
-  } else if (kind === "owl") {       // the Judge: a paper owl whose eyes are { }, in a black judicial robe
-    const robe = 0x17171B;
-    const b = solid(new THREE.CylinderGeometry(0.45, 0.62, 1.4, 6), robe, body, 0, 0.7, 0); b.rotation.y = Math.PI / 6;
-    b.material.roughness = 0.6;
-    paper([[[-0.24, 1.38, 0.43], [0.24, 1.38, 0.43], [0, 1.02, 0.5]]], 0xF4F1EA, body);                                // white collar
-    paper([[[-0.05, 1.04, 0.5], [0.05, 1.04, 0.5], [0, 0.18, 0.6]]], 0x2A2A30, body);                                 // front seam
-    headPivot.position.set(0, 1.4, 0);
-    const hd = solid(new THREE.CylinderGeometry(0.56, 0.5, 0.62, 6), color, headPivot, 0, 0.31, 0); hd.rotation.y = Math.PI / 6;
-    const tuft = [[[-0.52, 0.6, 0.1], [-0.2, 0.6, 0.12], [-0.46, 1.0, -0.04]], [[-0.52, 0.6, 0.1], [-0.46, 1.0, -0.04], [-0.42, 0.6, -0.22]]];
-    paper(tuft, color, headPivot); paper(mirror(tuft), color, headPivot);
-    for (const [ch, x] of [["{", -0.22], ["}", 0.22]]) {
-      const d = new THREE.Mesh(new THREE.CircleGeometry(0.19, 28), new THREE.MeshBasicMaterial({ map: braceTex(ch) }));
-      d.position.set(x, 0.34, 0.5); headPivot.add(d); eyes.push(d);
-    }
-    const beak = solid(new THREE.ConeGeometry(0.07, 0.2, 4), 0xE0A040, headPivot, 0, 0.18, 0.5); beak.rotation.x = Math.PI / 2 + 0.35;
-    const wl = pivot(-0.55, 1.2, 0), wr = pivot(0.55, 1.2, 0);
-    const wing = [[[0, 0, 0.18], [0, 0, -0.22], [0.14, -0.95, 0.0]]];
-    paper(wing, robe, wr); paper(mirror(wing), robe, wl); arms = [wl, wr];                                              // robe sleeves
   } else if (kind === "turtle") {    // the Guardian: a paper turtle that protects her status
     const sh = solid(new THREE.CylinderGeometry(0.18, 0.78, 0.5, 6), color, body, 0, 0.4, 0); sh.rotation.y = Math.PI / 6;
     const rim = solid(new THREE.CylinderGeometry(0.84, 0.84, 0.08, 6), light, body, 0, 0.14, 0); rim.rotation.y = Math.PI / 6;
@@ -618,12 +654,12 @@ seal.rotation.x = Math.PI / 2; sealGroup.add(seal);
 const sealFace = plate("Docket", "every claim gets a hearing", 1.7, 0.48);
 sealFace.position.z = 0.07; sealGroup.add(sealFace);
 
-const adv = makeAgent({ kind: "crane", color: 0x4F7CF0, scale: 1.45, label: "Advocate", outfit: "student" });
-adv.group.position.set(-3.2, 0.9, 0.8); adv.group.rotation.y = 0.5; adv.home = adv.group.position.clone();
-const counsel = makeAgent({ kind: "fox", color: 0xE8743B, scale: 1.15, label: "Payroll's Counsel" });
-counsel.group.position.set(3.2, 0.5, 0.8); counsel.group.rotation.y = -0.5; counsel.home = counsel.group.position.clone();
-const judge = makeAgent({ kind: "owl", color: 0xE6D8BC, scale: 1.3, label: "Judge" });
-judge.group.position.set(0, 0.5, -4.5); judge.home = judge.group.position.clone();
+const adv = makeAgent({ kind: "person", outfit: "student", color: 0x4F7CF0, scale: 1.2, label: "Advocate" });
+adv.group.position.set(-3.2, 0.54, 0.8); adv.group.rotation.y = 0.5; adv.home = adv.group.position.clone();
+const counsel = makeAgent({ kind: "person", outfit: "counsel", color: 0xE8743B, scale: 1.2, label: "Payroll's Counsel" });
+counsel.group.position.set(3.2, 0.54, 0.8); counsel.group.rotation.y = -0.5; counsel.home = counsel.group.position.clone();
+const judge = makeAgent({ kind: "person", outfit: "judge", color: 0x17171B, scale: 1.3, label: "Judge" });
+judge.group.position.set(0, 1.0, -4.4); judge.home = judge.group.position.clone();
 
 // Each side stands on a folded-paper pedestal with its name on the front
 function pedestal(x, z, rotY, name, sub, accent) {
@@ -752,18 +788,23 @@ closedStamp.position.set(MX, 4.1, 0.9); closedStamp.rotation.z = 0.08; scene.add
 
 /* ---------- Flying argument cards, stamps, paper bits ---------- */
 const flyers = [];
+// An argument card looks like a Docket case-file label: cream paper, the side's colour on a thick left edge,
+// a spaced mono kicker and the point in serif, sized up so it reads from the wider shots
 function argCard(title, body, color) {
-  const t = tex(768, 400, (ctx, w, h) => {
-    ctx.fillStyle = "#F7F1E6"; ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = color; ctx.fillRect(0, 0, 18, h);
-    ctx.fillStyle = "#5C4F40"; let ts = 30; do { ctx.font = M(600, ts); ts -= 1; } while (ctx.measureText(title).width > w - 96 && ts > 16); ctx.fillText(title, 48, 64);
+  const t = tex(1024, 560, (ctx, w, h) => {
+    ctx.fillStyle = "#FBF7EF"; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = color; ctx.fillRect(0, 0, 30, h);
+    ctx.strokeStyle = "rgba(74,56,38,0.18)"; ctx.lineWidth = 4; ctx.strokeRect(2, 2, w - 4, h - 4);
+    ctx.fillStyle = "#7A6E62"; const kick = title.toUpperCase(); let ts = 34;
+    do { ctx.font = M(600, ts); ts -= 1; } while (ctx.measureText(kick).width > w - 120 && ts > 16);
+    ctx.fillText(kick, 72, 84);
     // shrink the text until every line fits on the card
-    let size = 54, lines;
-    for (;;) { ctx.font = F(800, size); lines = wrap(ctx, body, w - 96); if (lines.length * size * 1.2 <= h - 120 || size <= 22) break; size -= 2; }
+    let size = 76, lines;
+    for (;;) { ctx.font = F(600, size, "Fraunces"); lines = wrap(ctx, body, w - 130); if (lines.length * size * 1.18 <= h - 150 || size <= 30) break; size -= 2; }
     ctx.fillStyle = "#17120E";
-    lines.forEach((l, i) => ctx.fillText(l, 48, 100 + size + i * size * 1.2));
+    lines.forEach((l, i) => ctx.fillText(l, 72, 130 + size + i * size * 1.18));
   });
-  const m = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.15, 0.02), [mat(0xEDE4D3), mat(0xEDE4D3), mat(0xEDE4D3), mat(0xEDE4D3), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }), mat(0xEDE4D3)]);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.42, 0.02), [mat(0xEDE4D3), mat(0xEDE4D3), mat(0xEDE4D3), mat(0xEDE4D3), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }), mat(0xEDE4D3)]);
   m.castShadow = true; m.userData.isArg = true; scene.add(m); return m;
 }
 // `land`: { scale, quat } to shrink and settle the mesh into a resting pose on arrival instead of facing the camera
@@ -809,20 +850,21 @@ function burst(at, color = 0xF2E8D5, n = 46, power = 1) {
 /* ============================================================
    Camera shots + shake
    ============================================================ */
+// Pulled back so the figures sit smaller and the cards, plates and stamps have room to be read
 const SHOTS = {
-  title: { pos: [7.5, 4.6, 12.5], look: [0, 1.8, -1] },
-  court: { pos: [0, 4.4, 11.8], look: [0, 1.9, -1] },
-  adv: { pos: [-1.0, 2.7, 6.4], look: [-3.2, 1.45, 0.8] },   // aimed low so the figure sits above the dialog
-  counsel: { pos: [1.0, 2.7, 6.4], look: [3.2, 1.4, 0.8] },
-  judge: { pos: [0, 3.6, 3.4], look: [0, 2.9, -4] },
-  duel: { pos: [0, 2.7, 7.6], look: [0, 1.9, 0] },
-  call: { pos: [CX, 4.0, 10.8], look: [CX, 2.0, -1] },
-  caller: { pos: [CX - 0.6, 2.7, 6.2], look: [CX - 2.8, 1.4, 0.6] },
-  clerk: { pos: [CX + 0.4, 2.9, 5.8], look: [CX + 3.0, 2.0, -0.4] },
-  board: { pos: [CX, 3.1, 4.2], look: [CX, 2.8, -3.1] },
-  money: { pos: [MX, 3.6, 10.2], look: [MX, 2.2, -1] },
-  card: { pos: [MX, 3.2, 7.4], look: [MX, 2.4, 0.4] },
-  end: { pos: [MX + 6, 4.4, 11], look: [MX, 2.4, -1] }
+  title: { pos: [9.0, 5.4, 15.5], look: [0, 1.9, -1] },
+  court: { pos: [0, 5.4, 15.0], look: [0, 1.8, -1] },
+  adv: { pos: [-0.4, 3.6, 9.6], look: [-3.0, 1.75, 0.6] },   // aimed low so the figure sits above the dialog
+  counsel: { pos: [0.4, 3.6, 9.6], look: [3.0, 1.75, 0.6] },
+  judge: { pos: [0, 4.3, 6.4], look: [0, 2.7, -4] },
+  duel: { pos: [0, 3.8, 11.0], look: [0, 1.9, 0] },
+  call: { pos: [CX, 4.8, 14.0], look: [CX, 2.0, -1] },
+  caller: { pos: [CX - 0.2, 3.4, 9.0], look: [CX - 2.4, 1.6, 0.4] },
+  clerk: { pos: [CX + 0.6, 3.5, 8.6], look: [CX + 2.8, 1.9, -0.4] },
+  board: { pos: [CX, 3.4, 6.4], look: [CX, 2.7, -3.1] },
+  money: { pos: [MX, 4.0, 11.6], look: [MX, 2.2, -1] },
+  card: { pos: [MX, 3.4, 9.6], look: [MX, 2.3, 0.4] },
+  end: { pos: [MX + 7, 5.0, 14], look: [MX, 2.4, -1] }
 };
 const cam = { pos: new THREE.Vector3(...SHOTS.title.pos), look: new THREE.Vector3(...SHOTS.title.look), tPos: new THREE.Vector3(...SHOTS.title.pos), tLook: new THREE.Vector3(...SHOTS.title.look), rate: 2.2, shake: 0, orbit: true };
 function shot(name, rate = 2.4) {
@@ -1041,12 +1083,13 @@ async function throwCard(from, to, title, body, color) {
   looseCards.push(card);
   const a = from.group.position, b = to.group.position;
   from.arms[1].rotation.x = -1.4;
-  await fly(card, V(a.x, 2.3, a.z + 0.4), V((a.x + b.x) / 2, 3.2, 2.6), 650, 0.6, 0.2);
-  await wait(500);
+  const air = V((a.x + b.x) / 2, 2.85, 2.8);   // low enough to stay clear of the top HUD
+  await fly(card, V(a.x, 2.3, a.z + 0.4), air, 650, 0.6, 0.2);
+  await wait(1300);   // long enough to read it before it lands
   // land on the floor in front of the target, tipped toward the room: still readable from the wide shot,
   // but it no longer stands upright between the close-up camera and the figure
   const tip = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2 + 0.45, 0, (Math.random() - 0.5) * 0.2));
-  await fly(card, V((a.x + b.x) / 2, 3.2, 2.6), V(b.x * 0.8, 0.2, Math.max(b.z + 1.6, -2.4)), 420, 0.2, 0, { scale: 0.75, quat: tip });
+  await fly(card, air, V(b.x * 0.8, 0.2, Math.max(b.z + 1.6, -2.4)), 420, 0.2, 0, { scale: 0.75, quat: tip });
   card.userData.rest = true;
   from.arms[1].rotation.x = 0;
   return card;
@@ -1420,8 +1463,10 @@ function end(kind) {
 /* Title + controls */
 function setCase(key) {
   current = CASES[key];
-  $("case-priya").setAttribute("aria-pressed", key === "priya");
-  $("case-nadia").setAttribute("aria-pressed", key === "nadia");
+  for (const k of ["priya", "nadia"]) {
+    $("case-" + k).setAttribute("aria-pressed", key === k);
+    $("case-" + k).querySelector(".pick").textContent = key === k ? "✓ Selected" : "Choose";
+  }
 }
 function setMode(m) {
   mode = m;
@@ -1470,7 +1515,7 @@ function animate() {
   if (cam.orbit && !running && !reduced) {
     const ang = Math.sin(t * 0.18) * 0.55;
     const base = endHidden() ? SHOTS.title : (current.key === "nadia" ? SHOTS.court : SHOTS.end);
-    cam.tPos.set(base.look[0] + Math.sin(ang) * 11.5 + (base === SHOTS.end ? 2 : 0), base.pos[1], base.look[2] + Math.cos(ang) * 11.5);
+    cam.tPos.set(base.look[0] + Math.sin(ang) * 14.5 + (base === SHOTS.end ? 2 : 0), base.pos[1], base.look[2] + Math.cos(ang) * 14.5);
     cam.tLook.set(...base.look);
   }
   const k = 1 - Math.exp(-cam.rate * dt * boost * SPEED);
@@ -1503,7 +1548,6 @@ function animate() {
     const f = reduced ? 0 : Math.sin(t * (a.talk ? 9 : 2.2) + a.seed) * (a.talk ? 0.35 : 0.1);
     if (a.kind === "crane") { a.arms[0].rotation.z = -f; a.arms[1].rotation.z = f; }
     else if (a.kind === "clerk") { a.arms[0].rotation.z = -(0.5 + (a.talk ? f : 0)); a.arms[1].rotation.z = 0.5 + (a.talk ? f : 0); }
-    else if (a.kind === "owl") { a.arms[0].rotation.z = -0.1 - (a.talk ? Math.abs(f) * 0.6 : 0); }
     else a.arms[0].rotation.x = THREE.MathUtils.lerp(a.arms[0].rotation.x, a.talk ? Math.sin(t * 7) * 0.5 - 0.3 : 0, ease60(0.15, dt));
     // blink now and then while idle
     if (a.mood === "idle" || a.mood === "code") { const bl = ((t + a.seed) % 3.6) < 0.11; for (const e of a.eyes) e.scale.y = bl ? 0.12 : 1; }
