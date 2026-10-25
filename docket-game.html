@@ -6,7 +6,7 @@
 <title>Docket · The Hearing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700;800;900&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --night: #F3EDE3;
@@ -24,10 +24,10 @@
     --warn: #B7791F;
     --paper: #F6F0E4;
     --shadow: 0 1px 2px rgba(74, 56, 38, 0.08), 0 6px 18px rgba(74, 56, 38, 0.10);
-    --display: 'Archivo', system-ui, sans-serif;
-    --sans: 'Public Sans', system-ui, sans-serif;
-    --mono: 'IBM Plex Mono', ui-monospace, monospace;
-    --serif: 'Fraunces', Georgia, serif;
+    --display: 'Bitter', Georgia, serif;
+    --sans: 'Nunito', system-ui, sans-serif;
+    --mono: 'Nunito', system-ui, sans-serif;
+    --serif: 'Newsreader', Georgia, serif;
     --file: #2F5D50;      /* the dark green edge on Docket's case files */
     --card: #FBF7EF;
   }
@@ -74,7 +74,8 @@
     pointer-events: none; opacity: 0; transform: translateY(-8px); transition: opacity .35s ease, transform .35s ease;
   }
   .fighters.show { opacity: 1; transform: none; }
-  .fighter { display: flex; flex-direction: column; gap: 6px; }
+  .fighter { display: flex; flex-direction: column; gap: 6px; justify-self: start; padding: 8px 12px; border-radius: 10px; background: rgba(251,247,239,0.9); box-shadow: 0 8px 20px -12px rgba(60,40,20,0.55); }
+  .fighter.right { justify-self: end; }
   .fighter.right { align-items: flex-end; text-align: right; }
   .fighter .who { display: flex; align-items: baseline; gap: 10px; }
   .fighter.right .who { flex-direction: row-reverse; }
@@ -88,14 +89,16 @@
   .bar .fill.counsel { background: var(--counsel); }
   .bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(251,248,243,0.95) calc(10% - 2px) 10%); }
   .meter-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  .center-hud { text-align: center; padding-top: 2px; max-width: 34vw; }
+  /* the HUD sits over the 3D room, so each block gets the same cream backing as the round tabs */
+  /* same plain cream panel as the round tabs, so the amount reads over the seal behind it */
+  .center-hud { text-align: center; max-width: 34vw; justify-self: center; padding: 6px 18px 8px; border-radius: 10px; background: rgba(251,247,239,0.95); box-shadow: 0 8px 20px -12px rgba(60,40,20,0.55); }
   .center-hud .round { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
   .center-hud .claim { font-family: var(--display); font-weight: 900; font-size: clamp(22px, 2.4vw, 34px); letter-spacing: -0.02em; line-height: 1.1; }
   .center-hud .claim.win { color: var(--win); }
   .center-hud .claim.lose { color: var(--counsel); text-decoration: line-through; }
   .center-hud .claim.long { font-size: clamp(16px, 1.5vw, 21px); white-space: nowrap; }   /* "Social Security + Medicare" on one line */
-  .conditions { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
-  .conditions span { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(183,121,31,0.5); color: var(--warn); background: rgba(255,255,255,0.9); }
+  .conditions { display: flex; gap: 6px; justify-content: center; margin-top: 2px; flex-wrap: wrap; }
+  .conditions span { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--warn); }
 
   /* Call + money HUDs */
   .side-hud {
@@ -137,6 +140,46 @@
   .hint { font-family: var(--mono); font-size: 12px; color: var(--muted); }
   .next-btn { min-height: 42px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--ink); background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 15px; }
   .next-btn[disabled] { opacity: .35; cursor: default; }
+  .foot-btns { display: flex; gap: 8px; align-items: center; }
+  .back-btn { min-height: 42px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--panel-2); color: var(--ink); font-family: var(--display); font-weight: 800; font-size: 15px; }
+  .back-btn:hover:not([disabled]) { border-color: var(--ink-2); }
+  .back-btn[disabled] { opacity: .35; cursor: default; }
+  /* Looking back: the live line, choices and card step aside for an earlier one */
+  #review { display: none; }
+  .dialog.reviewing #review { display: block; }
+  .dialog.reviewing > #speaker, .dialog.reviewing > #line, .dialog.reviewing > #sub, .dialog.reviewing > #proof, .dialog.reviewing > #choice-area { display: none; }
+  .dialog.reviewing { opacity: 1 !important; border-color: var(--ink-2); }
+  .dialog.reviewing .line, .dialog.reviewing .speaker { opacity: 1 !important; }
+  .review-tag { display: inline-block; font-family: var(--mono); font-size: 11px; color: var(--ink-2); background: rgba(74,56,38,0.08); border-radius: 4px; padding: 2px 6px; margin-bottom: 6px; }
+  .dialog.carding > #line { display: none; }
+  /* A note card, shown big in the dialog after it's thrown: the same case-file look as the cards in the room */
+  .notecard {
+    position: relative; margin-top: 4px; padding: 14px 18px 16px 26px; border-radius: 6px; background: var(--card);
+    border: 1px solid rgba(74,56,38,0.14); box-shadow: inset 7px 0 0 var(--edge, var(--file)), 0 14px 28px -18px rgba(60,40,20,0.6);
+    animation: noteIn .35s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes noteIn { from { opacity: 0; transform: translateY(10px) rotate(-1deg); } to { opacity: 1; transform: none; } }
+  .notecard .k { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .notecard .b { font-family: var(--serif); font-weight: 600; font-size: clamp(20px, 2.2vw, 27px); line-height: 1.3; margin-top: 6px; color: var(--ink); }
+  .notecard .stamp { position: absolute; right: 14px; top: 10px; font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: .12em; border: 2px solid currentColor; border-radius: 4px; padding: 2px 8px; transform: rotate(-4deg); }
+  /* The Guardian's redaction: her timesheet appears, the hours get blacked out, PRIVATE is stamped over it */
+  .timesheet { position: relative; margin-top: 8px; padding: 12px 16px 14px 22px; border-radius: 6px; background: var(--card); border: 1px solid rgba(74,56,38,0.14); box-shadow: inset 6px 0 0 #17120E, 0 14px 28px -18px rgba(60,40,20,0.6); overflow: hidden; }
+  .timesheet .k { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .timesheet .row { display: flex; justify-content: space-between; gap: 12px; font-family: var(--mono); font-size: 14px; padding: 4px 0; border-bottom: 1px dashed rgba(74,56,38,0.18); }
+  .timesheet .row.total { font-weight: 700; border-bottom: 0; }
+  .timesheet .v { position: relative; }
+  .timesheet .v::after { content: ""; position: absolute; left: -6px; right: -6px; top: -2px; bottom: -2px; background: #17120E; border-radius: 2px; transform-origin: left; transform: scaleX(0); animation: redact .45s cubic-bezier(.6,0,.3,1) forwards; animation-delay: calc(.5s + var(--i) * .22s); }
+  @keyframes redact { to { transform: scaleX(1); } }
+  .timesheet .seal { position: absolute; right: 18px; top: 50%; font-family: var(--display); font-weight: 900; font-size: clamp(22px, 3vw, 34px); letter-spacing: .06em; color: #B3262E; border: 4px solid currentColor; border-radius: 6px; padding: 2px 12px; background: rgba(251,247,239,0.88); transform: translateY(-50%) rotate(-8deg) scale(2); opacity: 0; animation: sealIn .4s cubic-bezier(.3,1.4,.5,1) forwards; animation-delay: 1.9s; text-align: center; line-height: 1.05; }
+  .timesheet .seal small { display: block; font-family: var(--mono); font-weight: 700; font-size: 11px; letter-spacing: .1em; }
+  @keyframes sealIn { to { opacity: 1; transform: translateY(-50%) rotate(-8deg) scale(1); } }
+  .dialog.alarm { border-color: #B3262E; box-shadow: 0 0 0 3px rgba(179,38,46,0.25), var(--shadow); }
+  @media (prefers-reduced-motion: reduce) { .timesheet .v::after, .timesheet .seal { animation-duration: .01s; animation-delay: 0s !important; } }
+  .proof-row:empty { display: none; }
+  .proof-row, .notecard .proof-row { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+  .proof { font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--file); text-decoration: underline; text-underline-offset: 3px; }
+  .proof:hover { color: #1C3B33; }
+  .proof-note { font-family: var(--mono); font-size: 12px; color: var(--muted); }
   .choices { position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 10px; }
   /* Reserved spot for a guide avatar that will hover over the right card. Empty and invisible for now;
      choose() keeps it on the right card's top-right corner. Add ?slot=show to the URL to see where it sits. */
@@ -153,10 +196,11 @@
   .choice span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
   .choice kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .choice.right { border-color: var(--win); background: rgba(31,143,85,0.10); }
-  .choice.wrong { border-color: var(--counsel); background: rgba(212,88,28,0.08); opacity: .7; }
+  .choice.wrong { border-color: var(--counsel); background: rgba(212,88,28,0.08); opacity: .75; box-shadow: inset 5px 0 0 var(--counsel); }
+  .choice.wrong b, .choice.wrong span { text-decoration: line-through; text-decoration-color: var(--counsel); text-decoration-thickness: 2px; }
   /* the result is spelled out too, not only colored */
   .choice.right b::after { content: " ✓ right"; color: var(--win); font-size: 14px; }
-  .choice.wrong b::after { content: " ✗ not this"; color: var(--counsel); font-size: 14px; }
+  .choice.wrong b::after { content: " ✗ no"; display: inline-block; color: var(--counsel); font-size: 14px; text-decoration: none; }
   .choice[disabled] { cursor: default; }
   .sign-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
   .sign-btn { min-height: 48px; padding: 0 22px; border-radius: 10px; border: 0; background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 16px; }
@@ -260,9 +304,12 @@
     .fighter .role, .meter-label { display: none; }
     .dialog { bottom: 16px; padding: 12px 16px 12px; max-height: calc(100vh - 150px); }
     .hint { display: none; }
+    .dialog-foot { justify-content: flex-end; }
     .proto { display: none; }
     .banner small { font-size: 15px; }
-    .fighters { grid-template-columns: 1fr 1fr; }
+    .fighters { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fighter { padding: 6px 8px; min-width: 0; max-width: 100%; }
+    .fighter .bar { width: 100%; }
     .center-hud { display: none; }
     .fighter .name { font-size: 16px; }
     .bar { width: 42vw; }
@@ -326,10 +373,15 @@
   <div class="speaker" id="speaker"></div>
   <div class="line" id="line"></div>
   <div class="sub" id="sub"></div>
+  <div class="proof-row" id="proof"></div>
   <div id="choice-area"></div>
+  <div id="review" aria-live="polite"></div>
   <div class="dialog-foot">
     <span class="hint" id="hint">Space or Enter to continue</span>
-    <button class="next-btn" id="btn-next" type="button">Next ▸</button>
+    <div class="foot-btns">
+      <button class="back-btn" id="btn-back" type="button" title="Go back a line (←)" disabled>◂ Back</button>
+      <button class="next-btn" id="btn-next" type="button">Next ▸</button>
+    </div>
   </div>
 </section>
 
@@ -397,6 +449,7 @@ const CASES = {
   priya: { key: "priya", id: "PS-2026-001", name: "Priya Sharma", first: "Priya", arrival: "Aug 15, 2024", year: 3, employer: "University Dining Services", claim: "$440.64", amount: 440.64 },
   nadia: { key: "nadia", id: "NP-2026-009", name: "Nadia Petrova", first: "Nadia", arrival: "Jan 7, 2019", year: 8, employer: "University Dining Services", claim: "Claim", amount: 0 }
 };
+let current = CASES.priya;
 const params = new URLSearchParams(location.search);
 const SPEED = Math.max(0.25, Number(params.get("speed")) || 1);
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -444,8 +497,9 @@ function tex(w, h, draw) {
   texRegistry.push({ t, draw, ctx, w, h });
   return t;
 }
-const F = (w, s, fam = "Archivo") => `${w} ${s}px "${fam}", system-ui, sans-serif`;
-const M = (w, s) => `${w} ${s}px "IBM Plex Mono", ui-monospace, monospace`;
+function redrawTex(t) { const r = texRegistry.find((x) => x.t === t); if (!r) return; r.ctx.clearRect(0, 0, r.w, r.h); r.draw(r.ctx, r.w, r.h); t.needsUpdate = true; }
+const F = (w, s, fam = "Bitter") => `${w} ${s}px "${fam}", Georgia, serif`;
+const M = (w, s) => `${w} ${s}px "Nunito", system-ui, sans-serif`;
 function wrap(ctx, text, maxW) {
   const words = text.split(" "), lines = [];
   let cur = "";
@@ -498,28 +552,46 @@ function solid(geo, color, parent, x = 0, y = 0, z = 0) { const m = new THREE.Me
 const mirror = (tris) => tris.map((t) => t.map((v) => [-v[0], v[1], v[2]]).reverse());
 const eyeMat = new THREE.MeshStandardMaterial({ color: 0x15110E, roughness: 0.3 });
 
+const badgeTex = tex(100, 130, (ctx, w, h) => {
+  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#3F6FE0"; ctx.fillRect(0, 0, w, 34);
+  ctx.fillStyle = "#17120E"; ctx.font = F(900, 44); ctx.textAlign = "center"; ctx.fillText("AI", w / 2, 92);
+});
+const redactTex = tex(170, 210, (ctx, w, h) => {
+  ctx.fillStyle = "#FBF7EF"; ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 8; i++) { ctx.fillStyle = i === 3 || i === 5 ? "#17120E" : "#B9A98E"; ctx.fillRect(16, 24 + i * 22, i === 3 || i === 5 ? 120 : 90 + (i * 13) % 50, i === 3 || i === 5 ? 12 : 5); }
+});
 function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
   const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
   const headPivot = new THREE.Group(); body.add(headPivot);
   const eyes = []; let arms = [];
-  const light = new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.6).getHex();
   const eye = (r, x, y, z, parent = headPivot) => { const e = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), eyeMat); e.position.set(x, y, z); parent.add(e); eyes.push(e); return e; };
   const pivot = (x, y, z, parent = body) => { const p = new THREE.Group(); p.position.set(x, y, z); parent.add(p); return p; };
 
-  if (kind === "person") {           // the hearing's people, folded from paper: judge, prosecutor, student
-    const skin = 0xE2B48C, skinDk = 0xC9946A;
+  if (kind === "person") {           // everyone in the story is a person, folded from paper
+    const skin = { judge: 0xE2B48C, counsel: 0xC98E62, student: 0xA8714A, aide: 0xE8C09A, clerk: 0xD9A57C, guardian: 0x8C5A3C, teller: 0xF0C8A4 }[outfit] ?? 0xE2B48C;
+    const skinDk = new THREE.Color(skin).lerp(new THREE.Color(0x5A3A28), 0.25).getHex();
     const look = {
-      judge:   { top: 0x17171B, legs: 0x17171B, shoe: 0x0F0F12, hair: 0xCFCBC4, sleeve: 0x17171B },
-      counsel: { top: 0x2C303A, legs: 0x2C303A, shoe: 0x111114, hair: 0x2A1E16, sleeve: 0x2C303A },
-      student: { top: 0x8E949C, legs: 0x3E5C8A, shoe: 0xF2EEE6, hair: 0x1E1612, sleeve: 0x8E949C }
+      judge:    { top: 0x17171B, legs: 0x17171B, shoe: 0x0F0F12, hair: 0xCFCBC4, sleeve: 0x17171B },
+      counsel:  { top: 0x2C303A, legs: 0x2C303A, shoe: 0x111114, hair: 0x2A1E16, sleeve: 0x2C303A, shirt: 0xF4F1EA, lapel: 0x3A3F4B, tie: 0xB3262E },
+      student:  { top: 0x8E949C, legs: 0x3E5C8A, shoe: 0xF2EEE6, hair: 0x1E1612, sleeve: 0x8E949C },
+      aide:     { top: 0x26365E, legs: 0x4A4F59, shoe: 0x5A3A26, hair: 0x5B3A22, sleeve: 0x26365E, shirt: 0xCFE0F2, lapel: 0x1E2B4C },
+      clerk:    { top: 0xC99A3B, legs: 0x5A4A3A, shoe: 0x3A2A1E, hair: 0x8A5A34, sleeve: 0xC99A3B, shirt: 0xF6F2EA, lapel: 0xB5872E },
+      guardian: { top: 0x2E6B4F, legs: 0x23282E, shoe: 0x111114, hair: 0x2A2624, sleeve: 0x2E6B4F, shirt: 0xF4F1EA, lapel: 0x245A42, tie: 0x1F4A36 },
+      teller:   { top: 0x2F5D50, legs: 0x1E1E22, shoe: 0x111114, hair: 0xA8552C, sleeve: 0xF6F2EA, shirt: 0xF6F2EA, tie: 0xB3262E }
     }[outfit] || {};
     // legs and shoes (the judge's robe covers them)
     if (outfit !== "judge") for (const x of [-0.1, 0.1]) {
       solid(new THREE.CylinderGeometry(0.075, 0.065, 0.66, 6), look.legs, body, x, 0.37, 0);
-      const sh = solid(new THREE.BoxGeometry(0.13, 0.08, 0.24), look.shoe, body, x, 0.04, 0.04);
+      solid(new THREE.BoxGeometry(0.13, 0.08, 0.24), look.shoe, body, x, 0.04, 0.04);
       if (outfit === "student") solid(new THREE.BoxGeometry(0.135, 0.025, 0.245), 0xD9D2C4, body, x, 0.012, 0.04);   // sneaker soles
-      sh.castShadow = true;
     }
+    // pieces of a jacket front, shared by the suits, the blazer, the cardigan and the vest
+    const shirtV = (c, low = 0.9) => paper([[[-0.09, 1.22, 0.16], [0.09, 1.22, 0.16], [0, low, 0.17]]], c, body);
+    const lapels = (c) => { const lap = [[[-0.1, 1.22, 0.165], [-0.01, 0.88, 0.175], [-0.16, 1.07, 0.15]]]; paper(lap, c, body); paper(mirror(lap), c, body); };
+    const tie = (c) => paper([[[-0.03, 1.21, 0.172], [0.03, 1.21, 0.172], [0, 1.16, 0.175]], [[0, 1.17, 0.175], [-0.035, 0.97, 0.178], [0.035, 0.97, 0.178]], [[-0.035, 0.97, 0.178], [0, 0.92, 0.18], [0.035, 0.97, 0.178]]], c, body);
+    const buttons = (ys, c = 0x15171C, z = 0.15) => { for (const y of ys) solid(new THREE.SphereGeometry(0.014, 8, 6), c, body, 0, y, z); };
+    const hem = (c) => { solid(new THREE.CylinderGeometry(0.205, 0.205, 0.04, 7), c, body, 0, 0.68, 0).scale.z = 0.74; };
     // torso
     if (outfit === "judge") {        // a black judicial robe to the floor, white collar, dark front seam
       const robe = solid(new THREE.CylinderGeometry(0.25, 0.36, 1.22, 7), look.top, body, 0, 0.62, 0); robe.material.roughness = 0.6;
@@ -527,13 +599,22 @@ function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
       paper([[[-0.03, 1.02, 0.27], [0.03, 1.02, 0.27], [0, 0.12, 0.37]]], 0x2A2A30, body);                            // front seam
     } else {
       const t = solid(new THREE.CylinderGeometry(0.22, 0.2, 0.58, 7), look.top, body, 0, 0.95, 0); t.scale.z = 0.72;
-      if (outfit === "counsel") {    // charcoal suit, white shirt in the V, lapels, red tie, buttons
-        paper([[[-0.09, 1.22, 0.16], [0.09, 1.22, 0.16], [0, 0.9, 0.17]]], 0xF4F1EA, body);
-        const lap = [[[-0.1, 1.22, 0.165], [-0.01, 0.88, 0.175], [-0.16, 1.07, 0.15]]];
-        paper(lap, 0x3A3F4B, body); paper(mirror(lap), 0x3A3F4B, body);
-        paper([[[-0.03, 1.21, 0.172], [0.03, 1.21, 0.172], [0, 1.16, 0.175]], [[0, 1.17, 0.175], [-0.035, 0.97, 0.178], [0.035, 0.97, 0.178]], [[-0.035, 0.97, 0.178], [0, 0.92, 0.18], [0.035, 0.97, 0.178]]], 0xB3262E, body);
-        for (const y of [0.84, 0.76]) solid(new THREE.SphereGeometry(0.014, 8, 6), 0x15171C, body, 0, y, 0.15);
-        solid(new THREE.CylinderGeometry(0.205, 0.205, 0.04, 7), 0x23262E, body, 0, 0.68, 0).scale.z = 0.74;          // jacket hem
+      if (outfit === "counsel") {    // charcoal suit, white shirt, lapels, red tie
+        shirtV(look.shirt); lapels(look.lapel); tie(look.tie); buttons([0.84, 0.76]); hem(0x23262E);
+      } else if (outfit === "aide") {   // Docket on the phone: navy blazer, open collar, a lanyard with an "AI" badge, a headset
+        shirtV(look.shirt, 0.96); lapels(look.lapel); buttons([0.8]); hem(0x1E2B4C);
+        paper([[[-0.07, 1.2, 0.165], [-0.05, 1.2, 0.165], [0.0, 0.92, 0.19]], [[0.07, 1.2, 0.165], [0.0, 0.92, 0.19], [0.05, 1.2, 0.165]]], 0x3F6FE0, body);   // lanyard
+        const badge = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.13), new THREE.MeshStandardMaterial({ map: badgeTex, roughness: 0.6 }));
+        badge.position.set(0, 0.84, 0.195); body.add(badge);
+      } else if (outfit === "clerk") {  // payroll office: mustard cardigan over a white blouse
+        shirtV(look.shirt, 0.86); buttons([0.84, 0.77, 0.7], 0xF6F2EA, 0.152); hem(0xB5872E);
+        box(0.06, 0.07, 0.01, flatMat(0x3F6FE0), -0.11, 1.0, 0.152, body);                                             // pen in a pocket
+      } else if (outfit === "guardian") {   // privacy officer: green suit, a small shield pin
+        shirtV(look.shirt); lapels(look.lapel); tie(look.tie); buttons([0.84, 0.76]); hem(0x245A42);
+        const pin = solid(new THREE.CylinderGeometry(0.025, 0.025, 0.01, 5), 0xD9B44A, body, -0.12, 1.06, 0.16); pin.rotation.x = Math.PI / 2; pin.material.metalness = 0.5;
+      } else if (outfit === "teller") {     // bank teller: white shirt, green vest, red bow tie
+        shirtV(look.shirt, 0.82); buttons([0.8, 0.73], 0xD9B44A, 0.152);
+        paper([[[0, 1.19, 0.175], [-0.08, 1.23, 0.17], [-0.08, 1.15, 0.17]], [[0, 1.19, 0.175], [0.08, 1.15, 0.17], [0.08, 1.23, 0.17]]], look.tie, body);   // bow tie
       } else {                       // student: grey hoodie, hood down, drawstrings, kangaroo pocket, backpack
         solid(new THREE.CylinderGeometry(0.21, 0.21, 0.05, 7), 0x7A8088, body, 0, 0.68, 0).scale.z = 0.74;             // ribbed hem
         const hood = solid(new THREE.TorusGeometry(0.1, 0.045, 6, 10), look.top, body, 0, 1.23, -0.06); hood.rotation.x = Math.PI / 2 - 0.35;
@@ -550,10 +631,16 @@ function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
     ar.forEach((p, i) => {
       const sl = solid(new THREE.CylinderGeometry(outfit === "judge" ? 0.07 : 0.055, outfit === "judge" ? 0.11 : 0.05, al, 6), look.sleeve, p, 0, -al / 2, 0);
       sl.rotation.z = (i ? -1 : 1) * 0.08;
-      if (outfit === "counsel") solid(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 6), 0xF4F1EA, p, (i ? 1 : -1) * 0.02, -al + 0.01, 0);   // shirt cuffs
+      if (look.shirt && outfit !== "teller") solid(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 6), look.shirt, p, (i ? 1 : -1) * 0.02, -al + 0.01, 0);   // shirt cuffs
+      if (outfit === "teller") solid(new THREE.CylinderGeometry(0.06, 0.06, 0.03, 6), 0xB3262E, p, 0, -0.16, 0);                    // sleeve garters
       solid(new THREE.IcosahedronGeometry(0.05, 0), skin, p, (i ? 1 : -1) * 0.02, -al - 0.04, 0);
     });
     arms = ar;
+    if (outfit === "guardian") {     // a clipboard with a redacted page, held in the left hand
+      const cb = new THREE.Group(); cb.position.set(0.02, -al - 0.02, 0.1); cb.rotation.x = -0.5; ar[0].add(cb);
+      box(0.2, 0.26, 0.015, flatMat(0x9C7350), 0, 0, 0, cb);
+      const pg = new THREE.Mesh(new THREE.PlaneGeometry(0.17, 0.21), new THREE.MeshStandardMaterial({ map: redactTex, roughness: 0.8 })); pg.position.z = 0.009; cb.add(pg);
+    }
     solid(new THREE.CylinderGeometry(0.05, 0.06, 0.08, 6), skin, body, 0, 1.25, 0);                                     // neck
     // head
     headPivot.position.set(0, 1.28, 0);
@@ -562,56 +649,35 @@ function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
     solid(new THREE.ConeGeometry(0.022, 0.05, 4), skinDk, headPivot, 0, 0.13, 0.155).rotation.x = Math.PI / 2;          // nose
     eye(0.018, -0.055, 0.18, 0.135); eye(0.018, 0.055, 0.18, 0.135);
     box(0.06, 0.01, 0.01, flatMat(0x8A4E3A), 0, 0.07, 0.143, headPivot);                                               // mouth
+    const glasses = (c) => {
+      for (const x of [-0.055, 0.055]) { const r = solid(new THREE.TorusGeometry(0.03, 0.006, 4, 12), c, headPivot, x, 0.18, 0.148); r.material.metalness = 0.3; }
+      box(0.05, 0.006, 0.006, flatMat(c), 0, 0.185, 0.15, headPivot);
+    };
     // hair
     const cap = solid(new THREE.SphereGeometry(0.162, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2.1), look.hair, headPivot, 0, 0.17, -0.012);
     cap.scale.set(1, 0.95, 1.04);
     if (outfit === "judge") {        // grey, a little fuller at the sides, and reading glasses
       for (const x of [-0.13, 0.13]) solid(new THREE.IcosahedronGeometry(0.055, 0), look.hair, headPivot, x, 0.16, -0.05);
-      for (const x of [-0.055, 0.055]) { const r = solid(new THREE.TorusGeometry(0.03, 0.006, 4, 12), 0x2A2420, headPivot, x, 0.18, 0.148); r.material.metalness = 0.3; }
-      box(0.05, 0.006, 0.006, flatMat(0x2A2420), 0, 0.185, 0.15, headPivot);
-    } else if (outfit === "counsel") {   // short, side-parted
+      glasses(0x2A2420);
+    } else if (outfit === "counsel" || outfit === "guardian") {   // short, side-parted
       solid(new THREE.BoxGeometry(0.24, 0.05, 0.12), look.hair, headPivot, 0.02, 0.27, 0.06).rotation.z = -0.12;
+    } else if (outfit === "aide") {  // hair up in a bun, and a headset with a mic
+      solid(new THREE.IcosahedronGeometry(0.07, 0), look.hair, headPivot, 0, 0.27, -0.13);
+      const band = solid(new THREE.TorusGeometry(0.168, 0.012, 6, 18, Math.PI), 0x15171A, headPivot, 0, 0.15, 0);
+      for (const x of [-0.165, 0.165]) solid(new THREE.CylinderGeometry(0.04, 0.04, 0.03, 10), 0x15171A, headPivot, x, 0.15, 0).rotation.z = Math.PI / 2;
+      const boom = solid(new THREE.CylinderGeometry(0.008, 0.008, 0.16, 5), 0x15171A, headPivot, 0.13, 0.1, 0.07); boom.rotation.set(Math.PI / 2, 0, -0.5);
+      solid(new THREE.SphereGeometry(0.018, 8, 6), 0x15171A, headPivot, 0.09, 0.08, 0.14);
+    } else if (outfit === "clerk") { // a bob and glasses
+      for (const x of [-0.14, 0.14]) solid(new THREE.BoxGeometry(0.05, 0.2, 0.2), look.hair, headPivot, x, 0.12, -0.02);
+      solid(new THREE.BoxGeometry(0.26, 0.05, 0.08), look.hair, headPivot, 0, 0.27, 0.09);
+      glasses(0x7A3B2E);
+    } else if (outfit === "teller") {   // a green eyeshade visor, the old bank-teller look
+      const vis = solid(new THREE.CylinderGeometry(0.2, 0.2, 0.012, 16, 1, false, -Math.PI / 2, Math.PI), 0x3BAA6E, headPivot, 0, 0.255, 0.04);
+      vis.rotation.x = 0.25; vis.material.transparent = true; vis.material.opacity = 0.85;
+      solid(new THREE.TorusGeometry(0.155, 0.012, 4, 16), 0x2F5D50, headPivot, 0, 0.255, 0).rotation.x = Math.PI / 2;
     } else {                         // student: a messier fringe
       for (const [x, rz] of [[-0.07, 0.4], [0, 0.1], [0.07, -0.3]]) { const f = solid(new THREE.ConeGeometry(0.05, 0.1, 4), look.hair, headPivot, x, 0.25, 0.1); f.rotation.set(1.9, 0, rz); }
     }
-  } else if (kind === "crane") {     // Docket on the phone: a paper crane
-    const T = [0, 0.32, 0], B = [0, -0.12, 0], Fr = [0, 0.08, 0.34], Bk = [0, 0.08, -0.34], L = [-0.17, 0.08, 0], R = [0.17, 0.08, 0];
-    paper([[T, Fr, L], [T, L, Bk], [T, Bk, R], [T, R, Fr], [B, L, Fr], [B, Bk, L], [B, R, Bk], [B, Fr, R]], color, body);
-    const wl = pivot(-0.1, 0.16, 0), wr = pivot(0.1, 0.16, 0);
-    const wing = [[[0, 0, 0.3], [0, 0, -0.32], [0.42, 0.2, -0.02]], [[0, 0, -0.32], [0.78, 0.46, -0.1], [0.42, 0.2, -0.02]], [[0, 0, 0.3], [0.42, 0.2, -0.02], [0.78, 0.46, -0.1]]];
-    paper(wing, color, wr); paper(mirror(wing), color, wl);
-    arms = [wl, wr];
-    paper([[[0, 0.08, -0.28], [0.035, 0.1, -0.3], [0, 0.8, -0.72]], [[0, 0.08, -0.28], [0, 0.8, -0.72], [-0.035, 0.1, -0.3]]], color, body);
-    headPivot.position.set(0, 0.1, 0.3);
-    paper([[[-0.035, 0, 0], [0.035, 0, 0], [0, 0.72, 0.2]], [[0.035, 0, 0], [0, 0.05, -0.06], [0, 0.72, 0.2]], [[0, 0.05, -0.06], [-0.035, 0, 0], [0, 0.72, 0.2]]], color, headPivot);
-    paper([[[0, 0.75, 0.2], [-0.04, 0.63, 0.2], [0, 0.67, 0.5]], [[0, 0.75, 0.2], [0, 0.67, 0.5], [0.04, 0.63, 0.2]]], color, headPivot);
-    eye(0.03, -0.038, 0.69, 0.27); eye(0.03, 0.038, 0.69, 0.27);
-  } else if (kind === "turtle") {    // the Guardian: a paper turtle that protects her status
-    const sh = solid(new THREE.CylinderGeometry(0.18, 0.78, 0.5, 6), color, body, 0, 0.4, 0); sh.rotation.y = Math.PI / 6;
-    const rim = solid(new THREE.CylinderGeometry(0.84, 0.84, 0.08, 6), light, body, 0, 0.14, 0); rim.rotation.y = Math.PI / 6;
-    headPivot.position.set(0, 0.24, 0.76);
-    paper([[[-0.15, 0, 0], [0.15, 0, 0], [0, 0.18, 0.3]], [[0.15, 0, 0], [0, -0.06, 0.26], [0, 0.18, 0.3]], [[0, -0.06, 0.26], [-0.15, 0, 0], [0, 0.18, 0.3]]], light, headPivot);
-    eye(0.035, -0.07, 0.14, 0.2); eye(0.035, 0.07, 0.14, 0.2);
-    const ll = pivot(-0.55, 0.12, 0.45), lr = pivot(0.55, 0.12, 0.45);
-    const leg = [[[0, 0, 0], [0.2, -0.1, 0.18], [0.04, -0.1, 0.32]]];
-    paper(mirror(leg), light, ll); paper(leg, light, lr); arms = [ll, lr];
-    paper([[[0.45, 0.1, -0.5], [0.66, 0, -0.6], [0.5, 0, -0.75]]], light, body); paper(mirror([[[0.45, 0.1, -0.5], [0.66, 0, -0.6], [0.5, 0, -0.75]]]), light, body);
-  } else if (kind === "frog") {      // the Ledger: a paper jumping frog that watches the bank
-    const BL = [-0.45, 0, -0.35], BR = [0.45, 0, -0.35], FL = [-0.38, 0, 0.35], FR = [0.38, 0, 0.35], T = [0, 0.55, -0.05], N = [0, 0.3, 0.45];
-    paper([[BL, BR, T], [BR, FR, T], [FR, N, T], [N, FL, T], [FL, BL, T], [FL, FR, N]], color, body);
-    headPivot.position.set(0, 0.46, 0.12);
-    for (const x of [-0.2, 0.2]) { solid(new THREE.SphereGeometry(0.13, 10, 8), color, headPivot, x, 0.06, 0); eye(0.055, x, 0.1, 0.1); }
-    const ll = pivot(-0.42, 0.05, -0.15), lr = pivot(0.42, 0.05, -0.15);
-    const leg = [[[0, 0, 0], [0.3, 0.12, -0.3], [0.32, 0, 0.12]]];
-    paper(mirror(leg), color, ll); paper(leg, color, lr); arms = [ll, lr];
-  } else if (kind === "clerk") {     // Payroll: a folded filing box with flaps
-    solid(new THREE.BoxGeometry(0.95, 1.15, 0.75), color, body, 0, 0.92, 0);
-    const fl = pivot(-0.475, 1.5, 0), fr = pivot(0.475, 1.5, 0);
-    const flap = [[[0, 0, 0.37], [0, 0, -0.37], [0.42, 0, -0.37]], [[0, 0, 0.37], [0.42, 0, -0.37], [0.42, 0, 0.37]]];
-    paper(flap, light, fr); paper(mirror(flap), light, fl); arms = [fl, fr];
-    headPivot.position.set(0, 1.25, 0.38);
-    eye(0.05, -0.16, 0, 0.01); eye(0.05, 0.16, 0, 0.01);
-    paper([[[-0.06, -0.3, 0.385], [0.06, -0.3, 0.385], [0, -0.62, 0.385]]], 0x3A3F46, body);
   }
   g.scale.setScalar(scale);
   scene.add(g);
@@ -622,14 +688,16 @@ function drawFace(agent, mood) {
   const sy = { idle: 1, code: 1, hurt: 0.18, joy: 0.4, sad: 0.55 }[mood] ?? 1;
   for (const e of agent.eyes) e.scale.set(mood === "hurt" ? 1.3 : 1, sy, 1);
 }
-function plate(text, sub, w = 1.5, h = 0.42) {
-  const t = tex(640, 180, (ctx, cw, ch) => {
+function plate(text, sub, w = 1.5, h = 0.42, res = 1) {
+  const t = tex(640 * res, 180 * res, (ctx, cw, ch) => {
+    ctx.save(); ctx.scale(res, res); cw /= res; ch /= res;
     ctx.fillStyle = "#EFE6D6"; ctx.fillRect(0, 0, cw, ch);
     ctx.strokeStyle = "#B9A98E"; ctx.lineWidth = 6; ctx.strokeRect(8, 8, cw - 16, ch - 16);
     ctx.fillStyle = "#17120E"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     let s = 60; do { ctx.font = F(800, s); s -= 2; } while (ctx.measureText(text).width > cw - 60 && s > 20);
     ctx.fillText(text, cw / 2, sub ? 70 : ch / 2);
     if (sub) { let s2 = 34; do { ctx.font = M(500, s2); s2 -= 1; } while (ctx.measureText(sub).width > cw - 60 && s2 > 14); ctx.fillStyle = "#5C4F40"; ctx.fillText(sub, cw / 2, 128); }
+    ctx.restore();
   });
   // polygon offset: a plate sits a hair in front of its wall or bench and must always win the depth test
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 }));
@@ -656,10 +724,10 @@ for (let i = -6; i <= 6; i++) if (Math.abs(i) > 1) box(0.08, 0.9, 0.08, railMat,
 box(11.4, 0.1, 0.14, railMat, 0, 0.92, 3.2);
 // seal on the wall: an original geometric emblem (scales of a ledger), not any real seal.
 // Disc and sign share one group facing the room, clear of the wall, so neither can cut through the other.
-const sealGroup = new THREE.Group(); sealGroup.position.set(0, 5.2, -6.7); scene.add(sealGroup);
-const seal = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.08, 48), mat(0xC9AE82, 0.6, 0.3));   // duller than the gavel brass: the warm light made it glare behind the judge
+const sealGroup = new THREE.Group(); sealGroup.position.set(0, 4.85, -6.7); scene.add(sealGroup);
+const seal = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.45, 0.08, 48), mat(0xC9AE82, 0.6, 0.3));   // duller than the gavel brass: the warm light made it glare behind the judge
 seal.rotation.x = Math.PI / 2; sealGroup.add(seal);
-const sealFace = plate("Docket", "every claim gets a hearing", 1.7, 0.48);
+const sealFace = plate("Docket", "every claim gets a hearing", 2.55, 0.72, 2);
 sealFace.position.z = 0.07; sealGroup.add(sealFace);
 
 const adv = makeAgent({ kind: "person", outfit: "student", color: 0x4F7CF0, scale: 1.2, label: "Advocate" });
@@ -678,7 +746,21 @@ function pedestal(x, z, rotY, name, sub, accent) {
   return g;
 }
 pedestal(-3.2, 0.8, 0.5, "Advocate", "argues for the student", 0x4F7CF0);
+// A display stand behind each side: every card that side plays is pinned to it and stays readable
+function easel(x, z, rotY, name, accent) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  const legM = mat(0x8A6440, 0.7);
+  for (const lx of [-1.2, 1.2]) { const l = box(0.08, 3.6, 0.08, legM, lx, 1.75, 0.1, g); l.rotation.z = lx > 0 ? -0.06 : 0.06; }
+  const back = box(0.08, 3.5, 0.08, legM, 0, 1.7, -0.75, g); back.rotation.x = -0.3;
+  const board = new THREE.Group(); board.position.set(0, 2.45, 0.2); board.rotation.x = -0.1; g.add(board);
+  box(3.1, 2.05, 0.06, mat(0xC9A56E, 0.85), 0, 0, -0.04, board);                                     // cork-coloured backing
+  box(3.24, 0.1, 0.22, legM, 0, -1.08, 0.06, board);                                                // ledge
+  const head = plate(name, "", 1.5, 0.3); head.position.set(0, 1.2, 0.0); board.add(head);
+  solid(new THREE.BoxGeometry(3.1, 0.05, 0.02), accent, board, 0, 1.0, 0.0);
+  return { group: g, board, slots: [[-0.74, 0.43], [0.74, 0.43], [-0.74, -0.47], [0.74, -0.47]], used: 0 };
+}
 pedestal(3.2, 0.8, -0.5, "Payroll's Counsel", "argues for the employer", 0xE8743B);
+const easels = new Map([[adv, easel(-5.1, -1.0, 0.42, "Advocate's cards", 0x4F7CF0)], [counsel, easel(5.1, -1.0, -0.42, "Counsel's objections", 0xE8743B)]]);
 
 // Gavel in the judge's hand + sound block on the bench
 const gavelPivot = new THREE.Group(); gavelPivot.position.set(1.15, 2.05, -3.2); scene.add(gavelPivot);
@@ -692,12 +774,37 @@ box(0.5, 0.1, 0.5, woodDark, 0.45, 2.07, -3.2);
 // Exhibit table with the case folder
 const exhibit = new THREE.Group(); exhibit.position.set(0, 0, 0.9); scene.add(exhibit);
 box(2.2, 0.8, 1.0, wood, 0, 0.4, 0, exhibit);
-const folderMat = mat(0xC9A56E, 0.75);
-const folderBack = box(1.1, 0.04, 0.8, folderMat, 0, 0.83, 0, exhibit);
-const folderCoverPivot = new THREE.Group(); folderCoverPivot.position.set(-0.55, 0.86, 0); exhibit.add(folderCoverPivot);
-const folderCover = box(1.1, 0.03, 0.8, folderMat, 0.55, 0, 0, folderCoverPivot);
-const folderLabel = plate("Case file", "", 0.6, 0.18);
-folderLabel.rotation.x = -Math.PI / 2; folderLabel.position.set(0.55, 0.02, 0); folderCoverPivot.add(folderLabel);
+// A kraft case folder with a tab, the case-file label on its cover, and her papers inside
+const folderMat = mat(0xC9A56E, 0.75), folderInMat = mat(0xD8BC88, 0.8);
+const folderBack = box(1.5, 0.02, 0.95, folderMat, 0.05, 0.81, 0, exhibit);
+box(0.5, 0.02, 0.14, folderMat, 0.45, 0.81, -0.53, exhibit);                       // tab
+const paperTex = tex(400, 520, (ctx, w, h) => {
+  ctx.fillStyle = "#FFFDF8"; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#2B231C"; ctx.font = F(800, 30); ctx.fillText("Earnings statement", 28, 52);
+  ctx.font = M(400, 17); ctx.fillStyle = "#5C4F40"; ctx.fillText("University Dining Services · 8 paystubs", 28, 84);
+  const rows = [["Gross pay", "$720.00"], ["Social Security", "$44.64"], ["Medicare", "$10.44"], ["Net pay", "$664.92"]];
+  rows.forEach(([k, v], i) => { const y = 140 + i * 50; ctx.fillStyle = "#3D332A"; ctx.font = M(500, 20); ctx.fillText(k, 28, y); ctx.textAlign = "right"; ctx.fillText(v, w - 28, y); ctx.textAlign = "left"; ctx.fillStyle = "#E4D8C4"; ctx.fillRect(28, y + 14, w - 56, 2); });
+  ctx.strokeStyle = "#B5503E"; ctx.lineWidth = 4; ctx.strokeRect(24, 192, w - 48, 60);   // the two lines in question, circled
+  ctx.fillStyle = "#B9A98E"; for (let i = 0; i < 6; i++) ctx.fillRect(28, 380 + i * 20, 180 + (i * 47) % 140, 6);
+});
+for (const [x, z, r] of [[0.1, 0.02, 0.05], [0.04, -0.02, -0.04]]) {
+  const pg = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.82), new THREE.MeshStandardMaterial({ map: paperTex, roughness: 0.85 }));
+  pg.rotation.set(-Math.PI / 2, 0, r); pg.position.set(x + 0.3, 0.825 + (z > 0 ? 0.004 : 0.002), z); pg.receiveShadow = true; exhibit.add(pg);
+}
+const folderCoverPivot = new THREE.Group(); folderCoverPivot.position.set(-0.7, 0.84, 0); exhibit.add(folderCoverPivot);
+const folderCover = box(1.5, 0.02, 0.95, folderMat, 0.75, 0, 0, folderCoverPivot);
+box(1.5, 0.002, 0.95, folderInMat, 0.75, -0.011, 0, folderCoverPivot);              // inside of the cover
+const folderLabelTex = tex(640, 300, (ctx, w, h) => {
+  ctx.fillStyle = "#FBF7EF"; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#2F5D50"; ctx.fillRect(0, 0, 22, h);
+  ctx.fillStyle = "#8A7D6E"; ctx.font = M(600, 24); ctx.fillText("C A S E   F I L E", 56, 58);
+  ctx.fillStyle = "#17120E"; ctx.font = F(600, 64, "Newsreader"); ctx.fillText(current.name, 56, 140);
+  ctx.fillStyle = "#3D332A"; ctx.font = F(500, 26, "Nunito");
+  ctx.fillText(`${current.id} · F-1 · arrived ${current.arrival}`, 56, 194);
+  ctx.fillText(`${current.employer} · calendar year ${current.year}`, 56, 234);
+});
+const folderLabel = new THREE.Mesh(new THREE.PlaneGeometry(1.06, 0.5), new THREE.MeshStandardMaterial({ map: folderLabelTex, roughness: 0.8 }));
+folderLabel.rotation.x = -Math.PI / 2; folderLabel.position.set(0.8, 0.012, 0.08); folderCoverPivot.add(folderLabel);
 
 /* ---------- Arena 2: the call (x = 60) ---------- */
 const CX = 60;
@@ -720,15 +827,39 @@ const phoneBase = box(0.5, 0.16, 0.36, mat(0x111111, 0.4), CX + 3.0, 0.98, 0.4);
 const handsetPivot = new THREE.Group(); handsetPivot.position.set(CX + 3.0, 1.12, 0.4); scene.add(handsetPivot);
 const handset = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.5, 6, 12), mat(0x111111, 0.4));
 handset.rotation.z = Math.PI / 2; handset.castShadow = true; handsetPivot.add(handset);
-const caller = makeAgent({ kind: "crane", color: 0x4F7CF0, scale: 1.45, label: "Docket" });
-caller.group.position.set(CX - 2.6, 0.9, 0.6); caller.group.rotation.y = 0.45; caller.home = caller.group.position.clone();
-const headset = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.014, 6, 16, Math.PI), mat(0x15171A, 0.4));
-headset.position.set(0, 0.72, 0.2); headset.rotation.y = Math.PI / 2; caller.headPivot.add(headset);
-pedestal(CX - 2.6, 0.6, 0.45, "Docket", "the caller", 0x4F7CF0);
-const clerk = makeAgent({ kind: "clerk", color: 0x9AA3AD, scale: 1.1, label: "Payroll" });
+// The call happens in an office: Docket's caller at a desk with a headset, the payroll clerk at hers,
+// and the Guardian (privacy officer) standing by with a redacted page
+const caller = makeAgent({ kind: "person", outfit: "aide", scale: 1.2, label: "Docket" });
+caller.group.position.set(CX - 2.6, 0.54, 0.6); caller.group.rotation.y = 0.45; caller.home = caller.group.position.clone();
+pedestal(CX - 2.6, 0.6, 0.45, "Docket", "the caller · an AI", 0x4F7CF0);
+const clerk = makeAgent({ kind: "person", outfit: "clerk", scale: 1.2, label: "Payroll" });
 clerk.group.position.set(CX + 3.1, 0, -0.6); clerk.group.rotation.y = -0.35; clerk.home = clerk.group.position.clone();
-const guardian = makeAgent({ kind: "turtle", color: 0x2E9B6C, scale: 1.25, label: "Guardian" });
-guardian.group.position.set(CX - 4.4, 0, -0.4); guardian.group.rotation.y = 0.6; guardian.home = guardian.group.position.clone();
+const guardian = makeAgent({ kind: "person", outfit: "guardian", scale: 1.2, label: "Guardian" });
+guardian.group.position.set(CX - 4.6, 0, -0.5); guardian.group.rotation.y = 0.6; guardian.home = guardian.group.position.clone();
+// office props: a monitor on the payroll desk, a filing cabinet, a plant, a wall clock
+const monitor = new THREE.Group(); monitor.position.set(CX + 2.3, 0.9, 0.3); monitor.rotation.y = 0.5; scene.add(monitor);
+box(0.08, 0.3, 0.08, mat(0x2B2B2B, 0.5), 0, 0.15, 0, monitor);
+box(0.75, 0.48, 0.05, mat(0x2B2B2B, 0.5), 0, 0.5, 0, monitor);
+const screenTex = tex(300, 190, (ctx, w, h) => {
+  ctx.fillStyle = "#EEF3F8"; ctx.fillRect(0, 0, w, h); ctx.fillStyle = "#3F6FE0"; ctx.fillRect(0, 0, w, 26);
+  ctx.fillStyle = "#FFFFFF"; ctx.font = M(600, 15); ctx.fillText("PAYROLL · Priya Sharma", 10, 18);
+  for (let i = 0; i < 6; i++) { ctx.fillStyle = "#9AA6B2"; ctx.fillRect(12, 44 + i * 23, 150, 8); ctx.fillStyle = "#56616C"; ctx.fillRect(210, 44 + i * 23, 70, 8); }
+});
+const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.69, 0.42), new THREE.MeshBasicMaterial({ map: screenTex })); scr.position.set(0, 0.5, 0.027); monitor.add(scr);
+const cabinet = new THREE.Group(); cabinet.position.set(CX + 4.7, 0, -1.4); scene.add(cabinet);
+box(0.8, 1.6, 0.7, mat(0x8E959C, 0.45, 0.35), 0, 0.8, 0, cabinet);
+for (let i = 0; i < 3; i++) { box(0.7, 0.44, 0.02, mat(0x9DA4AB, 0.45, 0.35), 0, 0.3 + i * 0.5, 0.36, cabinet); box(0.22, 0.04, 0.04, mat(0x5A6168, 0.4, 0.6), 0, 0.42 + i * 0.5, 0.38, cabinet); }
+const plant = new THREE.Group(); plant.position.set(CX - 5.6, 0, -1.6); scene.add(plant);
+solid(new THREE.CylinderGeometry(0.28, 0.22, 0.5, 8), 0xB5653E, plant, 0, 0.25, 0);
+for (let i = 0; i < 7; i++) { const l = solid(new THREE.ConeGeometry(0.1, 0.9, 4), 0x3F7A4E, plant, Math.cos(i) * 0.12, 0.85, Math.sin(i) * 0.12); l.rotation.set(Math.sin(i * 2) * 0.5, 0, Math.cos(i * 2) * 0.5); }
+const clockTex = tex(256, 256, (ctx, w, h) => {
+  ctx.fillStyle = "#FBF7EF"; ctx.beginPath(); ctx.arc(128, 128, 120, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "#2B231C"; ctx.lineWidth = 10; ctx.stroke();
+  for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; ctx.fillStyle = "#2B231C"; ctx.fillRect(128 + Math.cos(a) * 96 - 4, 128 + Math.sin(a) * 96 - 4, 8, 8); }
+  ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(128, 128); ctx.lineTo(128, 60); ctx.stroke();
+  ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(128, 128); ctx.lineTo(180, 150); ctx.stroke();
+});
+const wallClock = new THREE.Mesh(new THREE.CircleGeometry(0.55, 32), new THREE.MeshStandardMaterial({ map: clockTex, roughness: 0.7 })); wallClock.position.set(CX + 5.6, 4.6, -6.75); scene.add(wallClock);
 // Letter + envelope (used if payroll stalls)
 const letterTex = tex(512, 660, (ctx, w, h) => {
   ctx.fillStyle = "#F7F1E6"; ctx.fillRect(0, 0, w, h);
@@ -762,17 +893,32 @@ function roundedRect(w, h, r) {
 }
 const cardFront = tex(1024, 640, () => {});
 var BANK = { name: "Priya Sharma", amount: "$440.64", from: "University Dining Payroll" };
+// Every value on the card comes from BANK, which setCase() repoints at the live student file
+// when the live case is chosen, so the card shows that student and that case's amount.
+// Priya's debit card: chip, masked number, her name, and a deposit strip that the refund lights up
 function drawCard(refunded) {
   const { ctx, canvas: c } = cardFront.userData, w = c.width, h = c.height;
-  ctx.fillStyle = "#FBF8F2"; ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = "#2B231C"; ctx.font = F(800, 52); ctx.fillText("Your bank", 64, 104);
-  ctx.fillStyle = "#6F6357"; ctx.font = M(400, 30); ctx.fillText(`Checking · ${BANK.name}`, 64, 156);
-  ctx.font = M(400, 28); ctx.fillStyle = "#6F6357"; ctx.fillText("8 of 8 paychecks matched to a deposit", 64, 236);
+  const g = ctx.createLinearGradient(0, 0, w, h); g.addColorStop(0, "#2F5D50"); g.addColorStop(1, "#1C3B33");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  ctx.globalAlpha = 0.08; ctx.fillStyle = "#FFFFFF";
+  ctx.beginPath(); ctx.arc(w * 0.92, h * 0.05, 330, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(w * 0.78, h * 0.02, 220, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = "#F3EDE3"; ctx.font = F(800, 44); ctx.fillText("Your bank", 64, 90);
+  ctx.font = M(500, 26); ctx.fillStyle = "rgba(243,237,227,0.75)"; ctx.textAlign = "right"; ctx.fillText("DEBIT · CHECKING", w - 64, 90); ctx.textAlign = "left";
+  // chip + contactless
+  ctx.fillStyle = "#D9B867"; ctx.beginPath(); ctx.roundRect(64, 136, 120, 92, 14); ctx.fill();
+  ctx.strokeStyle = "#A8873E"; ctx.lineWidth = 3; for (const y of [167, 197]) { ctx.beginPath(); ctx.moveTo(64, y); ctx.lineTo(184, y); ctx.stroke(); } ctx.beginPath(); ctx.moveTo(124, 136); ctx.lineTo(124, 228); ctx.stroke();
+  ctx.strokeStyle = "rgba(243,237,227,0.8)"; ctx.lineWidth = 5; for (const r of [18, 32, 46]) { ctx.beginPath(); ctx.arc(214, 182, r, -0.7, 0.7); ctx.stroke(); }
+  ctx.fillStyle = "#F3EDE3"; ctx.font = M(500, 46); ctx.fillText("••••  ••••  ••••  4821", 64, 300);
+  ctx.font = M(600, 30); ctx.fillText(BANK.name.toUpperCase(), 64, 352);
+  ctx.font = M(400, 22); ctx.fillStyle = "rgba(243,237,227,0.7)"; ctx.fillText("8 of 8 paychecks matched to a deposit", 64, 392);
+  // deposit strip
+  ctx.fillStyle = refunded ? "#FBF7EF" : "rgba(251,247,239,0.16)"; ctx.beginPath(); ctx.roundRect(40, 440, w - 80, 160, 18); ctx.fill();
   if (refunded) {
-    ctx.fillStyle = "#1F8F55"; ctx.font = F(900, 96); ctx.fillText(`+${BANK.amount}`, 64, 420);
-    ctx.fillStyle = "#4A4038"; ctx.font = M(400, 30); ctx.fillText(`${BANK.from} · matched`, 64, 474);
+    ctx.fillStyle = "#1F8F55"; ctx.font = F(900, 84); ctx.fillText(`+${BANK.amount}`, 72, 532);
+    ctx.fillStyle = "#4A4038"; ctx.font = M(500, 24); ctx.fillText(`${BANK.from} · matched exactly`, 72, 576);
   } else {
-    ctx.fillStyle = "#4A4038"; ctx.font = M(400, 32); ctx.fillText(`Watching for exactly ${BANK.amount}`, 64, 420);
+    ctx.fillStyle = "#F3EDE3"; ctx.font = M(500, 30); ctx.fillText(`Watching for a deposit of exactly ${BANK.amount}`, 72, 532);
   }
   cardFront.needsUpdate = true;
 }
@@ -789,7 +935,7 @@ const slipTex = tex(512, 220, (ctx, w, h) => {
 });
 const slip = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.69), new THREE.MeshStandardMaterial({ map: slipTex, roughness: 0.8, side: THREE.DoubleSide }));
 slip.visible = false; scene.add(slip);
-const ledger = makeAgent({ kind: "frog", color: 0x3BAA6E, scale: 1.5, label: "Ledger" });
+const ledger = makeAgent({ kind: "person", outfit: "teller", scale: 1.25, label: "Ledger" });   // the Ledger as a bank teller
 ledger.group.position.set(MX - 3.2, 0, 0.9); ledger.group.rotation.y = 0.5; ledger.home = ledger.group.position.clone();
 const closedStamp = plate("Case closed", "$440.64 recovered", 2.6, 0.72);
 closedStamp.material.transparent = true; closedStamp.material.opacity = 0;
@@ -809,7 +955,7 @@ function argCard(title, body, color) {
     ctx.fillText(kick, 72, 84);
     // shrink the text until every line fits on the card
     let size = 76, lines;
-    for (;;) { ctx.font = F(600, size, "Fraunces"); lines = wrap(ctx, body, w - 130); if (lines.length * size * 1.18 <= h - 150 || size <= 30) break; size -= 2; }
+    for (;;) { ctx.font = F(600, size, "Newsreader"); lines = wrap(ctx, body, w - 130); if (lines.length * size * 1.18 <= h - 150 || size <= 30) break; size -= 2; }
     ctx.fillStyle = "#17120E";
     lines.forEach((l, i) => ctx.fillText(l, 72, 130 + size + i * size * 1.18));
   });
@@ -825,12 +971,15 @@ function fly(mesh, from, to, dur = 900, arc = 1.4, spin = 0, land = null) {
 }
 // Removes a mesh made for one moment and frees its GPU memory, so replays don't pile up textures.
 function drop(m) {
-  scene.remove(m);
-  m.geometry.dispose();
-  for (const mt of [].concat(m.material)) {
-    if (mt.map) { mt.map.dispose(); const i = texRegistry.findIndex((r) => r.t === mt.map); if (i >= 0) texRegistry.splice(i, 1); }
-    mt.dispose();
-  }
+  if (m.parent) m.parent.remove(m);
+  m.traverse((o) => {
+    if (!o.isMesh) return;
+    o.geometry.dispose();
+    for (const mt of [].concat(o.material)) {
+      if (mt.map) { mt.map.dispose(); const i = texRegistry.findIndex((r) => r.t === mt.map); if (i >= 0) texRegistry.splice(i, 1); }
+      mt.dispose();
+    }
+  });
 }
 function stampMesh(text, color) {
   const t = tex(900, 260, (ctx, w, h) => {
@@ -869,6 +1018,7 @@ const SHOTS = {
   duel: { pos: [0, 3.8, 11.0], look: [0, 1.9, 0] },
   call: { pos: [CX, 4.8, 14.0], look: [CX, 2.0, -1] },
   caller: { pos: [CX - 0.2, 3.4, 9.0], look: [CX - 2.4, 1.6, 0.4] },
+  guardian: { pos: [CX - 2.6, 2.9, 5.6], look: [CX - 4.4, 1.7, -0.5] },
   clerk: { pos: [CX + 0.6, 3.5, 8.6], look: [CX + 2.8, 1.9, -0.4] },
   board: { pos: [CX, 3.4, 6.4], look: [CX, 2.7, -3.1] },
   money: { pos: [MX, 4.0, 11.6], look: [MX, 2.2, -1] },
@@ -876,7 +1026,12 @@ const SHOTS = {
   end: { pos: [MX + 7, 5.0, 14], look: [MX, 2.4, -1] }
 };
 const cam = { pos: new THREE.Vector3(...SHOTS.title.pos), look: new THREE.Vector3(...SHOTS.title.look), tPos: new THREE.Vector3(...SHOTS.title.pos), tLook: new THREE.Vector3(...SHOTS.title.look), rate: 2.2, shake: 0, orbit: true };
+let liveShot = "title";
 function shot(name, rate = 2.4) {
+  liveShot = name;
+  aim(name, rate);
+}
+function aim(name, rate = 2.4) {
   const s = SHOTS[name];
   cam.tPos.set(...s.pos); cam.tLook.set(...s.look); cam.rate = rate; cam.orbit = false;
 }
@@ -920,8 +1075,9 @@ async function banner(text, sub, color, hold = false) {
   await wait(700);
   focusDialog();
   $("speaker").textContent = text; $("speaker").style.setProperty("--dot", color);
-  $("line").textContent = sub; $("sub").textContent = "";
+  $("line").textContent = sub; $("sub").textContent = ""; $("proof").innerHTML = "";
   $("choice-area").innerHTML = ""; $("btn-next").disabled = false;
+  record({ kind: "line", speaker: text, color, text: sub, shot: liveShot });
   await waitAdvance();
   clearBanner();
   stepBack();
@@ -967,16 +1123,96 @@ function focusDialog(choosing = false) {
 }
 // Between lines (cards flying, a banner) the last line stays up but dimmed, and Next is off until the next line.
 function stepBack() { $("dialog").classList.add("stale"); $("btn-next").disabled = true; $("hint").textContent = ""; }
+
+/* ---------- Back: every line and card shown is kept, so the viewer can step back through them ----------
+   Going back only re-reads the record (and re-aims the camera); the courtroom itself doesn't rewind.
+   Next walks forward again, and past the last record it returns to where the game is waiting. */
+const IRS_P519 = "https://www.irs.gov/publications/p519";
+const IRS_QUOTE_LINK = IRS_P519 + "#:~:text=" + encodeURIComponent(QUOTE.replace(/\.$/, "")).replace(/-/g, "%2D");
+const history = [];
+let liveIsFrame = false;   // is the live dialog showing a recorded line/card (vs. a choice or an approval)?
+let reviewIdx = null, liveNext = null, liveHint = "";
+function record(frame) { history.push(frame); liveIsFrame = true; updateBack(); }
+function liveIndex() { return liveIsFrame ? history.length - 1 : history.length; }
+function updateBack() { $("btn-back").disabled = (reviewIdx ?? liveIndex()) <= 0 || skipping(); }
+function proofEl(proof) {
+  const row = document.createElement("div"); row.className = "proof-row";
+  if (!proof) return row;
+  const a = document.createElement("a"); a.className = "proof"; a.href = proof.href; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = proof.label + " ↗";
+  const n = document.createElement("span"); n.className = "proof-note"; n.textContent = proof.note || "opens irs.gov with the sentence highlighted";
+  row.append(a, n); return row;
+}
+function noteEl(f) {
+  const c = document.createElement("div"); c.className = "notecard"; c.style.setProperty("--edge", f.color);
+  const k = document.createElement("div"); k.className = "k"; k.textContent = f.title;
+  const b = document.createElement("div"); b.className = "b"; b.textContent = f.body;
+  c.append(k, b);
+  if (f.proof) c.append(proofEl(f.proof));
+  return c;
+}
+function showReview() {
+  const f = history[reviewIdx], d = $("dialog"), r = $("review");
+  d.classList.add("reviewing"); d.classList.remove("stale");
+  r.innerHTML = "";
+  const tag = document.createElement("span"); tag.className = "review-tag"; tag.textContent = `Earlier · ${reviewIdx + 1} of ${history.length}`;
+  const sp = document.createElement("div"); sp.className = "speaker"; sp.textContent = f.speaker; sp.style.setProperty("--dot", f.color);
+  r.append(tag, sp);
+  if (f.kind === "card") r.append(noteEl(f));
+  else {
+    const l = document.createElement("div"); l.className = "line"; l.style.minHeight = "0"; l.textContent = f.text; r.append(l);
+    if (f.sub) { const s2 = document.createElement("div"); s2.className = "sub"; s2.textContent = f.sub; r.append(s2); }
+    if (f.proof) r.append(proofEl(f.proof));
+  }
+  if (f.shot) aim(f.shot, 3);
+  $("btn-next").disabled = false;
+  $("hint").textContent = "Looking back · Next ▸ to return";
+  updateBack();
+}
+function goBack() {
+  if (skipping() || !running) return;
+  if (typing) typing.finish();
+  const cur = reviewIdx ?? liveIndex();
+  if (cur <= 0) return;
+  if (reviewIdx === null) { liveNext = $("btn-next").disabled; liveHint = $("hint").textContent; $("dialog").classList.add("show"); }
+  reviewIdx = cur - 1;
+  showReview();
+}
+function exitReview() {
+  if (reviewIdx === null) return;
+  reviewIdx = null;
+  $("dialog").classList.remove("reviewing"); $("review").innerHTML = "";
+  $("btn-next").disabled = liveNext; $("hint").textContent = liveHint;
+  aim(liveShot, 3);
+  updateBack();
+}
 function onAdvance() {
+  if (reviewIdx !== null) { if (reviewIdx + 1 >= liveIndex()) exitReview(); else { reviewIdx++; showReview(); } return; }
   if (typing) { typing.finish(); return; }
   if (advanceResolve) { const r = advanceResolve; advanceResolve = null; r(); }
 }
 $("btn-next").addEventListener("click", onAdvance);
+$("btn-back").addEventListener("click", goBack);
 addEventListener("keydown", (e) => {
-  if (e.target.closest && e.target.closest("button") && (e.key === " " || e.key === "Enter")) return; // let focused buttons act
+  if (e.target.closest && e.target.closest("button, a") && (e.key === " " || e.key === "Enter")) return; // let focused buttons act
   if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!e.repeat) onAdvance(); }   // a held key doesn't skip lines
-  if (/^[1-4]$/.test(e.key)) { const btn = document.querySelectorAll("#choice-area .choice")[Number(e.key) - 1]; if (btn && !btn.disabled) btn.click(); }
+  if (e.key === "ArrowLeft" && !e.repeat) goBack();
+  if (/^[1-4]$/.test(e.key) && reviewIdx === null) { const btn = document.querySelectorAll("#choice-area .choice")[Number(e.key) - 1]; if (btn && !btn.disabled) btn.click(); }
 });
+// A thrown card, shown big in the dialog. The game waits here until Next.
+async function cardPop(owner, title, body, proof) {
+  const sp = SPEAKERS[owner];
+  focusDialog();
+  const d = $("dialog"); d.classList.add("carding");
+  $("speaker").textContent = owner + " · note card"; $("speaker").style.setProperty("--dot", sp.color);
+  $("line").textContent = ""; $("sub").textContent = ""; $("proof").innerHTML = "";
+  const f = { kind: "card", speaker: owner + " · note card", color: sp.color, title, body, proof, shot: liveShot };
+  $("choice-area").innerHTML = ""; $("choice-area").append(noteEl(f));
+  $("btn-next").disabled = false;
+  record(f);
+  await waitAdvance();
+  d.classList.remove("carding"); $("choice-area").innerHTML = "";
+  stepBack();
+}
 function typeText(el, text) {
   return new Promise((resolve) => {
     el.textContent = "";
@@ -998,9 +1234,11 @@ async function say(speaker, text, opts = {}) {
   $("speaker").textContent = speaker;
   $("speaker").style.setProperty("--dot", sp.color);
   $("sub").textContent = opts.sub || "";
+  $("proof").innerHTML = ""; if (opts.proof) $("proof").append(...proofEl(opts.proof).childNodes);
   $("choice-area").innerHTML = "";
   $("btn-next").disabled = false;
   if (opts.shot) shot(opts.shot);
+  record({ kind: "line", speaker, color: sp.color, text, sub: opts.sub || "", proof: opts.proof || null, shot: liveShot });
   const a = sp.agent();
   a.talk = 1; if (opts.lean) a.lean = 1;
   const talkLoop = setInterval(() => drawFace(a, a.mood === "code" ? "code" : (opts.mood || "idle"), Math.random() > 0.45), 120);
@@ -1024,17 +1262,17 @@ function waitAdvance() {
   });
 }
 // A choice: the viewer always picks. Nothing is pre-selected or picked for them (Skip round aside).
-function choose(prompt, options, speakerColor = "#3F6FE0") {
+function choose(prompt, options, speakerColor = "#3F6FE0", ruledOut = new Set()) {
   return new Promise((resolve) => {
     const right = options.findIndex((o) => o.correct);
     if (skipping()) { resolve(options[right]); return; }
-    focusDialog(true);
+    focusDialog(true); liveIsFrame = false; updateBack(); $("proof").innerHTML = "";
     $("speaker").textContent = "Your move";
     $("speaker").style.setProperty("--dot", speakerColor);
     $("line").textContent = prompt;
     $("sub").textContent = "";
     $("btn-next").disabled = true;
-    $("hint").textContent = "Pick a card (or press 1–" + options.length + ")";
+    $("hint").textContent = ruledOut.size ? "Crossed-out cards were already tried" : "Pick a card (or press 1–" + options.length + ")";
     const area = $("choice-area");
     area.innerHTML = "";
     const grid = document.createElement("div"); grid.className = "choices"; area.append(grid);
@@ -1045,6 +1283,7 @@ function choose(prompt, options, speakerColor = "#3F6FE0") {
       b.querySelector("b").textContent = o.label;
       b.querySelector("span").textContent = o.detail || "";
       b.addEventListener("click", () => pick(i));
+      if (ruledOut.has(o)) { b.classList.add("wrong"); b.disabled = true; }   // tried already: crossed out, not removed
       grid.append(b); return b;
     });
     // Placeholder for the guide avatar, pinned to the right card's top-right corner
@@ -1074,37 +1313,56 @@ function choose(prompt, options, speakerColor = "#3F6FE0") {
     };
   });
 }
-// Ask until the right card is picked (a wrong pick costs credibility).
+// Ask until the right card is picked (a wrong pick costs credibility). Every option stays on screen;
+// a wrong one comes back crossed out.
 async function present(prompt, options, onWrong) {
-  let remaining = options.slice();
+  const ruledOut = new Set();
   for (;;) {
-    const o = await choose(prompt, remaining);
+    const o = await choose(prompt, options, undefined, ruledOut);
     if (o.correct) return o;
     await onWrong(o);
-    remaining = remaining.filter((x) => x !== o);
+    ruledOut.add(o);
   }
 }
 
 /* ---------- Animated beats ---------- */
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
-const looseCards = [];
-async function throwCard(from, to, title, body, color) {
+// A side plays a card: it flies up where it can be read, opens big in the dialog until Next,
+// then gets pinned to that side's stand, where it stays for the rest of the hearing.
+async function throwCard(from, to, title, body, color, opts = {}) {
   const card = argCard(title, body, color);
-  looseCards.push(card);
   const a = from.group.position, b = to.group.position;
   from.arms[1].rotation.x = -1.4;
   const air = V((a.x + b.x) / 2, 2.85, 2.8);   // low enough to stay clear of the top HUD
   await fly(card, V(a.x, 2.3, a.z + 0.4), air, 650, 0.6, 0.2);
-  await wait(1300);   // long enough to read it before it lands
-  // land on the floor in front of the target, tipped toward the room: still readable from the wide shot,
-  // but it no longer stands upright between the close-up camera and the figure
-  const tip = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2 + 0.45, 0, (Math.random() - 0.5) * 0.2));
-  await fly(card, air, V(b.x * 0.8, 0.2, Math.max(b.z + 1.6, -2.4)), 420, 0.2, 0, { scale: 0.75, quat: tip });
-  card.userData.rest = true;
   from.arms[1].rotation.x = 0;
+  await wait(350);
+  await cardPop(from.label, title, body, opts.proof);
+  const st = easels.get(from);
+  if (st && st.used < st.slots.length) {
+    const [sx, sy] = st.slots[st.used++];
+    st.group.updateMatrixWorld(true);
+    const to3 = st.board.localToWorld(V(sx, sy, 0.03));
+    const q = st.board.getWorldQuaternion(new THREE.Quaternion());
+    card.userData.rest = true;
+    await fly(card, air, to3, 650, 0.4, 0, { scale: 0.5, quat: q });
+  } else {
+    const tip = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2 + 0.45, 0, 0));
+    card.userData.rest = true;
+    await fly(card, air, V(b.x * 0.8, 0.2, Math.max(b.z + 1.6, -2.4)), 420, 0.2, 0, { scale: 0.75, quat: tip });
+  }
   return card;
 }
-async function rule(result, reason, card) {
+// a small ruling stamp on a pinned card, so the stand shows how each card fared
+function stampCard(card, text, color) {
+  const t = tex(512, 150, (ctx, w, h) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 10; ctx.strokeRect(8, 8, w - 16, h - 16);
+    ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = F(900, 84); ctx.fillText(text.toUpperCase(), w / 2, h / 2 + 4);
+  });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.37), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
+  m.position.set(0.55, -0.38, 0.015); m.rotation.z = 0.12; card.add(m);
+}
+async function rule(result, reason, card, proof) {
   shot("judge", 3);
   await wait(500);
   judge.arms[1].rotation.x = -1.8;
@@ -1119,24 +1377,15 @@ async function rule(result, reason, card) {
   for (const old of stamps.splice(0)) drop(old);
   st.userData.anim = { start: performance.now() };
   stamps.push(st);
-  if (result === "Struck" && card) { burst(card.position.clone(), 0xF2E8D5, 60, 1.1); const i = looseCards.indexOf(card); if (i >= 0) looseCards.splice(i, 1); drop(card); }
-  // Every other card on the floor goes onto the record pile: a small stack lying flat on the bench's left end
-  looseCards.splice(0).forEach((c) => {
-    if (c === card && result === "Struck") return;
-    recordCount++;
-    const flat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, (recordCount % 2 ? 1 : -1) * 0.07 * recordCount));
-    c.userData.rest = true;
-    fly(c, c.position.clone(), V(-1.95, 2.05 + recordCount * 0.006, -3.45), 700, 0.6, 0, { scale: 0.42, quat: flat });
-  });
-  await say("Judge", `${result}. ${reason}`, { sub: result === "Struck" ? "Quote not found word for word in the stored source" : "" });
+  if (result === "Struck" && card) { burst(card.getWorldPosition(V(0, 0, 0)), 0xF2E8D5, 60, 1.1); drop(card); }
+  else if (card) stampCard(card, result, colors[result] || "#8A7458");
+  await say("Judge", `${result}. ${reason}`, { proof });
 }
 const stamps = [];
-let recordCount = 0;
 
 /* ============================================================
    Round 1: the hearing
    ============================================================ */
-let current = CASES.priya;
 let aborted = false;
 async function roundHearing() {
   const c = current;
@@ -1155,8 +1404,9 @@ async function roundHearing() {
 
   await say("Judge", `Case ${c.id}. ${c.name}, F-1, working for ${c.employer}. The claim: Social Security and Medicare withheld that she likely didn't owe${c.amount ? ", $440.64 in total" : ""}. Advocate, open.`, { shot: "judge" });
   await say("Advocate", `${c.first} is on an F-1 visa and works on campus. IRS Publication 519 says these taxes aren't withheld from F-1 students unless they're resident aliens.`, { shot: "adv", lean: true });
-  const exhibitA = await throwCard(adv, judge, "Exhibit A · IRS Publication 519", QUOTE, "#3F6FE0");
-  await rule("Admitted", "The quote matches the stored IRS text word for word.", exhibitA);
+  const proofQuote = { href: IRS_QUOTE_LINK, label: "See it in IRS Publication 519" };
+  const exhibitA = await throwCard(adv, judge, "Exhibit A · IRS Publication 519", QUOTE, "#3F6FE0", { proof: proofQuote });
+  await rule("Admitted", "The quote matches the stored IRS text word for word.", exhibitA, proofQuote);
   if (aborted) return;
 
   // Objection 1: residency
@@ -1175,7 +1425,6 @@ async function roundHearing() {
       { label: "Medicare withheld", detail: "From her paystubs" }
     ], async () => { damage("left", 10); await say("Judge", "Not relevant to residency. Answer the objection.", { shot: "judge" }); });
     await say("Advocate", "She arrived January 7, 2019.", { shot: "adv", mood: "sad" });
-    await fly(o1, o1.position.clone(), V(0, 2.4, -2.2), 500, 0.3);
     await rule("Sustained", "2019 was her first calendar year, so 2026 is year 8, past the five exempt years. She's likely taxed as a resident.", o1);
     damage("left", 100); drawFace(adv, "sad"); adv.slump = 1; counsel.joy = 1; drawFace(counsel, "joy");
     $("hud-claim").className = "claim long lose";
@@ -1228,7 +1477,8 @@ async function roundHearing() {
   ], async () => { damage("left", 12); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "Docket never takes a quote on trust. Every quote gets checked.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
   await say("Advocate", "Your Honor, please check that quote against IRS Publication 519.", { shot: "adv", lean: true });
   counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 30); stats.struck++;
-  await rule("Struck", "That sentence doesn't appear in IRS Publication 519. It's struck from the record.", o3);
+  await rule("Struck", "Counsel's quote, “All student wages are subject to FICA,” isn't in IRS Publication 519. The real rule says the opposite for F-1 students. Struck from the record.", o3,
+    { href: IRS_QUOTE_LINK, label: "Read the real rule in Publication 519", note: "opens irs.gov with it highlighted" });
   await banner("Made-up rule caught", "An AI agent invented a quote. Docket's code checked it against the IRS text and threw it out.", "#D4581C");
   counsel.hurt = 0; drawFace(counsel, "idle");
   if (aborted) return;
@@ -1269,6 +1519,41 @@ function plugCord() {
   cord.castShadow = true; cord.userData.grow = 0; cord.geometry.setDrawRange(0, 0); scene.add(cord);
 }
 function stepState(id, cls) { const el = $(id); el.className = cls; }
+// Docket was about to share her hours. The Guardian stops it: the timesheet comes up, the hours are
+// blacked out and stamped PRIVATE, and none of it reaches payroll.
+async function privacyBlock() {
+  const shared = new Set(lamps.map((l) => l.material.color.getHex()));
+  shot("guardian", 3.2);
+  lamps.forEach((l) => l.material.color.set(0xD4381C));
+  guardian.lean = 1; guardian.raise = 1; drawFace(guardian, "hurt");
+  shake(0.32); burst(V(CX - 4.6, 2.6, 0.2), 0x17120E, 30, 0.7);
+  await banner("Private!", null, "#B3262E");
+  const text = "Stop. Her hours are private. They have nothing to do with this refund, and sharing them could put her visa status at risk. Docket never brings them up.";
+  focusDialog();
+  const d = $("dialog"); d.classList.add("alarm", "carding");
+  $("speaker").textContent = "Guardian"; $("speaker").style.setProperty("--dot", SPEAKERS.Guardian.color);
+  $("sub").textContent = ""; $("proof").innerHTML = "";
+  const sheet = document.createElement("div"); sheet.className = "timesheet";
+  const rows = [["Mon Oct 19 · 09:00–15:00", "6 h"], ["Tue Oct 20 · 10:00–16:00", "6 h"], ["Thu Oct 22 · 09:00–15:00", "6 h"], ["Fri Oct 23 · 11:00–17:00", "6 h"], ["Hours this week", "24 h"]];
+  const k = document.createElement("div"); k.className = "k"; k.textContent = `Timesheet · ${current.name}`; sheet.append(k);
+  rows.forEach(([a, v], i) => {
+    const r = document.createElement("div"); r.className = "row" + (i === rows.length - 1 ? " total" : "");
+    const x = document.createElement("span"); x.textContent = a;
+    const y = document.createElement("span"); y.className = "v"; y.textContent = v; y.style.setProperty("--i", i);
+    r.append(x, y); sheet.append(r);
+  });
+  const seal = document.createElement("div"); seal.className = "seal"; seal.innerHTML = "PRIVATE<small>not shared with payroll</small>"; sheet.append(seal);
+  const say1 = document.createElement("div"); say1.className = "line"; say1.style.minHeight = "0"; say1.textContent = text;
+  $("choice-area").innerHTML = ""; $("choice-area").append(say1, sheet);
+  $("btn-next").disabled = false;
+  record({ kind: "line", speaker: "Guardian", color: SPEAKERS.Guardian.color, text, sub: "Her timesheet was blacked out and stamped PRIVATE: not shared with payroll", shot: "guardian" });
+  guardian.talk = 1; await wait(1400); guardian.talk = 0;
+  await waitAdvance();
+  d.classList.remove("alarm", "carding"); $("choice-area").innerHTML = "";
+  guardian.lean = 0; guardian.raise = 0; drawFace(guardian, "idle");
+  lamps.forEach((l) => l.material.color.set(shared.size === 1 ? [...shared][0] : 0x43D18A));
+  stepBack();
+}
 async function roundCall() {
   if (current.live) return liveCall(current);
   setRounds(2); showHud(null);
@@ -1280,7 +1565,7 @@ async function roundCall() {
   await say("Docket", "The court said: ask payroll first. May I call University Dining Services payroll for you?", { shot: "caller", lean: true });
   // Approval: a signature
   await new Promise((resolve) => {
-    focusDialog(true);
+    focusDialog(true); liveIsFrame = false; updateBack(); $("proof").innerHTML = "";
     $("speaker").textContent = "Your approval";
     $("speaker").style.setProperty("--dot", "#3F6FE0");
     $("line").textContent = "One approval places exactly one call.";
@@ -1319,11 +1604,8 @@ async function roundCall() {
     { label: "Mention her 24-hour week", detail: "Answer the hours question" },
     { label: "Hang up", detail: "Try another day" }
   ], async (o) => {
-    if (o.label.startsWith("Mention")) {
-      guardian.lean = 1; drawFace(guardian, "hurt");
-      await say("Guardian", "Stop. Her hours have nothing to do with this refund, and mentioning them could put her visa status at risk. Docket never brings them up.", { shot: "caller" });
-      guardian.lean = 0; drawFace(guardian, "idle");
-    } else {
+    if (o.label.startsWith("Mention")) await privacyBlock();
+    else {
       await say("Guardian", "Don't give up on a claim that just won its hearing. Use the ruling.", { shot: "caller" });
     }
   });
@@ -1367,7 +1649,7 @@ async function roundMoney() {
   $("date-chip").textContent = "Oct 24, 2026";
   await say("Ledger", "Watching Priya's Capital One account for a deposit of exactly $440.64 from University Dining Payroll.", { shot: "money", lean: true });
   await new Promise((resolve) => {
-    focusDialog(true);
+    focusDialog(true); liveIsFrame = false; updateBack(); $("proof").innerHTML = "";
     $("speaker").textContent = "Your move";
     $("speaker").style.setProperty("--dot", "#1F8F55");
     $("line").textContent = "Time passes. Payroll's next pay run is in two weeks.";
@@ -1702,11 +1984,12 @@ function endLive(kind) {
 let running = false;
 let skipTo = 0;
 function resetWorld() {
-  for (const a of [adv, counsel, judge, caller, clerk, guardian, ledger]) { a.hurt = a.joy = a.slump = a.lean = 0; a.group.position.copy(a.home); drawFace(a, a === judge ? "code" : "idle"); }
+  for (const a of [adv, counsel, judge, caller, clerk, guardian, ledger]) { a.hurt = a.joy = a.slump = a.lean = a.raise = 0; a.group.position.copy(a.home); drawFace(a, a === judge ? "code" : "idle"); }
   for (const s of stamps) drop(s); stamps.length = 0;
   for (const f of flyers.splice(0)) f.resolve();
   scene.children.filter((o) => o.userData && o.userData.isArg).forEach(drop);
-  looseCards.length = 0; recordCount = 0;
+  for (const st of easels.values()) st.used = 0;
+  history.length = 0; liveIsFrame = false; reviewIdx = null; $("dialog").classList.remove("reviewing", "carding"); $("review").innerHTML = ""; $("proof").innerHTML = ""; updateBack();
   for (const b of bits.splice(0)) scene.remove(b.m);
   if (cord) { scene.remove(cord); cord.geometry.dispose(); cord = null; }
   lamps.forEach((l) => l.material.color.set(0x4A4A44));
@@ -1724,6 +2007,7 @@ async function play() {
   if (running) return;
   running = true; aborted = false;
   resetWorld();
+  redrawTex(folderLabelTex);
   $("title-screen").classList.add("hide");
   $("end-screen").classList.add("hide");
   document.body.classList.remove("menu");
@@ -1775,6 +2059,7 @@ function setCase(key) {
     $("case-" + k).setAttribute("aria-pressed", key === k);
     $("case-" + k).querySelector(".pick").textContent = key === k ? "✓ Selected" : "Choose";
   }
+  redrawTex(folderLabelTex);
 }
 function setMode(m) {
   mode = m;
@@ -1792,7 +2077,7 @@ $("btn-mode").addEventListener("click", () => setMode(mode === "watch" ? "play" 
 $("btn-start").addEventListener("click", play);
 $("btn-replay").addEventListener("click", () => { $("end-screen").classList.add("hide"); play(); });
 $("btn-other").addEventListener("click", () => { setCase(current.key === "priya" ? "nadia" : "priya"); $("end-screen").classList.add("hide"); play(); });
-$("btn-skip").addEventListener("click", () => { if (!running) return; boost = 8; onAdvance(); if (skipHook) skipHook(); });
+$("btn-skip").addEventListener("click", () => { if (!running) return; exitReview(); boost = 8; updateBack(); onAdvance(); if (skipHook) skipHook(); });
 if (params.get("payroll") === "agree") payrollWill = "agree";
 if (params.get("case") === "nadia") setCase("nadia");
 // The live case appears once Convex answers, and refreshes while the menu is up, so a hearing the agents
@@ -1834,7 +2119,8 @@ function animate() {
   const k = 1 - Math.exp(-cam.rate * dt * boost * SPEED);
   cam.pos.lerp(cam.tPos, k); cam.look.lerp(cam.tLook, k);
   camera.position.copy(cam.pos);
-  if (!reduced) { camera.position.x += pointer.x * 0.5; camera.position.y -= pointer.y * 0.3; }
+  // mouse parallax only on the title and end screens: in play it slid the wall seal out from under the centered HUD
+  if (!reduced && cam.orbit) { camera.position.x += pointer.x * 0.5; camera.position.y -= pointer.y * 0.3; }
   if (cam.shake > 0.001) {
     camera.position.x += Math.sin(t * 61) * cam.shake * 0.5; camera.position.y += Math.sin(t * 47 + 1.3) * cam.shake * 0.5;
     cam.shake *= Math.pow(0.02, dt);
@@ -1852,16 +2138,12 @@ function animate() {
     a._slump = THREE.MathUtils.lerp(a._slump || 0, a.slump, 1 - Math.pow(0.01, dt));
     const breathe = reduced ? 0 : Math.sin(t * 2 + g.position.x) * 0.02;
     const hop = a.joy && !reduced ? Math.abs(Math.sin(t * 6)) * 0.12 : 0;
-    const hover = a.kind === "crane" && !reduced ? Math.sin(t * 1.6 + a.seed) * 0.07 : 0;
-    g.position.y = a.home.y + breathe + hop + hover;
+    g.position.y = a.home.y + breathe + hop;
     a.body.rotation.x = a._lean * 0.18 - a._hurt * 0.25 + a._slump * 0.22;
     a.body.scale.y = 1 - a._hurt * 0.14;                       // paper crumples a little when hit
     a.headPivot.rotation.x = a.talk && !reduced ? Math.sin(t * 14) * 0.07 : a._slump * 0.4;
     a.headPivot.rotation.z = a._hurt * 0.2 * Math.sin(t * 30);
-    const f = reduced ? 0 : Math.sin(t * (a.talk ? 9 : 2.2) + a.seed) * (a.talk ? 0.35 : 0.1);
-    if (a.kind === "crane") { a.arms[0].rotation.z = -f; a.arms[1].rotation.z = f; }
-    else if (a.kind === "clerk") { a.arms[0].rotation.z = -(0.5 + (a.talk ? f : 0)); a.arms[1].rotation.z = 0.5 + (a.talk ? f : 0); }
-    else a.arms[0].rotation.x = THREE.MathUtils.lerp(a.arms[0].rotation.x, a.talk ? Math.sin(t * 7) * 0.5 - 0.3 : 0, ease60(0.15, dt));
+    a.arms[0].rotation.x = THREE.MathUtils.lerp(a.arms[0].rotation.x, a.raise ? -1.5 : a.talk ? Math.sin(t * 7) * 0.5 - 0.3 : 0, ease60(0.15, dt));
     // blink now and then while idle
     if (a.mood === "idle" || a.mood === "code") { const bl = ((t + a.seed) % 3.6) < 0.11; for (const e of a.eyes) e.scale.y = bl ? 0.12 : 1; }
   }
@@ -1874,7 +2156,7 @@ function animate() {
   }
   // folder cover
   const fo = folderCoverPivot.userData.open || 0;
-  folderCoverPivot.rotation.z = THREE.MathUtils.lerp(folderCoverPivot.rotation.z, fo ? 2.6 : 0, ease60(0.06, dt));
+  folderCoverPivot.rotation.z = THREE.MathUtils.lerp(folderCoverPivot.rotation.z, fo ? 0.32 : 0, ease60(0.06, dt));   // the cover lifts a little: label still readable, papers showing
   // flying things
   for (let i = flyers.length - 1; i >= 0; i--) {
     const f = flyers[i];
@@ -1927,7 +2209,8 @@ function animate() {
 
   renderer.render(scene, camera);
 }
-document.fonts.ready.then(() => {
+// canvas-only fonts don't load on their own, so ask for them before redrawing
+Promise.all(["800 30px Bitter", "900 30px Bitter", "600 30px Newsreader", "500 20px Nunito", "600 20px Nunito"].map(f => document.fonts.load(f))).catch(() => {}).then(() => document.fonts.ready).then(() => {
   // redraw canvas textures that used web fonts
   for (const r of texRegistry) { r.ctx.clearRect(0, 0, r.w, r.h); r.draw(r.ctx, r.w, r.h); r.t.needsUpdate = true; }
   for (const a of [adv, counsel, caller, clerk, guardian, ledger]) drawFace(a, "idle");
