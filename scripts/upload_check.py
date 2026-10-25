@@ -1,8 +1,8 @@
-"""Upload a sample PDF to the dev Convex deployment, read back its URL, and fetch it.
+"""Upload a sample PDF to the dev SQLite deployment, read back its URL, and fetch it.
 
     .venv/bin/python -m scripts.upload_check [path/to.pdf]
 
-Uses the first paystub PDF in seed/paystubs (synthetic) and the first paystub row in Convex, so it
+Uses the first paystub PDF in seed/paystubs (synthetic) and the first paystub row in SQLite, so it
 exercises the same helper the Ledger uses. Exits non-zero if the round trip fails.
 """
 import sys
@@ -26,7 +26,11 @@ def main() -> int:
     flag = next(f for f in query("flags:listByProfile", {"profileId": profile["_id"]}) if f.get("paystubIds"))
     receipt = query("files:forFlag", {"flagId": flag["_id"]})
     url = next(f["url"] for f in receipt["paystubs"] if f["_id"] == file_id)
-    body = requests.get(url, timeout=30).content
+    import os
+    url = os.environ.get("DOCKET_API_URL", "http://127.0.0.1:8000").rstrip("/") + url
+    response = requests.get(url, headers={"Authorization": "Bearer " + os.environ["DOCKET_API_TOKEN"]}, timeout=30)
+    response.raise_for_status()
+    body = response.content
     ok = body == pdf.read_bytes()
     print(f"uploaded {pdf.name} -> {file_id}\nurl: {url}\nread back {len(body)} bytes, {'identical' if ok else 'DIFFERENT'}")
     return 0 if ok else 1

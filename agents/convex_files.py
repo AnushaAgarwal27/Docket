@@ -1,19 +1,10 @@
-"""Upload a file to Convex file storage and link it to a paystub or flag, from any agent.
-
-Convex's upload is two steps: a mutation hands out a short-lived upload URL, the bytes are POSTed
-there, and the response carries the storageId; files:attach then records the row. The Python client
-has no upload helper, so the POST goes through requests. Every upload, and every failure, is logged
-to activity.
-"""
+"""Store PDFs beside SQLite and attach them to findings. Historical module name kept for agent imports."""
 from __future__ import annotations
 
 from pathlib import Path
 
-import requests
 
 from agents.store import log, mutation
-
-UPLOAD_TIMEOUT = 30
 
 
 def upload_and_attach(path: Path, kind: str, content_type: str = "application/pdf", *, agent: str,
@@ -23,11 +14,11 @@ def upload_and_attach(path: Path, kind: str, content_type: str = "application/pd
     filename = Path(path).name
     linked = [v for v in links.values() if v]
     try:
-        upload_url = mutation("files:generateUploadUrl")
+        from backend.store import files_path
+        import uuid
         body = data if data is not None else Path(path).read_bytes()
-        resp = requests.post(upload_url, data=body, headers={"Content-Type": content_type}, timeout=UPLOAD_TIMEOUT)
-        resp.raise_for_status()
-        storage_id = resp.json()["storageId"]
+        storage_id = uuid.uuid4().hex
+        (files_path() / storage_id).write_bytes(body)
         file_id = mutation("files:attach", {"storageId": storage_id, "kind": kind, "filename": filename, **links})
     except Exception as e:  # noqa: BLE001 - any failure is logged, never raised into the agent loop
         try:

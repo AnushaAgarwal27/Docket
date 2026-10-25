@@ -1,8 +1,7 @@
 import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
+import { useMutation, useQuery, api, FileLink } from "./backend";
+import type { Id } from "./model";
 import type { Activity, Case, Patterns, PayrollScript, Snapshot, Timeline } from "./data";
 import { AGENT_LABEL, MEDICARE_BP, RULE_LABEL, SS_BP, actionLabel, calendarYear, day, demoFeed, demoLetter, demoSnapshot, pct, time, usd } from "./data";
 import { PaperTrail } from "./PaperTrail";
@@ -221,7 +220,7 @@ function Dashboard({ mode, snap, feed, timeline, patterns, ...actions }: { mode:
         {snap && tab === "tracks" && <TracksView snap={snap} feed={feed} patterns={patterns} mode={mode} onTab={go} />}
 
         <footer className="foot">
-          <span>{mode === "demo" ? "Demo mode: synthetic data, simulated calls and deposits. Nothing leaves this page." : "Live: every row comes from the shared Convex student file."}</span>
+          <span>{mode === "demo" ? "Demo mode: synthetic data, simulated calls and deposits. Nothing leaves this page." : "Live: shared SQLite student file · refreshes every 1.5 seconds."}</span>
           <span>Docket · a caseworker for F-1 students</span>
         </footer>
       </div>
@@ -430,14 +429,14 @@ function ReceiptFiles({ flagId }: { flagId: Id<"flags"> }) {
         <div className="rc-file-row">
           <span className="muted">Paystub{paystubs.length > 1 ? "s" : ""}</span>
           {paystubs.map((f) => f.url && (
-            <a key={f._id} href={f.url} target="_blank" rel="noreferrer" className="rc-file">{f.filename}</a>
+            <FileLink key={f._id} url={f.url}>{f.filename}</FileLink>
           ))}
         </div>
       )}
       <div className="rc-file-row">
         <span className="muted">Letter</span>
         {letters.length
-          ? letters.map((f) => f.url && <a key={f._id} href={f.url} target="_blank" rel="noreferrer" className="rc-file">{f.filename}</a>)
+          ? letters.map((f) => f.url && <FileLink key={f._id} url={f.url}>{f.filename}</FileLink>)
           : <span className="muted">not drafted yet</span>}
       </div>
     </div>

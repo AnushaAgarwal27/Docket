@@ -1,16 +1,6 @@
-import type { FunctionReturnType } from "convex/server";
-import type { api } from "../../convex/_generated/api";
-import type { Doc, Id, TableNames } from "../../convex/_generated/dataModel";
+import type { Id, TableNames, Snapshot, Paystub, Activity } from "./model";
+export type { Snapshot, Flag, Case, Paystub, Activity, Timeline, Patterns } from "./model";
 
-// Everything the dashboard renders comes from one Snapshot plus the activity feed,
-// whether it is live from Convex or the labelled demo copy below.
-export type Snapshot = NonNullable<FunctionReturnType<typeof api.dashboard.snapshot>>;
-export type Flag = Snapshot["flags"][number];
-export type Case = Snapshot["cases"][number];
-export type Paystub = Snapshot["paystubs"][number];
-export type Activity = Doc<"activity">;
-export type Timeline = NonNullable<FunctionReturnType<typeof api.timeline.forProfile>>;
-export type Patterns = FunctionReturnType<typeof api.patterns.byEmployer>;
 export type PayrollScript = "cooperate" | "stall_once" | "refuse_once";
 
 export const usd = (cents: number) =>

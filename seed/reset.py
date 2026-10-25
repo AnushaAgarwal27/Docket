@@ -3,7 +3,7 @@
     python -m seed.reset            # wipes Nessie too when NESSIE_API_KEY is set
     python -m seed.reset --dry-run  # print what would be created, no network
 
-With CONVEX_URL set, it also runs seed:resetDemo with Priya's profile (keeping fetched sources), then
+With DOCKET_DB_PATH set, it also runs seed:resetDemo with Priya's profile (keeping fetched sources), then
 adds the simulated cohort for the employer pattern view (seed/cohort.py; skip with --no-cohort).
 Paystubs come from the Ledger reading seed/paystubs/*.pdf, not from this script.
 """
@@ -23,7 +23,7 @@ IDS_FILE = Path(".nessie_ids.json")
 def student_profile() -> dict:
     """Priya's profile plus the employer, the forms she filed per year (from filed8843Years), and her job facts."""
     p = demo_data.PROFILE
-    return {**p, "employer": demo_data.EMPLOYER,
+    return {**p, "demo": True, "employer": demo_data.EMPLOYER,
             "filings": [{"year": y, "form": "8843"} for y in p.get("filed8843Years", [])],
             # facts the Hearing's objection checks read: on-campus employee of her own school, enrolled
             "employmentType": "employee", "employerIsSchool": True, "enrolled": True}
@@ -52,13 +52,12 @@ def main() -> None:
     else:
         print("NESSIE_API_KEY not set; skipped the Nessie seed")
 
-    if os.environ.get("CONVEX_URL"):
-        from convex import ConvexClient
-        profile_id = ConvexClient(os.environ["CONVEX_URL"]).mutation("seed:resetDemo", {"profile": student_profile()})
-        print(f"Convex reset; Priya's profile id: {profile_id}")
-        if not args.no_cohort:
-            from seed.cohort import seed_cohort  # after Priya, so she stays the first profile
-            print(f"Simulated cohort: {seed_cohort()}")
+    from agents.store import mutation
+    profile_id = mutation("seed:resetDemo", {"profile": student_profile()})
+    print(f"SQLite reset; Priya's profile id: {profile_id}")
+    if not args.no_cohort:
+        from seed.cohort import seed_cohort  # after Priya, so she stays the first profile
+        print(f"Simulated cohort: {seed_cohort()}")
 
 
 if __name__ == "__main__":

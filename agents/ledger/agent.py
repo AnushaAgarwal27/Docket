@@ -2,10 +2,10 @@
 
     .venv/bin/python -m agents.ledger.agent
 
-Needs LEDGER_SEED, CONVEX_URL and ANTHROPIC_API_KEY in .env. With NESSIE_API_KEY and either
+Needs LEDGER_SEED, DOCKET_DB_PATH and ANTHROPIC_API_KEY in .env. With NESSIE_API_KEY and either
 NESSIE_ACCOUNT_ID or the .nessie_ids.json written by `python -m seed.reset`, it also syncs the bank;
 without it, it only reads paystubs.
-Uses agents/store.py and the paystubs/cases Convex functions from the anusha branch.
+Uses agents/store.py and the paystubs/cases SQLite functions from the anusha branch.
 """
 import json
 import os
@@ -30,7 +30,7 @@ PAYSTUB_DIR = Path(os.environ.get("PAYSTUB_DIR", "seed/paystubs"))
 POLL_SECONDS = float(os.environ.get("LEDGER_POLL_SECONDS", "30"))
 
 
-class ConvexLedgerStore:
+class SQLiteLedgerStore:
     """The few shared-file calls the Ledger needs, on top of agents/store.py."""
 
     def upsert_transaction(self, txn: dict) -> tuple[str, bool]:
@@ -67,7 +67,7 @@ agent = Agent(name="docket-ledger", seed=os.environ["LEDGER_SEED"], port=PORTS["
               readme_path=str(Path(__file__).with_name("AGENTVERSE.md")),
               publish_agent_details=True)
 add_mailbox_check(agent, "ledger", PORTS["LEDGER"])
-ledger_store = ConvexLedgerStore()
+ledger_store = SQLiteLedgerStore()
 nessie = Nessie() if os.environ.get("NESSIE_API_KEY") else None
 done_files: set[str] = set()
 last_profile: dict[str, str | None] = {"id": None}

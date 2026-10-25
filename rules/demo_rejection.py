@@ -38,8 +38,8 @@ def main() -> None:
     ap.add_argument("--clause", default=MADE_UP)
     args = ap.parse_args()
 
-    from convex import ConvexClient
-    convex = ConvexClient(os.environ["CONVEX_URL"])
+    from agents.store import client
+    convex = client()
     rule = next(r for r in load_rules() if r["id"] == RULE_ID)
     source = convex.query("sources:getByUrl", {"url": rule["source_url"]})
     if source is None:

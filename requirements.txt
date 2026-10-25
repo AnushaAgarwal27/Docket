@@ -1,7 +1,6 @@
 uagents==0.26.1
 uagents-core==0.4.12
 anthropic==2.3.0
-convex==0.8.1
 requests==2.34.2
 apify-client==1.12.2
 PyYAML==6.0.3

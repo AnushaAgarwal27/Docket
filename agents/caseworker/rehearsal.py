@@ -1,14 +1,6 @@
-"""Rehearsal mode: a stand-in payroll call that follows the case's rehearsal setting, with no phone.
-
-Turn on with CARTESIA_SIMULATE=1. Instead of dialing through Cartesia, it plays the voice agent's two
-webhook tools against our own Convex endpoints (convex/http.ts), so the whole path after the call
-(state machine, written request, follow-up, dashboard) runs exactly as it would on a real call.
-
-    first call:  cooperate -> promised | stall_once -> stalled | refuse_once -> refused
-    later calls: promised
-
-Needs CARTESIA_TOOL_TOKEN in .env (same value as on Convex). The webhook base is CONVEX_SITE_URL, or
-CONVEX_URL with .convex.cloud -> .convex.site (a local backend's port 3210 -> 3211).
+"""Rehearse payroll through local HTTP tools with CARTESIA_SIMULATE=1.
+Requires CARTESIA_TOOL_TOKEN and a running backend at DOCKET_API_URL.
+No real phone call is placed.
 """
 from __future__ import annotations
 
@@ -33,13 +25,7 @@ def enabled() -> bool:
 
 
 def site_url() -> str:
-    explicit = os.environ.get("CONVEX_SITE_URL")
-    if explicit:
-        return explicit.rstrip("/")
-    url = os.environ["CONVEX_URL"].rstrip("/")
-    if url.endswith(":3210"):
-        return url[:-4] + "3211"
-    return url.replace(".convex.cloud", ".convex.site")
+    return os.environ.get("DOCKET_API_URL", "http://127.0.0.1:8000").rstrip("/")
 
 
 def outcome_for(case: dict) -> str:

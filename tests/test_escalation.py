@@ -39,10 +39,7 @@ def test_rehearsal_outcomes_follow_the_setting_once():
 
 
 def test_site_url(monkeypatch):
-    monkeypatch.delenv("CONVEX_SITE_URL", raising=False)
-    monkeypatch.setenv("CONVEX_URL", "https://basic-magpie-317.convex.cloud")
-    assert rehearsal.site_url() == "https://basic-magpie-317.convex.site"
-    monkeypatch.setenv("CONVEX_URL", "http://127.0.0.1:3210")
-    assert rehearsal.site_url() == "http://127.0.0.1:3211"
-    monkeypatch.setenv("CONVEX_SITE_URL", "https://example.convex.site/")
-    assert rehearsal.site_url() == "https://example.convex.site"
+    monkeypatch.delenv("DOCKET_API_URL", raising=False)
+    assert rehearsal.site_url() == "http://127.0.0.1:8000"
+    monkeypatch.setenv("DOCKET_API_URL", "https://demo.example/")
+    assert rehearsal.site_url() == "https://demo.example"

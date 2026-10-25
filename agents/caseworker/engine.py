@@ -1,6 +1,6 @@
 """Caseworker: turn refund flags into cases with a draft request, and act on the student's approval.
 
-State changes happen in convex/cases.ts so every caller obeys the same state machine.
+State changes happen in backend/store.py so every caller obeys the same state machine.
 """
 
 from datetime import date, timedelta

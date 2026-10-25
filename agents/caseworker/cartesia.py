@@ -1,7 +1,7 @@
 """Place the payroll call through a Cartesia managed voice agent.
 
 The agent (set up once in the Cartesia dashboard, see docs/CARTESIA.md) reads the case through the
-get_case_summary webhook and records the result through log_call_outcome, both served by convex/http.ts.
+get_case_summary webhook and records the result through log_call_outcome, both served by backend/server.py.
 This module only starts the call and hands the agent the case id as a dynamic variable.
 
 Env (all four needed, else the call is skipped and logged):

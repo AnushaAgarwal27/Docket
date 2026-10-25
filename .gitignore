@@ -14,3 +14,8 @@ eval/results/
 agent1*_data.json
 sources/*.txt
 sources/*.sha256
+# Local persistent backend and private document bytes
+data/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm

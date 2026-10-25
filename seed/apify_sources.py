@@ -1,7 +1,7 @@
 """The Apify source collector: fetch every rule's official page through Apify and store it in
-the Convex `sources` table. Replaces the plain-HTTP stand-in, seed/fetch_sources.py.
+the SQLite `sources` table. Replaces the plain-HTTP stand-in, seed/fetch_sources.py.
 
-    python -m seed.apify_sources      # needs APIFY_TOKEN and CONVEX_URL
+    python -m seed.apify_sources      # needs APIFY_TOKEN and DOCKET_DB_PATH
 
 Each page's hash is compared with the stored copy. A changed page logs `source_changed`, and
 its rule's quote is checked again: if the quote no longer appears, the Tax agent's quote check
@@ -55,8 +55,8 @@ def sync(rules: list[dict], pages, convex) -> list[str]:
 
 def main() -> None:
     load_dotenv()
-    from convex import ConvexClient
-    convex = ConvexClient(os.environ["CONVEX_URL"])
+    from agents.store import client
+    convex = client()
     rules = load_rules()
     pages, missing = collect(rules)
     for line in sync(rules, pages, convex):
