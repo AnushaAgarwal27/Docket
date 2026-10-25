@@ -1,5 +1,7 @@
+# Every .env variant holds real keys. .env.example is the only one that is tracked.
 .env
-.env.local
+.env.*
+!.env.example
 __pycache__/
 *.pyc
 .venv/
@@ -14,3 +16,5 @@ eval/results/
 agent1*_data.json
 sources/*.txt
 sources/*.sha256
+.gstack/
+cartesia-paste/

@@ -18,11 +18,14 @@ from uagents import Context
 from agents import messaging
 from agents.coordinator import brain
 from agents.coordinator import hearing_view
-from agents.coordinator.cards import Card, profile_form, refund_review
+from agents.coordinator.cards import (
+    Card, contact_form, document_review, group_invite, profile_form, refund_review,
+)
 from agents.coordinator.profile_form import form_changes
 from agents.coordinator.season import next_season
 from agents.messages import (
-    CaseDecision, CasesResult, DecisionResult, OpenCases, RulesResult, RunRules, address_of,
+    CaseDecision, CasesResult, DecisionResult, OpenCases, ResearchAnswer, ResearchQuestion,
+    RulesResult, RunRules, address_of,
 )
 from agents.store import dollars, log, mutation, query
 from seed.demo_data import SCHOOL_CALENDAR
@@ -31,7 +34,13 @@ AGENT = "coordinator"
 
 HELP = (
     "I'm Docket. I check your pay and filings against official F-1 rules.\n\n"
-    "Try:\n- **check my pay**: I read your paystubs and flag problems\n- **what's wrong?**: your open issues"
+    "Try:\n"
+    "- **check my pay**: I read your paystubs and flag problems\n"
+    "- **what's wrong?**: your open issues\n"
+    "- **my forms**: what I've filled in for you, and what needs your signature\n"
+    "- **anyone else?**: other students at your employer with the same problem\n"
+    "- **call me**: how I should reach you, and my phone line\n"
+    "- ask me anything about F-1 pay, tax or status and I'll research it properly"
 )
 
 NOT_ADVICE = "This is not tax advice; confirm with your international student office."
@@ -310,7 +319,151 @@ async def answer_selection(ctx: Context, selection: dict) -> str:
         return await asyncio.to_thread(save_profile, selection)
     if action == "show_hearing":
         return await replay_hearing(selection.get("flag_id"))
+    if action in ("join_group", "decline_group"):
+        return await asyncio.to_thread(answer_group, selection.get("group_id"), action == "join_group")
+    if action in ("approve_document", "decline_document"):
+        return await asyncio.to_thread(decide_document, selection.get("document_id"),
+                                       action == "approve_document")
+    if action == "save_contact":
+        return await asyncio.to_thread(save_contact, selection)
     return f"I got your {action.replace('_', ' ')} selection, but I can't act on it yet."
+
+
+# ---------- group cases, documents and how Docket reaches her ----------
+
+def answer_group(group_id: str | None, join: bool) -> str:
+    profile = demo_profile()
+    if profile is None:
+        return "I don't have a student file yet."
+    pending = query("groups:pendingInvite", {"profileId": profile["_id"]})
+    group_id = group_id or (pending or {}).get("group", {}).get("_id")
+    if not group_id:
+        return "There's no group request waiting for your answer right now."
+    mutation("groups:respond", {"groupId": group_id, "profileId": profile["_id"], "join": join,
+                                "via": "ASI:One"})
+    if join:
+        return ("You're in. I'll add you to the combined request and keep your own case running "
+                "exactly as it is. I'll tell you what payroll says.")
+    return "No problem, I've left you out of the group. Your own case isn't affected."
+
+
+def group_status() -> list:
+    """'what about other students?': the invitation if one is waiting, else where the group stands."""
+    profile = demo_profile()
+    if profile is None:
+        return ["I don't have a student file yet."]
+    pending = query("groups:pendingInvite", {"profileId": profile["_id"]})
+    if pending:
+        group, count = pending["group"], pending["inviteeCount"]
+        log(AGENT, "group_invite_shown", f"Showed the {group['employer']} group invitation",
+            inputIds=[profile["_id"], group["_id"]])
+        return [group_invite(group["employer"], count, group["_id"],
+                             f"{count} students at {group['employer']} have the same problem you do.")]
+    mine = query("groups:forProfile", {"profileId": profile["_id"]})
+    if not mine:
+        return ["No one else on Docket has the same problem at your employer yet. If that changes, "
+                "I'll ask whether you want to join them."]
+    lines = []
+    for row in mine:
+        group, state = row["group"], row["membership"]["state"]
+        if state == "joined":
+            lines.append(f"You're in the {group['employer']} group request: {group['joinedCount']} "
+                         f"students, **{dollars(group['joinedCents'])}** between them.")
+        elif state == "declined":
+            lines.append(f"You chose not to join the {group['employer']} group. Say **join the group** "
+                         f"if you change your mind.")
+    return ["\n".join(lines) or "Nothing to report on group requests."]
+
+
+def decide_document(document_id: str | None, approved: bool) -> str:
+    profile = demo_profile()
+    if profile is None:
+        return "I don't have a student file yet."
+    if not document_id:
+        waiting = query("documents:nextAwaitingApproval", {"profileId": profile["_id"]})
+        document_id = (waiting or {}).get("_id")
+    if not document_id:
+        return "There's no document waiting for your approval."
+    document = query("documents:get", {"documentId": document_id})
+    mutation("documents:decide", {"documentId": document_id, "approved": approved, "via": "ASI:One"})
+    if not approved:
+        return (f"Okay, I won't send your {document['title']}. It stays on your file; "
+                f"say **my forms** when you want to look at it again.")
+    if document["submitTo"] == "IRS":
+        return (f"Approved. Your {document['title']} is signed off and the PDF is on your file. "
+                f"I can't file with the IRS for you, so print it, sign it and post it to the address "
+                f"in the instructions. I'll remind you if it's still unsent.")
+    return f"Approved. I'm sending your {document['title']} to {document['submitTo']}."
+
+
+def documents_reply() -> list:
+    """'my forms': what's filled in, what's waiting on her, what's done."""
+    profile = demo_profile()
+    if profile is None:
+        return ["I don't have a student file yet."]
+    documents = query("documents:forProfile", {"profileId": profile["_id"]})
+    log(AGENT, "documents_listed", f"{len(documents)} documents on file", inputIds=[profile["_id"]])
+    if not documents:
+        return ["I haven't filled in any forms for you yet. Say **check my pay** and I'll look at "
+                "what you need."]
+    waiting = next((d for d in documents if d["state"] == "awaiting_approval"), None)
+    parts: list = []
+    if waiting:
+        parts.append(document_review(
+            waiting["title"], waiting["submitTo"], waiting["fields"], waiting["_id"],
+            f"I've filled in your {waiting['title']} from your file. Every value shows where it came "
+            f"from. Nothing goes to {waiting['submitTo']} until you approve it."))
+    done = [d for d in documents if d["state"] in ("approved", "submitted")]
+    if done:
+        parts.append("Already signed off:\n" + "\n".join(
+            f"- {d['title']}" + (f" (reference {d['submissionRef']})" if d.get("submissionRef") else "")
+            for d in done))
+    if not parts:
+        parts.append("Nothing is waiting on you. I'll tell you when a form is due.")
+    return parts
+
+
+def save_contact(selection: dict) -> str:
+    profile = demo_profile()
+    if profile is None:
+        return "I don't have a student file yet."
+    phone = str(selection.get("phone") or "").strip()
+    changes: dict = {}
+    if phone:
+        cleaned = re.sub(r"[\s\-().]", "", phone)
+        if not re.fullmatch(r"\+[1-9]\d{7,14}", cleaned):
+            return (f"I didn't save that: {phone!r} isn't a full number with a country code. "
+                    "It should look like +14155550123. Say **update my contact details** to try again.")
+        changes["phone"] = cleaned
+    for key, field in (("voiceConsent", "voice_consent"), ("smsConsent", "sms_consent")):
+        if field in selection:
+            changes[key] = str(selection[field]).strip().lower() in {"1", "true", "yes", "on"}
+    preference = selection.get("group_preference")
+    if preference in ("ask", "always", "never"):
+        changes["groupPreference"] = preference
+    if not changes:
+        return "Nothing to save. Say **update my contact details** to fill in the form."
+    mutation("profiles:setContact", {"profileId": profile["_id"], **changes})
+    calling = changes.get("voiceConsent", profile.get("voiceConsent"))
+    texting = changes.get("smsConsent", profile.get("smsConsent"))
+    how = ", ".join(filter(None, ["call you" if calling else None, "text you" if texting else None]))
+    return (f"Saved. I'll {how} when something needs you." if how
+            else "Saved. I won't call or text you; I'll keep everything here in chat.")
+
+
+async def research_reply(ctx: Context, text: str) -> list:
+    """A question the file can't answer goes to the Athena research agent."""
+    profile = await asyncio.to_thread(demo_profile)
+    if profile is None:
+        return ["I don't have a student file yet."]
+    await asyncio.to_thread(log, AGENT, "research_requested", f"Question for the researcher: {text[:120]}",
+                            inputIds=[profile["_id"]])
+    reply = await ask(ctx, "RESEARCHER", ResearchQuestion(profile_id=profile["_id"], question=text,
+                                                          asked_via="chat"), ResearchAnswer)
+    if reply is None or not reply.answer:
+        return ["I couldn't research that reliably just now, and I'd rather not guess. "
+                "Please ask your international student office, and I'll keep trying."]
+    return [f"{reply.answer}\n\n{NOT_ADVICE}"]
 
 
 def save_profile(selection: dict) -> str:
@@ -338,6 +491,18 @@ async def answer(ctx: Context, text: str) -> str:
         return await replay_hearing()
     if re.search(r"\bany (update|news)s?\b|\bwhat'?s new\b|\bcase status\b|\bstatus of my (case|refund)\b", t):
         return await asyncio.to_thread(latest_news)
+    # Matched in code, not by Claude: these change consent or send a document, so a misread
+    # message must not be able to trigger them.
+    if re.search(r"\bjoin the group\b|\bjoin them\b|\bcount me in\b", t):
+        return await asyncio.to_thread(answer_group, None, True)
+    if re.search(r"\bleave the group\b|\bnot the group\b|\bdon'?t join\b", t):
+        return await asyncio.to_thread(answer_group, None, False)
+    if re.search(r"\bmy forms?\b|\bmy documents?\b|\bwhat do i (need to )?file\b", t):
+        return await asyncio.to_thread(documents_reply)
+    if re.search(r"\banyone else\b|\bother students?\b|\bgroup (case|request)\b", t):
+        return await asyncio.to_thread(group_status)
+    if re.search(r"\bcall me\b|\btext me\b|\bmy (phone|number)\b|\bcontact details\b|\bstop (calling|texting)\b", t):
+        return [await asyncio.to_thread(contact_card)]
 
     try:
         intent = (await asyncio.to_thread(brain.classify, text)).intent
@@ -357,7 +522,20 @@ async def answer(ctx: Context, text: str) -> str:
         return await asyncio.to_thread(season_reply)
     if intent == "check_pay":
         return await check_pay(ctx)
+    if intent == "contact":
+        return [await asyncio.to_thread(contact_card)]
+    if intent == "documents":
+        return await asyncio.to_thread(documents_reply)
+    if intent == "group":
+        return await asyncio.to_thread(group_status)
+    if intent == "research":
+        return await research_reply(ctx, text)
     return await explain_with_claude(ctx, text, intent)
+
+
+def contact_card() -> Card:
+    profile = demo_profile()
+    return contact_form((profile or {}).get("phone"))
 
 
 def season_reply() -> str:

@@ -47,6 +47,44 @@ export const snapshot = query({
       .withIndex("by_profile", (q) => q.eq("profileId", profileId))
       .order("desc")
       .take(50);
-    return { profile, flags: flagsWithSource, cases: casesWithCalls, paystubs, transactions };
+    // The surfaces added for the voice, research, filing and group layers. Each is bounded and
+    // comes from the same student file, so the dashboard still renders from one reactive query.
+    const notifications = await ctx.db
+      .query("notifications")
+      .withIndex("by_profile", (q) => q.eq("profileId", profileId))
+      .order("desc")
+      .take(50);
+    const documentRows = await ctx.db
+      .query("documents")
+      .withIndex("by_profile", (q) => q.eq("profileId", profileId))
+      .order("desc")
+      .take(25);
+    const documents = await Promise.all(documentRows.map(async (d) => ({
+      ...d,
+      url: d.storageId ? await ctx.storage.getUrl(d.storageId) : null,
+    })));
+    const research = await ctx.db
+      .query("research")
+      .withIndex("by_profile", (q) => q.eq("profileId", profileId))
+      .order("desc")
+      .take(25);
+    const studentCalls = await ctx.db
+      .query("calls")
+      .withIndex("by_profile", (q) => q.eq("profileId", profileId))
+      .order("desc")
+      .take(25);
+    const memberships = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_profile", (q) => q.eq("profileId", profileId))
+      .take(10);
+    const groups = [];
+    for (const membership of memberships) {
+      const group = await ctx.db.get(membership.groupId);
+      if (group !== null) groups.push({ membership, group });
+    }
+    return {
+      profile, flags: flagsWithSource, cases: casesWithCalls, paystubs, transactions,
+      notifications, documents, research, studentCalls, groups,
+    };
   },
 });

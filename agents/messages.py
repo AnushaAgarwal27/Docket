@@ -9,12 +9,22 @@ from uagents.resolver import GlobalResolver, Resolver
 
 load_dotenv()
 
-PORTS = {"COORDINATOR": 8001, "LEDGER": 8002, "TAX": 8003, "CASEWORKER": 8004, "AUDITOR": 8006}
+PORTS = {"COORDINATOR": 8001, "LEDGER": 8002, "TAX": 8003, "CASEWORKER": 8004,
+         "RESEARCHER": 8005, "AUDITOR": 8006, "ORGANIZER": 8007, "FILER": 8008}
 
 
 def address_of(name: str) -> str:
     """Agent address derived from its seed in .env, e.g. address_of("TAX")."""
-    return Identity.from_seed(os.environ[f"{name}_SEED"], 0).address
+    seed = os.environ.get(f"{name}_SEED")
+    if not seed:
+        raise KeyError(f"{name}_SEED is not set; add it to .env (see scripts/make_seeds.py)")
+    return Identity.from_seed(seed, 0).address
+
+
+def configured() -> list[str]:
+    """The agents this machine has a seed for. An agent nobody is running yet is simply absent,
+    so adding one to PORTS never breaks the agents that are running."""
+    return [name for name in PORTS if os.environ.get(f"{name}_SEED")]
 
 
 def local_endpoint(name: str) -> list[str]:
@@ -26,7 +36,7 @@ class LocalFirstResolver(Resolver):
     round-tripping through Agentverse. Every other address (ASI:One users) resolves normally."""
 
     def __init__(self):
-        self._local = {address_of(name): local_endpoint(name) for name in PORTS}
+        self._local = {address_of(name): local_endpoint(name) for name in configured()}
         self._global = GlobalResolver()
 
     async def resolve(self, destination: str) -> tuple[str | None, list[str]]:
@@ -139,3 +149,62 @@ class WatchRefund(Model):
     profile_id: str
     case_id: str
     amount_cents: int
+
+
+# ---------- Athena research, group cases and filled-in documents ----------
+
+class ResearchQuestion(Model):
+    """Coordinator -> Researcher: the student asked something the file cannot answer."""
+    profile_id: str
+    question: str
+    asked_via: str = "chat"  # voice | chat | dashboard
+
+
+class ResearchAnswer(Model):
+    """Researcher -> Coordinator: the answer, with the sources code could verify."""
+    profile_id: str
+    answer: str
+    sources_json: str = "[]"
+    confidence: str = "low"
+    engine: str = ""
+    error: str = ""
+
+
+class PatternFound(Model):
+    """Tax -> Organizer: several students at one employer have the same finding."""
+    employer: str
+    rule_id: str
+    flagged: int
+
+
+class GroupInvite(Model):
+    """Organizer -> Coordinator: ask this student whether she wants to join the group case."""
+    profile_id: str
+    group_id: str
+    employer: str
+    members: int
+    total_cents: int
+
+
+class GroupDecision(Model):
+    """Coordinator -> Organizer: her answer."""
+    profile_id: str
+    group_id: str
+    join: bool
+
+
+class FillDocument(Model):
+    """Caseworker or Coordinator -> Filer: fill this form in from the student file."""
+    profile_id: str
+    kind: str  # form_8843 | form_843 | form_8316 | refund_letter | group_request
+    flag_id: str = ""
+    group_id: str = ""
+
+
+class DocumentReady(Model):
+    """Filer -> Coordinator: the document is filled in and waiting for the student to approve it."""
+    profile_id: str
+    document_id: str
+    kind: str
+    title: str
+    submit_to: str

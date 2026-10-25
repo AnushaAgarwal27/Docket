@@ -133,6 +133,61 @@ def finding_detail(title: str, rows: list[tuple[str, str]], quote: str | None, s
     })
 
 
+def group_invite(employer: str, affected: int, group_id: str, text: str) -> Card:
+    """Join a group request, or not. Nothing about any other student appears on this card: a count
+    and an employer are the only facts it carries."""
+    return Card(text=text, kind="review", payload={
+        "title": f"Join the group request to {employer}?",
+        "summary_rows": [
+            {"label": "Employer", "value": employer},
+            {"label": "Students affected", "value": f"{affected} including you"},
+            {"label": "What joining does", "value": "Adds your name to one combined request, which is "
+                                                    "harder for payroll to put off than one student's"},
+            {"label": "What it does not do", "value": "Your own case keeps running either way. "
+                                                      "Declining costs you nothing."},
+        ],
+        "approve_cta": {"label": "Join the group", "selection": {"action": "join_group", "group_id": group_id},
+                        "primary": True},
+        "reject_cta": {"label": "No thanks", "selection": {"action": "decline_group", "group_id": group_id}},
+    })
+
+
+def document_review(title: str, submit_to: str, fields: list[dict], document_id: str, text: str) -> Card:
+    """A filled-in form, field by field, with the record each value came from. Approve sends it."""
+    rows = [{"label": f["label"], "value": str(f["value"])} for f in fields[:8]]
+    rows.append({"label": "Goes to", "value": submit_to})
+    return Card(text=text, kind="review", payload={
+        "title": title,
+        "summary_rows": rows,
+        "approve_cta": {"label": f"Approve and send to {submit_to}",
+                        "selection": {"action": "approve_document", "document_id": document_id},
+                        "primary": True},
+        "reject_cta": {"label": "Not yet",
+                       "selection": {"action": "decline_document", "document_id": document_id}},
+    })
+
+
+def contact_form(phone: str | None = None) -> Card:
+    """How Docket may reach her. Nothing is dialled or texted without the matching box ticked."""
+    return Card(text="Tell me how you want me to reach you. I'll only call or text if you say yes here, "
+                     "and you can change it any time.",
+                kind="form", payload={
+        "title": "How should Docket reach you?",
+        "fields": [
+            {"name": "phone", "kind": "text", "label": "Your phone number (+1...)", "required": True,
+             **({"value": phone} if phone else {})},
+            {"name": "voice_consent", "kind": "checkbox",
+             "label": "Call me when something needs me, and let me call Docket"},
+            {"name": "sms_consent", "kind": "checkbox", "label": "Text me updates"},
+            {"name": "group_preference", "kind": "select", "label": "If other students have the same problem",
+             "options": [{"value": "ask", "label": "Ask me each time"},
+                         {"value": "always", "label": "Always join the group"},
+                         {"value": "never", "label": "Never join a group"}]},
+        ],
+        "submit_cta": {"label": "Save", "selection": {"action": "save_contact"}},
+    })
+
+
 def refund_review(employer: str, amount_cents: int, ss_cents: int | None, medicare_cents: int | None,
                   verdict_line: str, case_id: str | None, flag_id: str | None, text: str) -> Card:
     """Approval: Approve contacts payroll; Not now does not. Nothing is called without the approve selection."""
