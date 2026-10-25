@@ -159,6 +159,19 @@
   .notecard .k { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
   .notecard .b { font-family: var(--serif); font-weight: 600; font-size: clamp(20px, 2.2vw, 27px); line-height: 1.3; margin-top: 6px; color: var(--ink); }
   .notecard .stamp { position: absolute; right: 14px; top: 10px; font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: .12em; border: 2px solid currentColor; border-radius: 4px; padding: 2px 8px; transform: rotate(-4deg); }
+  /* The Guardian's redaction: her timesheet appears, the hours get blacked out, PRIVATE is stamped over it */
+  .timesheet { position: relative; margin-top: 8px; padding: 12px 16px 14px 22px; border-radius: 6px; background: var(--card); border: 1px solid rgba(74,56,38,0.14); box-shadow: inset 6px 0 0 #17120E, 0 14px 28px -18px rgba(60,40,20,0.6); overflow: hidden; }
+  .timesheet .k { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .timesheet .row { display: flex; justify-content: space-between; gap: 12px; font-family: var(--mono); font-size: 14px; padding: 4px 0; border-bottom: 1px dashed rgba(74,56,38,0.18); }
+  .timesheet .row.total { font-weight: 700; border-bottom: 0; }
+  .timesheet .v { position: relative; }
+  .timesheet .v::after { content: ""; position: absolute; left: -6px; right: -6px; top: -2px; bottom: -2px; background: #17120E; border-radius: 2px; transform-origin: left; transform: scaleX(0); animation: redact .45s cubic-bezier(.6,0,.3,1) forwards; animation-delay: calc(.5s + var(--i) * .22s); }
+  @keyframes redact { to { transform: scaleX(1); } }
+  .timesheet .seal { position: absolute; right: 18px; top: 50%; font-family: var(--display); font-weight: 900; font-size: clamp(22px, 3vw, 34px); letter-spacing: .06em; color: #B3262E; border: 4px solid currentColor; border-radius: 6px; padding: 2px 12px; background: rgba(251,247,239,0.88); transform: translateY(-50%) rotate(-8deg) scale(2); opacity: 0; animation: sealIn .4s cubic-bezier(.3,1.4,.5,1) forwards; animation-delay: 1.9s; text-align: center; line-height: 1.05; }
+  .timesheet .seal small { display: block; font-family: var(--mono); font-weight: 700; font-size: 11px; letter-spacing: .1em; }
+  @keyframes sealIn { to { opacity: 1; transform: translateY(-50%) rotate(-8deg) scale(1); } }
+  .dialog.alarm { border-color: #B3262E; box-shadow: 0 0 0 3px rgba(179,38,46,0.25), var(--shadow); }
+  @media (prefers-reduced-motion: reduce) { .timesheet .v::after, .timesheet .seal { animation-duration: .01s; animation-delay: 0s !important; } }
   .proof-row:empty { display: none; }
   .proof-row, .notecard .proof-row { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
   .proof { font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--file); text-decoration: underline; text-underline-offset: 3px; }
@@ -180,10 +193,11 @@
   .choice span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
   .choice kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .choice.right { border-color: var(--win); background: rgba(31,143,85,0.10); }
-  .choice.wrong { border-color: var(--counsel); background: rgba(212,88,28,0.08); opacity: .7; }
+  .choice.wrong { border-color: var(--counsel); background: rgba(212,88,28,0.08); opacity: .75; box-shadow: inset 5px 0 0 var(--counsel); }
+  .choice.wrong b, .choice.wrong span { text-decoration: line-through; text-decoration-color: var(--counsel); text-decoration-thickness: 2px; }
   /* the result is spelled out too, not only colored */
   .choice.right b::after { content: " ✓ right"; color: var(--win); font-size: 14px; }
-  .choice.wrong b::after { content: " ✗ not this"; color: var(--counsel); font-size: 14px; }
+  .choice.wrong b::after { content: " ✗ no"; display: inline-block; color: var(--counsel); font-size: 14px; text-decoration: none; }
   .choice[disabled] { cursor: default; }
   .sign-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
   .sign-btn { min-height: 48px; padding: 0 22px; border-radius: 10px; border: 0; background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 16px; }
@@ -989,6 +1003,7 @@ const SHOTS = {
   duel: { pos: [0, 3.8, 11.0], look: [0, 1.9, 0] },
   call: { pos: [CX, 4.8, 14.0], look: [CX, 2.0, -1] },
   caller: { pos: [CX - 0.2, 3.4, 9.0], look: [CX - 2.4, 1.6, 0.4] },
+  guardian: { pos: [CX - 2.6, 2.9, 5.6], look: [CX - 4.4, 1.7, -0.5] },
   clerk: { pos: [CX + 0.6, 3.5, 8.6], look: [CX + 2.8, 1.9, -0.4] },
   board: { pos: [CX, 3.4, 6.4], look: [CX, 2.7, -3.1] },
   money: { pos: [MX, 4.0, 11.6], look: [MX, 2.2, -1] },
@@ -1231,7 +1246,7 @@ function waitAdvance() {
   });
 }
 // A choice: the viewer always picks. Nothing is pre-selected or picked for them (Skip round aside).
-function choose(prompt, options, speakerColor = "#3F6FE0") {
+function choose(prompt, options, speakerColor = "#3F6FE0", ruledOut = new Set()) {
   return new Promise((resolve) => {
     const right = options.findIndex((o) => o.correct);
     if (skipping()) { resolve(options[right]); return; }
@@ -1241,7 +1256,7 @@ function choose(prompt, options, speakerColor = "#3F6FE0") {
     $("line").textContent = prompt;
     $("sub").textContent = "";
     $("btn-next").disabled = true;
-    $("hint").textContent = "Pick a card (or press 1–" + options.length + ")";
+    $("hint").textContent = ruledOut.size ? "Crossed-out cards were already tried" : "Pick a card (or press 1–" + options.length + ")";
     const area = $("choice-area");
     area.innerHTML = "";
     const grid = document.createElement("div"); grid.className = "choices"; area.append(grid);
@@ -1252,6 +1267,7 @@ function choose(prompt, options, speakerColor = "#3F6FE0") {
       b.querySelector("b").textContent = o.label;
       b.querySelector("span").textContent = o.detail || "";
       b.addEventListener("click", () => pick(i));
+      if (ruledOut.has(o)) { b.classList.add("wrong"); b.disabled = true; }   // tried already: crossed out, not removed
       grid.append(b); return b;
     });
     // Placeholder for the guide avatar, pinned to the right card's top-right corner
@@ -1281,14 +1297,15 @@ function choose(prompt, options, speakerColor = "#3F6FE0") {
     };
   });
 }
-// Ask until the right card is picked (a wrong pick costs credibility).
+// Ask until the right card is picked (a wrong pick costs credibility). Every option stays on screen;
+// a wrong one comes back crossed out.
 async function present(prompt, options, onWrong) {
-  let remaining = options.slice();
+  const ruledOut = new Set();
   for (;;) {
-    const o = await choose(prompt, remaining);
+    const o = await choose(prompt, options, undefined, ruledOut);
     if (o.correct) return o;
     await onWrong(o);
-    remaining = remaining.filter((x) => x !== o);
+    ruledOut.add(o);
   }
 }
 
@@ -1346,7 +1363,7 @@ async function rule(result, reason, card, proof) {
   stamps.push(st);
   if (result === "Struck" && card) { burst(card.getWorldPosition(V(0, 0, 0)), 0xF2E8D5, 60, 1.1); drop(card); }
   else if (card) stampCard(card, result, colors[result] || "#8A7458");
-  await say("Judge", `${result}. ${reason}`, { sub: result === "Struck" ? "Quote not found word for word in the stored source" : "", proof });
+  await say("Judge", `${result}. ${reason}`, { proof });
 }
 const stamps = [];
 
@@ -1442,8 +1459,8 @@ async function roundHearing() {
   ], async () => { damage("left", 12); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "Docket never takes a quote on trust. Every quote gets checked.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
   await say("Advocate", "Your Honor, please check that quote against IRS Publication 519.", { shot: "adv", lean: true });
   counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 30); stats.struck++;
-  await rule("Struck", "That sentence doesn't appear in IRS Publication 519. It's struck from the record.", o3,
-    { href: IRS_QUOTE_LINK, label: "Here's what Publication 519 actually says", note: "opens irs.gov with the real rule highlighted" });
+  await rule("Struck", "Counsel's quote, “All student wages are subject to FICA,” isn't in IRS Publication 519. The real rule says the opposite for F-1 students. Struck from the record.", o3,
+    { href: IRS_QUOTE_LINK, label: "Read the real rule in Publication 519", note: "opens irs.gov with it highlighted" });
   await banner("Made-up rule caught", "An AI agent invented a quote. Docket's code checked it against the IRS text and threw it out.", "#D4581C");
   counsel.hurt = 0; drawFace(counsel, "idle");
   if (aborted) return;
@@ -1484,6 +1501,41 @@ function plugCord() {
   cord.castShadow = true; cord.userData.grow = 0; cord.geometry.setDrawRange(0, 0); scene.add(cord);
 }
 function stepState(id, cls) { const el = $(id); el.className = cls; }
+// Docket was about to share her hours. The Guardian stops it: the timesheet comes up, the hours are
+// blacked out and stamped PRIVATE, and none of it reaches payroll.
+async function privacyBlock() {
+  const shared = new Set(lamps.map((l) => l.material.color.getHex()));
+  shot("guardian", 3.2);
+  lamps.forEach((l) => l.material.color.set(0xD4381C));
+  guardian.lean = 1; guardian.raise = 1; drawFace(guardian, "hurt");
+  shake(0.32); burst(V(CX - 4.6, 2.6, 0.2), 0x17120E, 30, 0.7);
+  await banner("Private!", null, "#B3262E");
+  const text = "Stop. Her hours are private. They have nothing to do with this refund, and sharing them could put her visa status at risk. Docket never brings them up.";
+  focusDialog();
+  const d = $("dialog"); d.classList.add("alarm", "carding");
+  $("speaker").textContent = "Guardian"; $("speaker").style.setProperty("--dot", SPEAKERS.Guardian.color);
+  $("sub").textContent = ""; $("proof").innerHTML = "";
+  const sheet = document.createElement("div"); sheet.className = "timesheet";
+  const rows = [["Mon Oct 19 · 09:00–15:00", "6 h"], ["Tue Oct 20 · 10:00–16:00", "6 h"], ["Thu Oct 22 · 09:00–15:00", "6 h"], ["Fri Oct 23 · 11:00–17:00", "6 h"], ["Hours this week", "24 h"]];
+  const k = document.createElement("div"); k.className = "k"; k.textContent = `Timesheet · ${current.name}`; sheet.append(k);
+  rows.forEach(([a, v], i) => {
+    const r = document.createElement("div"); r.className = "row" + (i === rows.length - 1 ? " total" : "");
+    const x = document.createElement("span"); x.textContent = a;
+    const y = document.createElement("span"); y.className = "v"; y.textContent = v; y.style.setProperty("--i", i);
+    r.append(x, y); sheet.append(r);
+  });
+  const seal = document.createElement("div"); seal.className = "seal"; seal.innerHTML = "PRIVATE<small>not shared with payroll</small>"; sheet.append(seal);
+  const say1 = document.createElement("div"); say1.className = "line"; say1.style.minHeight = "0"; say1.textContent = text;
+  $("choice-area").innerHTML = ""; $("choice-area").append(say1, sheet);
+  $("btn-next").disabled = false;
+  record({ kind: "line", speaker: "Guardian", color: SPEAKERS.Guardian.color, text, sub: "Her timesheet was blacked out and stamped PRIVATE: not shared with payroll", shot: "guardian" });
+  guardian.talk = 1; await wait(1400); guardian.talk = 0;
+  await waitAdvance();
+  d.classList.remove("alarm", "carding"); $("choice-area").innerHTML = "";
+  guardian.lean = 0; guardian.raise = 0; drawFace(guardian, "idle");
+  lamps.forEach((l) => l.material.color.set(shared.size === 1 ? [...shared][0] : 0x43D18A));
+  stepBack();
+}
 async function roundCall() {
   setRounds(2); showHud(null);
   for (const old of stamps.splice(0)) drop(old);
@@ -1533,11 +1585,8 @@ async function roundCall() {
     { label: "Mention her 24-hour week", detail: "Answer the hours question" },
     { label: "Hang up", detail: "Try another day" }
   ], async (o) => {
-    if (o.label.startsWith("Mention")) {
-      guardian.lean = 1; drawFace(guardian, "hurt");
-      await say("Guardian", "Stop. Her hours have nothing to do with this refund, and mentioning them could put her visa status at risk. Docket never brings them up.", { shot: "caller" });
-      guardian.lean = 0; drawFace(guardian, "idle");
-    } else {
+    if (o.label.startsWith("Mention")) await privacyBlock();
+    else {
       await say("Guardian", "Don't give up on a claim that just won its hearing. Use the ruling.", { shot: "caller" });
     }
   });
@@ -1627,7 +1676,7 @@ async function roundMoney() {
 let running = false;
 let skipTo = 0;
 function resetWorld() {
-  for (const a of [adv, counsel, judge, caller, clerk, guardian, ledger]) { a.hurt = a.joy = a.slump = a.lean = 0; a.group.position.copy(a.home); drawFace(a, a === judge ? "code" : "idle"); }
+  for (const a of [adv, counsel, judge, caller, clerk, guardian, ledger]) { a.hurt = a.joy = a.slump = a.lean = a.raise = 0; a.group.position.copy(a.home); drawFace(a, a === judge ? "code" : "idle"); }
   for (const s of stamps) drop(s); stamps.length = 0;
   for (const f of flyers.splice(0)) f.resolve();
   scene.children.filter((o) => o.userData && o.userData.isArg).forEach(drop);
@@ -1775,7 +1824,7 @@ function animate() {
     a.body.scale.y = 1 - a._hurt * 0.14;                       // paper crumples a little when hit
     a.headPivot.rotation.x = a.talk && !reduced ? Math.sin(t * 14) * 0.07 : a._slump * 0.4;
     a.headPivot.rotation.z = a._hurt * 0.2 * Math.sin(t * 30);
-    a.arms[0].rotation.x = THREE.MathUtils.lerp(a.arms[0].rotation.x, a.talk ? Math.sin(t * 7) * 0.5 - 0.3 : 0, ease60(0.15, dt));
+    a.arms[0].rotation.x = THREE.MathUtils.lerp(a.arms[0].rotation.x, a.raise ? -1.5 : a.talk ? Math.sin(t * 7) * 0.5 - 0.3 : 0, ease60(0.15, dt));
     // blink now and then while idle
     if (a.mood === "idle" || a.mood === "code") { const bl = ((t + a.seed) % 3.6) < 0.11; for (const e of a.eyes) e.scale.y = bl ? 0.12 : 1; }
   }
