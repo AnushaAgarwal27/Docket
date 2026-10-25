@@ -72,10 +72,21 @@ def reply(text: str) -> ChatMessage:
 
 
 def to_messages(parts: list) -> list[ChatMessage]:
-    """One ChatMessage per part (text, or a card with its text). Only the last one ends the session.
-    A card that fails validation is sent as its text alone, which is what ASI:One would show anyway."""
+    """One ChatMessage per part (text, or a card with its text).
+
+    The session ends on the last message, except when that message carries a card still waiting to
+    be answered. A card says requires_card_interaction "true" and end-session says the conversation
+    is over; sent together they contradict each other, and the reasonable thing for a client to do
+    with a card it has just been told nobody can answer is not to draw it. That is what ASI:One
+    appears to do: the reply arrives as text and the approval card never shows.
+
+    So an interactive card is sent without end-session, and the session stays open for the answer,
+    which is what we wanted anyway -- the whole point of the card is the student pressing Approve.
+    A terminal card (nothing to answer) still ends the session.
+    """
     messages = []
     for i, part in enumerate(parts):
+        awaiting_answer = False
         if isinstance(part, Card):
             content = [TextContent(type="text", text=part.text)]
             problems = validate(part)
@@ -86,9 +97,10 @@ def to_messages(parts: list) -> list[ChatMessage]:
                     pass
             else:
                 content.append(MetadataContent(type="metadata", metadata=part.metadata()))
+                awaiting_answer = not part.terminal
         else:
             content = [TextContent(type="text", text=part)]
-        if i == len(parts) - 1:
+        if i == len(parts) - 1 and not awaiting_answer:
             content.append(EndSessionContent(type="end-session"))
         messages.append(ChatMessage(timestamp=datetime.now(timezone.utc), msg_id=uuid4(), content=content))
     return messages
