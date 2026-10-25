@@ -14,6 +14,7 @@ import type * as cases from "../cases.js";
 import type * as dashboard from "../dashboard.js";
 import type * as files from "../files.js";
 import type * as flags from "../flags.js";
+import type * as hearings from "../hearings.js";
 import type * as http from "../http.js";
 import type * as patterns from "../patterns.js";
 import type * as paystubs from "../paystubs.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   files: typeof files;
   flags: typeof flags;
+  hearings: typeof hearings;
   http: typeof http;
   patterns: typeof patterns;
   paystubs: typeof paystubs;

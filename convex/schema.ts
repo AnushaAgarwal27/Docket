@@ -80,7 +80,9 @@ export default defineSchema({
   }),
   // The Hearing: Tax (advocate) and Auditor argue a flag before it reaches the student; the verdict is decided in code.
   hearings: defineTable({
-    flagId: v.id("flags"),
+    profileId: v.id("profiles"),
+    ruleId: v.string(),
+    flagId: v.optional(v.id("flags")), // absent when the rule did not fire and the Auditor defeated the claim
     caseId: v.optional(v.id("cases")),
     rounds: v.array(v.object({
       round: v.number(),
@@ -93,5 +95,5 @@ export default defineSchema({
     verdict: v.union(v.literal("upheld"), v.literal("downgraded"), v.literal("needs_human"), v.literal("defeated")),
     reason: v.string(),
     createdAt: v.string(),
-  }).index("by_flag", ["flagId"]),
+  }).index("by_flag", ["flagId"]).index("by_profile", ["profileId"]),
 });

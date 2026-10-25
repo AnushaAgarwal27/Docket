@@ -4,7 +4,7 @@ import schema from "./schema";
 // Wipes demo state and re-creates the student. Synthetic data only.
 // Paystubs are not seeded here: the Ledger reads them from the PDFs in seed/paystubs/.
 // Sources are kept: they are fetched official text, not demo state.
-const DEMO_TABLES = ["files", "calls", "cases", "flags", "paystubs", "transactions", "activity", "profiles"] as const;
+const DEMO_TABLES = ["files", "hearings", "calls", "cases", "flags", "paystubs", "transactions", "activity", "profiles"] as const;
 
 export const resetDemo = mutation({
   // The profile comes from seed/demo_data.py, the single source of truth for Priya.

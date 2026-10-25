@@ -74,7 +74,7 @@ def run(profile_id: str, as_of: date | None = None, calendar: dict = SCHOOL_CALE
             "explanation": explain(rule["id"], hit),
             "quote": rule["quote"],
             "sourceId": source["_id"],
-            "status": "open",
+            "status": "contested",  # until the Hearing's verdict sets it (a re-run keeps the status it has)
             "paystubIds": paystub_ids(hit, paystubs),
             # The rule's own totals, so letters quote them instead of re-adding paystubs.
             **{k: hit[k] for k in ("ssCents", "medicareCents") if k in hit},
@@ -82,5 +82,5 @@ def run(profile_id: str, as_of: date | None = None, calendar: dict = SCHOOL_CALE
         log(AGENT, "flag_written", f"{rule['id']}: {dollars(hit['amountCents'])}" if hit["amountCents"] else rule["id"],
             sourceId=source["_id"], inputIds=[profile_id], outputIds=[flag_id])
         written.append({**rule, "flagId": flag_id, "hit": hit, "explanation": explain(rule["id"], hit),
-                        "sourceTitle": source["title"]})
+                        "sourceTitle": source["title"], "sourceId": source["_id"]})
     return written

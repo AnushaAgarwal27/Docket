@@ -129,11 +129,6 @@ def write_reply(text: str, facts: dict, excerpts: dict[str, dict]) -> Reply:
 
 # ---------- Code checks on what Claude wrote ----------
 
-def unsure(reply: Reply) -> list[Finding]:
-    """Findings with low or unknown confidence: these go to a person, never to a case."""
-    return [f for f in reply.findings if f.confidence in ("low", "unknown")]
-
-
 _MONEY = re.compile(r"\$\s?([\d,]+(?:\.\d{2})?)")
 _QUOTED = re.compile(r"[\"“]([^\"”]{20,})[\"”]")
 

@@ -41,6 +41,7 @@ class RunRules(Model):
 
 class RulesResult(Model):
     flags_json: str  # list of flags written this run
+    hearings_json: str = "[]"  # [{rule_id, flag_id, hearing_id, verdict, reason}] for each claim heard
     error: str = ""
 
 
