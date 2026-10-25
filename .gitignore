@@ -18,3 +18,5 @@ sources/*.txt
 sources/*.sha256
 .gstack/
 cartesia-paste/
+.vercel
+.env*
