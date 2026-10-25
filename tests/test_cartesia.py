@@ -24,11 +24,16 @@ class Resp:
 
 
 class FakeSession:
+    """Records every POST. place_call makes two: one to our own webhook for the case brief, then
+    the real one to Cartesia. `calls` keeps only the Cartesia one, which is what these tests are
+    about; `brief_calls` keeps the other so a test can assert on it if it needs to."""
+
     def __init__(self, resp):
-        self.resp, self.calls = resp, []
+        self.resp, self.calls, self.brief_calls = resp, [], []
 
     def post(self, url, json, headers, timeout):
-        self.calls.append({"url": url, "json": json, "headers": headers})
+        record = {"url": url, "json": json, "headers": headers}
+        (self.calls if url.endswith("/agents/calls") else self.brief_calls).append(record)
         return self.resp
 
 

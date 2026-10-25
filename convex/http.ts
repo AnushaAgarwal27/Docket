@@ -28,8 +28,23 @@ const http = httpRouter();
 const RESULTS = ["promised", "stalled", "refused", "needs_student"] as const;
 type Result = (typeof RESULTS)[number];
 
+/** What a webhook tool hands back to the voice model.
+ *
+ *  This used to be text/plain, on the assumption that Cartesia passes the raw body to the model.
+ *  It does reach us — the feed shows case_summary_read returning the full case — but the agent
+ *  still said it could not pull the details, so the body was not being used. JSON is the format a
+ *  webhook tool is normally expected to return.
+ *
+ *  The text is repeated under a few keys on purpose. Which one a tool reads is not documented
+ *  anywhere we can reach without a Cartesia login, and a demo is the wrong place to find out by
+ *  halves; if the model is instead handed the whole object, every key says the same thing, so it
+ *  reads correctly either way.
+ */
 const text = (body: string, status = 200) =>
-  new Response(body, { status, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  new Response(JSON.stringify({ result: body, output: body, text: body, message: body }), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+  });
 
 function authorized(req: Request): boolean {
   const token = env.CARTESIA_TOOL_TOKEN;
