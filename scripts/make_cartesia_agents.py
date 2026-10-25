@@ -293,10 +293,48 @@ def save_ids(key: str) -> None:
         print(f"  or paste the ids into .env yourself.{OFF}")
 
 
+def sync_prompts(key: str) -> None:
+    """Write the prompts and opening lines onto the managed agents over the API.
+
+    The dashboard's prompt box does not always keep what you paste — an edit can look saved and
+    leave the stored prompt untouched, which you only discover when the agent opens a call by
+    introducing itself as a Cartesia demo. PATCH is reliable, so this sets them directly and reads
+    each agent back to prove the text landed.
+    """
+    try:
+        have = existing(key)
+    except requests.RequestException as e:
+        print(f"{RED}could not reach Cartesia: {e}{OFF}")
+        sys.exit(1)
+
+    for _env_key, name, voice, intro, prompt, _tools in AGENTS:
+        if name not in have:
+            print(f"  {DIM}skipped {name}: not built in the dashboard yet{OFF}")
+            continue
+        agent_id = have[name]
+        body = {"llm_system_prompt": prompt, "llm_introduce": intro}
+        vid = voice_id(key, voice)
+        if vid:
+            body["tts_voice"] = vid
+        r = requests.patch(f"{API}/agents/{agent_id}", json=body, headers=headers(key), timeout=30)
+        if r.status_code >= 400:
+            print(f"  {RED}{name}: {r.status_code} {r.text[:160]}{OFF}")
+            continue
+        back = requests.get(f"{API}/agents/{agent_id}", headers=headers(key), timeout=25).json()
+        stored = back.get("llm_system_prompt") or ""
+        ok = stored.strip() == prompt.strip()
+        leftovers = "docs.cartesia.ai" in stored
+        print(f"  {GREEN if ok and not leftovers else RED}{'synced' if ok else 'MISMATCH'}{OFF}  "
+              f"{name:<26} {len(stored)} chars"
+              + (f"  {RED}Cartesia template still present{OFF}" if leftovers else ""))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ids", action="store_true",
                         help="find the agents you built in the dashboard and save their ids to .env")
+    parser.add_argument("--sync-prompts", action="store_true",
+                        help="push the prompts and opening lines onto the agents over the API")
     args = parser.parse_args()
 
     key = os.environ.get("CARTESIA_API_KEY", "")
@@ -307,6 +345,12 @@ def main() -> None:
 
     if args.ids:
         save_ids(key)
+        return
+
+    if args.sync_prompts:
+        print(f"\n{BOLD}Pushing prompts onto the agents{OFF}")
+        sync_prompts(key)
+        print(f"\n  {DIM}Refresh the dashboard to see them. Tools are still added by hand.{OFF}\n")
         return
 
     print(f"\n{BOLD}Build these two in the dashboard{OFF}")
