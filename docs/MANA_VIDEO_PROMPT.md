@@ -38,7 +38,7 @@ If a feature doesn't fit Docket Pocket's layout, tell me before changing the app
 
 ### The product in one sentence
 
-Docket is an AI caseworker for international students: it notices money and deadlines they don't know about, proves every finding with the official rule, acts only with their permission, and follows up until the problem is fixed.
+A caseworker for international and F-1 students that handles their legal and financial tasks autonomously: it finds the problem, proves it with the official rule, and fixes it with their OK.
 
 ### Our real user research (for the Microsoft and Anthropic tracks)
 
@@ -56,7 +56,7 @@ Always say "students we surveyed", never a national statistic.
 ### The story (keep every number exact)
 
 - **Priya Sharma** (synthetic), F-1 from Pune, India. Arrived **Aug 15, 2024**, so 2026 is **calendar year 3 of 5**. Works at **University Dining Services**, **$18/hour**.
-- Payroll withheld Social Security and Medicare anyway: **$55.08 a paycheck × 8 = $440.64** (**$357.12** Social Security + **$83.52** Medicare).
+- Payroll withheld Social Security and Medicare anyway: **$440.64** across 8 paychecks (**$357.12** Social Security + **$83.52** Medicare).
 - The proof, from **IRS Publication 519**: "Social security and Medicare taxes are not withheld from pay for the work unless the student is considered a resident alien."
 
 ### The 8 Fetch.ai agents
@@ -88,7 +88,7 @@ Always say "students we surveyed", never a national statistic.
 
 **0:00–0:12 · Hook**
 Visual: the Docket Pocket home screen, slow zoom on "$440.64".
-VO: "Priya is an F-1 student working in her campus dining hall. Every paycheck, $55 comes out for taxes she doesn't owe. She's lost $440.64, and she has no idea."
+VO: "International students live under tax, filing and work rules nobody explains. Docket is a caseworker that handles them for you. Meet Priya, an F-1 student who has lost $440.64 in taxes she never owed, and has no idea."
 Caption: *Priya is synthetic. Our survey is real.*
 
 **0:12–0:27 · The real problem (Microsoft, Anthropic)**
