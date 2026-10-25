@@ -1415,6 +1415,11 @@ async function roundMoney() {
    Read and written through Convex's HTTP API, so this page needs no client library.
    ============================================================ */
 const CONVEX = (document.querySelector('meta[name="convex-url"]')?.content || params.get("convex") || "").replace(/\/$/, "");
+// Set by the build that serves this page: the deployed game opens on the live case, and posts the
+// refund through its own endpoint (/api/release-refund on Vercel, /__docket/release-refund in dev).
+const metaOf = (name) => document.querySelector(`meta[name="${name}"]`)?.content;
+const DEFAULT_CASE = params.get("case") || metaOf("docket-default-case");
+const REFUND_ENDPOINT = metaOf("docket-refund-endpoint") || "/__docket/release-refund";
 const OBJECTION = {
   missing_visa_or_arrival_data: "Missing visa or arrival date",
   employer_is_contractor: "Is this contractor work?",
@@ -1637,7 +1642,7 @@ async function liveMoney(c) {
       $("choice-area").innerHTML = `<div class="sign-row"><button class="sign-btn" id="btn-ff" type="button">Post the refund to the test bank ▸▸</button></div>`;
       $("btn-ff").addEventListener("click", async () => {
         $("btn-ff").disabled = true;
-        try { const r = await fetch("/__docket/release-refund", { method: "POST" }); if (!r.ok) throw new Error(await r.text()); resolve(true); }
+        try { const r = await fetch(REFUND_ENDPOINT, { method: "POST" }); if (!r.ok) throw new Error(await r.text()); resolve(true); }
         catch (e) { $("sub").textContent = `Couldn't post it from here (${e.message}). Run: python -m seed.release_refund ${new Date().toISOString().slice(0, 10)}`; resolve(false); }
       });
       $("btn-ff").focus({ preventScroll: true });
@@ -1792,7 +1797,7 @@ if (params.get("payroll") === "agree") payrollWill = "agree";
 if (params.get("case") === "nadia") setCase("nadia");
 // The live case appears once Convex answers, and refreshes while the menu is up, so a hearing the agents
 // hold while this page is open shows up without a reload.
-loadLive().then(() => { if (params.get("case") === "live" && CASES.live) setCase("live"); });
+loadLive().then(() => { if (DEFAULT_CASE === "live" && CASES.live) setCase("live"); });
 setInterval(() => { if (!running) loadLive(); }, 5000);
 if (params.get("mode") === "play") setMode("play");
 if (params.get("slot") === "show") document.body.classList.add("show-slot");

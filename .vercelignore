@@ -1,11 +1,9 @@
-# Vercel only builds the dashboard, the waitlist and the Hearing game. Upload nothing else:
+# The Vercel site is only the Hearing game (docket-game.vercel.app). Upload nothing else:
 # no .env (keys and agent seeds), no agents, no Python, no student data.
 /*
-!/package.json
-!/package-lock.json
 !/vercel.json
 !/docket-game.html
-!/dashboard
-!/convex
-/dashboard/dist
-/dashboard/node_modules
+!/scripts
+/scripts/*
+!/scripts/build_game_site.mjs
+!/api

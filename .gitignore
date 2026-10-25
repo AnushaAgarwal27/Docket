@@ -20,3 +20,4 @@ sources/*.sha256
 cartesia-paste/
 .vercel
 .env*
+game-site/
