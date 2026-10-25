@@ -406,8 +406,9 @@
         <span>F-1 · arrived Jan 7, 2019 · calendar year 8<br>Example student from our test set</span>
         <em class="dim">Can this claim survive?</em>
       </button>
-      <button class="case-card live" id="case-live" aria-pressed="false" hidden>
-        <span class="k">Live</span><span class="pick" aria-hidden="true">Choose</span>
+      <button class="case-card live" id="case-live" aria-pressed="false" hidden
+              title="The real case from Docket's student file. Approving places a real payroll call.">
+        <span class="k">Live · real case</span><span class="pick" aria-hidden="true">Choose</span>
         <b id="live-name">Live case</b>
         <span id="live-facts"></span>
         <em id="live-claim"></em>
@@ -418,7 +419,7 @@
       <button class="mode-btn" id="mode-play" aria-pressed="false">Argue it yourself</button>
     </div>
     <button class="start-btn" id="btn-start">Open the case ▸</button>
-    <p class="fine">Prototype. The hearing is scripted from the student's case file; no real call is placed and no money moves. In Docket, this runs as Fetch.ai agents you talk to in ASI:One.</p>
+    <p class="fine" id="start-fine">Prototype. The hearing is scripted from the student's case file; no real call is placed and no money moves. In Docket, this runs as Fetch.ai agents you talk to in ASI:One.</p>
   </div>
 </section>
 
@@ -1756,7 +1757,15 @@ async function loadLive() {
   $("live-facts").innerHTML = "";
   $("live-facts").append(`${c.visa} · arrived ${c.arrival} · calendar year ${c.year} of 5`, document.createElement("br"),
     h ? `Hearing held by the agents: ${h.verdict.replace("_", " ")}` : "No hearing yet: ask Docket “check my pay”");
-  $("live-claim").textContent = file.finding ? `${c.claim} withheld` : "Waiting for the agents";
+  // Say what choosing this card will actually do, on the card itself. "Live" alone did not read as
+  // "this one rings a phone", so the real case looked like a third variant of the demo.
+  const k = file.case;
+  const state = !k ? "No case open yet"
+    : k.state === "awaiting_approval" ? "Waiting for your approval → places a real call"
+    : k.state === "contacting_employer" ? "Approved · the Caseworker is calling payroll"
+    : k.state === "awaiting_response" ? "Already called · waiting on payroll"
+    : k.state.replace(/_/g, " ");
+  $("live-claim").textContent = file.finding ? `${c.claim} withheld · ${state}` : "Waiting for the agents";
 }
 const liveVerdictLabel = { upheld: "Claim stands", downgraded: "Claim stands, with a condition", needs_human: "Needs a person", defeated: "Claim dismissed" };
 
@@ -2054,6 +2063,19 @@ function end(kind) {
 function setCase(key) {
   current = CASES[key];
   $("proto-note").textContent = current.live ? "Live · from Docket's agents and the Convex student file" : "Prototype · scripted from the case file · no real call placed";
+  // The opening screen's fine print is its own line and used to say "no real call is placed" even
+  // with the live case chosen, which is the opposite of what happens: approving the live case
+  // places a real call. Someone reading it would decide the button was broken before pressing it.
+  const fine = $("start-fine");
+  if (fine) {
+    fine.textContent = current.live
+      ? "This is the real case, read from Docket's Convex student file. The hearing below is the one "
+        + "the Tax and Auditor agents actually held. Approving places a real payroll call through "
+        + "Cartesia, and nothing is dialled until you do."
+      : "Prototype. The hearing is scripted from the student's case file; no real call is placed and "
+        + "no money moves. In Docket, this runs as Fetch.ai agents you talk to in ASI:One.";
+    fine.classList.toggle("live-fine", !!current.live);
+  }
   for (const k of ["priya", "nadia", "live"]) {
     if (!$("case-" + k) || $("case-" + k).hidden) continue;
     $("case-" + k).setAttribute("aria-pressed", key === k);
