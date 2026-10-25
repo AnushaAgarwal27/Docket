@@ -55,6 +55,8 @@ export const ACTION_LABEL: Record<string, string> = {
   approval_declined: "Priya declined",
   quote_accepted: "Quote verified",
   source_fetched: "Official source fetched",
+  source_changed: "Official source updated",
+  source_fetch_failed: "Official source could not be fetched",
   call_requested: "Call requested",
   call_placed: "Calling payroll",
   case_written_request: "Written request needed",

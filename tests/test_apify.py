@@ -73,6 +73,8 @@ def test_changed_page_logs_source_changed_and_rechecks_quote():
     lines = sync([FICA], pages, convex)
     actions = [a["action"] for n, a in convex.mutations if n == "activity:log"]
     assert actions == ["source_changed", "source_fetched"] and "QUOTE NOT FOUND" in lines[0]
+    changed = convex.mutations[1][1]["detail"]
+    assert changed.startswith(f"{FICA['source_title']} was updated.") and "on hold" in changed
 
 
 def test_unchanged_page_is_same():

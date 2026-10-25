@@ -33,10 +33,13 @@ def sync(rules: list[dict], pages, convex) -> list[str]:
         quote_ok = check_quote(rule["quote"], page.text).ok
         quote = "quote found" if quote_ok else "QUOTE NOT FOUND, flags held back"
         if before is not None and before["hash"] != page.hash:
+            # The dashboard shows this detail as a popup on the home screen, up to " (sha256".
+            outcome = ("the quoted rule text is still there" if quote_ok
+                       else "the quoted rule text is gone, so its flags are on hold until the rule is updated")
             convex.mutation("activity:log", {
                 "agent": AGENT, "action": "source_changed", "sourceId": source_id,
-                "detail": f"{rule['source_title']} changed (sha256 {before['hash'][:12]} -> {page.hash[:12]}); "
-                          f"{rule['id']} re-checked: {quote}",
+                "detail": f"{rule['source_title']} was updated. Docket re-checked {rule['id']}: {outcome} "
+                          f"(sha256 {before['hash'][:12]} -> {page.hash[:12]})",
             })
             status = "CHANGED"
         else:

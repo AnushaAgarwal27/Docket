@@ -213,6 +213,7 @@ function Dashboard({ mode, snap, feed, timeline, patterns, ...actions }: { mode:
             <p className="muted">Seed Priya with <code>python -m seed.reset</code>, then say “check my pay” in ASI:One. This page fills in as each agent writes.</p>
           </div>
         )}
+        {snap && tab === "overview" && <SourceUpdate feed={feed} onTab={go} />}
         {snap && tab === "overview" && <Overview snap={snap} stubs={stubs} feed={feed} selected={selected} onSelect={inspect} onTab={go} mode={mode} wide={wide} timeline={timeline} patterns={patterns} {...actions} />}
         {snap && tab === "paystubs" && <PaystubsView snap={snap} stubs={stubs} selected={selected} onSelect={inspect} wide={wide} />}
         {snap && tab === "cases" && <CasesView snap={snap} mode={mode} {...actions} />}
@@ -334,6 +335,32 @@ function Overview({ snap, stubs, feed, selected, onSelect, onTab, mode, wide, ti
       {timeline && <TimelinePanel timeline={timeline} name={profile.name} />}
       {stubs[selected] && <PaperTrail snap={snap} stub={stubs[selected]} index={selected} wide={wide} />}
     </>
+  );
+}
+
+// ---- Source update popup: the collector logs source_changed when an official page's text changes ----
+const SEEN_KEY = "docket.seenSourceChange";
+const readSeen = () => { try { return localStorage.getItem(SEEN_KEY); } catch { return null; } };
+
+function SourceUpdate({ feed, onTab }: { feed: Activity[] | undefined; onTab: (t: Tab) => void }) {
+  const [seen, setSeen] = useState(readSeen);
+  const latest = feed?.find((a) => a.action === "source_changed");
+  if (!latest || latest._id === seen) return null;
+  const dismiss = () => {
+    setSeen(latest._id);
+    try { localStorage.setItem(SEEN_KEY, latest._id); } catch { /* the popup just comes back on reload */ }
+  };
+  const held = latest.detail.includes("on hold");
+  return (
+    <div className={`src-toast${held ? " held" : ""}`} role="status" aria-live="polite">
+      <div className="src-toast-t"><span className="sq" />{held ? "A rule changed. Related flags are on hold." : "An official rule page was updated"}</div>
+      <p>{latest.detail.split(" (sha256")[0]}.</p>
+      <span className="src-toast-a">
+        <button type="button" className="link" onClick={() => { dismiss(); onTab("activity"); }}>See activity →</button>
+        <button type="button" className="link" onClick={dismiss}>Dismiss</button>
+      </span>
+      <span className="src-toast-when">{day(latest.at.slice(0, 10))} · {time(latest.at)}</span>
+    </div>
   );
 }
 
