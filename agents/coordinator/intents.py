@@ -16,6 +16,8 @@ from datetime import date
 from uagents import Context
 
 from agents.coordinator import brain
+from agents.coordinator.cards import Card, profile_form, refund_review
+from agents.coordinator.profile_form import form_changes
 from agents.coordinator.season import next_season
 from agents.messages import (
     CaseDecision, CasesResult, DecisionResult, OpenCases, RulesResult, RunRules, address_of,
@@ -156,12 +158,21 @@ def compose(reply: brain.Reply, flags: list[dict], extra: list[str]) -> str:
     return "\n\n".join(parts + extra + [NOT_ADVICE])
 
 
-async def explain_with_claude(ctx: Context, text: str, intent: str) -> str:
+def review_card(case: dict, data: dict) -> Card:
+    fica = next((f for f in data["flags"] if f["ruleId"] == "FICA_EXEMPT_F1"), {})
+    detail = fica.get("detail") or {}
+    employer = data["paystubs"][0]["employer"] if data["paystubs"] else "your employer"
+    return refund_review(employer, case["amountCents"], detail.get("ssCents"), detail.get("medicareCents"),
+                         "likely refundable", case["_id"], case.get("flagId"),
+                         "Here is the refund request. Approve it and I'll contact payroll; nothing happens until you do.")
+
+
+async def explain_with_claude(ctx: Context, text: str, intent: str) -> list:
     data = await gather_check(ctx) if intent == "check_pay" else await asyncio.to_thread(gather_open)
     if isinstance(data, str):
-        return data
+        return [data]
     if not data["flags"]:
-        return f"I checked your {len(data['paystubs'])} paystubs and didn't find anything wrong.\n\n{NOT_ADVICE}"
+        return [f"I checked your {len(data['paystubs'])} paystubs and didn't find anything wrong.\n\n{NOT_ADVICE}"]
     try:
         reply = await asyncio.to_thread(checked_reply, text, data)
     except Exception as e:
@@ -169,7 +180,7 @@ async def explain_with_claude(ctx: Context, text: str, intent: str) -> str:
         await asyncio.to_thread(log, AGENT, "claude_reply_failed", str(e)[:200])
         reply = None
     if reply is None:
-        return COULD_NOT_CHECK
+        return [COULD_NOT_CHECK]
     unsure = brain.unsure(reply)
     hold_refund = any(u.rule == "FICA_EXEMPT_F1" for u in unsure)
     extra = [await asyncio.to_thread(hand_off, unsure, data, hold_refund)] if unsure else []
@@ -178,8 +189,8 @@ async def explain_with_claude(ctx: Context, text: str, intent: str) -> str:
         cases = await ask(ctx, "CASEWORKER", OpenCases(profile_id=data["profile"]["_id"]), CasesResult)
         pending = json.loads(cases.awaiting_json) if cases else []
         if pending:
-            extra.append(approval_prompt(pending[0]))
-    return compose(reply, data["flags"], extra)
+            return [compose(reply, data["flags"], extra), review_card(pending[0], data)]
+    return [compose(reply, data["flags"], extra)]
 
 
 def reopen_reviewed(profile_id: str) -> None:
@@ -234,7 +245,23 @@ async def answer_selection(ctx: Context, selection: dict) -> str:
         return await respond_to_approval(ctx, True)
     if action == "decline_refund":
         return await respond_to_approval(ctx, False)
+    if action == "submit_profile":
+        return await asyncio.to_thread(save_profile, selection)
     return f"I got your {action.replace('_', ' ')} selection, but I can't act on it yet."
+
+
+def save_profile(selection: dict) -> str:
+    profile = demo_profile()
+    if profile is None:
+        return "I don't have a student file yet."
+    changes, problems = form_changes(selection, date.today())
+    if problems:
+        log(AGENT, "profile_form_rejected", "; ".join(problems), inputIds=[profile["_id"]])
+        return f"I didn't save that: {'; '.join(problems)}. Say **update my profile** to try again."
+    if not changes:
+        return "Nothing to save. Say **update my profile** to fill in the form."
+    mutation("profiles:updateFromForm", {"profileId": profile["_id"], **changes})
+    return "Saved your profile. Say **check my pay** and I'll check your paystubs with it."
 
 
 async def answer(ctx: Context, text: str) -> str:
@@ -257,6 +284,8 @@ async def answer(ctx: Context, text: str) -> str:
         return CONFIRM_APPROVAL  # only an explicit YES or NO acts
     if intent == "other":
         return HELP
+    if intent == "profile":
+        return [profile_form()]
     if intent == "next_season":
         return await asyncio.to_thread(season_reply)
     return await explain_with_claude(ctx, text, intent)

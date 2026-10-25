@@ -16,6 +16,8 @@ from uagents import Agent, Context, Protocol
 from uagents_core.contrib.protocols.chat import (
     ChatAcknowledgement,
     ChatMessage,
+    EndSessionContent,
+    MetadataContent,
     TextContent,
     chat_protocol_spec,
 )
@@ -40,7 +42,11 @@ async def on_reply(ctx: Context, sender: str, msg: ChatMessage):
     for item in msg.content:
         if isinstance(item, TextContent):
             print(f"\n<<< docket-coordinator\n{item.text}\n", flush=True)
-    got_reply.set()
+        elif isinstance(item, MetadataContent) and "card_kind" in item.metadata:
+            print(f"[{item.metadata['card_kind']} card] {item.metadata['card_payload'][:300]}\n", flush=True)
+    # A reply can be several messages; the last one ends the session.
+    if any(isinstance(item, EndSessionContent) for item in msg.content):
+        got_reply.set()
 
 
 @chat.on_message(ChatAcknowledgement)

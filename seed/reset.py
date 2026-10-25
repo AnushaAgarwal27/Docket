@@ -21,10 +21,12 @@ IDS_FILE = Path(".nessie_ids.json")
 
 
 def student_profile() -> dict:
-    """Priya's profile plus the employer and the forms she filed per year (from filed8843Years)."""
+    """Priya's profile plus the employer, the forms she filed per year (from filed8843Years), and her job facts."""
     p = demo_data.PROFILE
     return {**p, "employer": demo_data.EMPLOYER,
-            "filings": [{"year": y, "form": "8843"} for y in p.get("filed8843Years", [])]}
+            "filings": [{"year": y, "form": "8843"} for y in p.get("filed8843Years", [])],
+            # facts the Hearing's objection checks read: on-campus employee of her own school, enrolled
+            "employmentType": "employee", "employerIsSchool": True, "enrolled": True}
 
 
 def main() -> None:

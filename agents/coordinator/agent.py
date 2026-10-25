@@ -22,10 +22,12 @@ from uagents_core.contrib.protocols.chat import (
     ChatAcknowledgement,
     ChatMessage,
     EndSessionContent,
+    MetadataContent,
     TextContent,
     chat_protocol_spec,
 )
 
+from agents.coordinator.cards import Card, validate
 from agents.coordinator.intents import answer, answer_selection
 from agents.coordinator.selection import parse_selection
 from agents.agentverse import add_mailbox_check
@@ -65,6 +67,33 @@ def reply(text: str) -> ChatMessage:
     )
 
 
+def to_messages(parts: list) -> list[ChatMessage]:
+    """One ChatMessage per part (text, or a card with its text). Only the last one ends the session.
+    A card that fails validation is sent as its text alone, which is what ASI:One would show anyway."""
+    messages = []
+    for i, part in enumerate(parts):
+        if isinstance(part, Card):
+            content = [TextContent(type="text", text=part.text)]
+            problems = validate(part)
+            if problems:
+                try:
+                    log("coordinator", "card_invalid", f"{part.kind} card sent as text: {'; '.join(problems)}"[:300])
+                except Exception:  # noqa: BLE001 - the text still goes out
+                    pass
+            else:
+                content.append(MetadataContent(type="metadata", metadata=part.metadata()))
+        else:
+            content = [TextContent(type="text", text=part)]
+        if i == len(parts) - 1:
+            content.append(EndSessionContent(type="end-session"))
+        messages.append(ChatMessage(timestamp=datetime.now(timezone.utc), msg_id=uuid4(), content=content))
+    return messages
+
+
+def part_text(part) -> str:
+    return part.text if isinstance(part, Card) else part
+
+
 def session_state(ctx: Context, sender: str) -> dict:
     key = f"{sender}:{ctx.session}"
     state = sessions.setdefault(key, {"sender": sender, "session": str(ctx.session), "turns": 0})
@@ -90,27 +119,28 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
         if any(r in text for r in recent_replies[sender]) or text.startswith("[docket-coordinator]"):
             ctx.logger.info("echo ignored")
             continue
-        response = await handle(ctx, text, state)
-        recent_replies[sender].append(response)
-        await ctx.send(sender, reply(response))
+        parts = await handle(ctx, text, state)
+        for part in parts:
+            recent_replies[sender].append(part_text(part))
+        for message in await asyncio.to_thread(to_messages, parts):
+            await ctx.send(sender, message)
 
 
-async def handle(ctx: Context, text: str, state: dict) -> str:
-    """Answer one message. Never raises: a Claude or Convex failure becomes a plain fallback reply,
-    and the failure is logged to activity."""
+async def handle(ctx: Context, text: str, state: dict) -> list:
+    """Answer one message as a list of parts (text or cards). Never raises: a Claude or Convex failure
+    becomes a plain fallback reply, and the failure is logged to activity."""
     try:
         selection = parse_selection(text)
         state["last_selection"] = selection
-        if selection is not None:
-            return await answer_selection(ctx, selection)
-        return await answer(ctx, text)
+        out = await (answer_selection(ctx, selection) if selection is not None else answer(ctx, text))
+        return out if isinstance(out, list) else [out]
     except Exception as e:  # noqa: BLE001 - the student always gets a reply
         ctx.logger.exception("handling a chat message failed")
         try:
             await asyncio.to_thread(log, "coordinator", "chat_failed", f"{type(e).__name__}: {e}"[:300])
         except Exception:  # noqa: BLE001 - Convex itself may be the failure
             ctx.logger.warning("could not log chat_failed to activity")
-        return FAILED
+        return [FAILED]
 
 
 @chat.on_message(ChatAcknowledgement)

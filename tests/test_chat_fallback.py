@@ -26,17 +26,17 @@ async def _boom(*_):
 
 def test_card_json_goes_to_the_selection_handler(monkeypatch):
     out, _ = run('{"action": "approve_refund"}', monkeypatch)
-    assert out == "selected approve_refund"
+    assert out == ["selected approve_refund"]
 
 
 def test_plain_text_goes_to_answer(monkeypatch):
     out, _ = run("check my pay", monkeypatch)
-    assert out == "answered"
+    assert out == ["answered"]
 
 
 def test_failure_gives_a_fallback_reply_and_logs_it(monkeypatch):
     out, logged = run("check my pay", monkeypatch, answer=_boom)
-    assert out == coord.FAILED and "Nothing was sent" in out
+    assert out == [coord.FAILED] and "Nothing was sent" in out[0]
     assert logged[0][:2] == ("coordinator", "chat_failed") and "Convex is down" in logged[0][2]
 
 
@@ -44,4 +44,4 @@ def test_failure_while_logging_still_replies(monkeypatch):
     def broken_log(*a, **k):
         raise ConnectionError("no network")
     out, _ = run("check my pay", monkeypatch, answer=_boom, log=broken_log)
-    assert out == coord.FAILED
+    assert out == [coord.FAILED]
