@@ -7,6 +7,7 @@ NESSIE_ACCOUNT_ID or the .nessie_ids.json written by `python -m seed.reset`, it 
 without it, it only reads paystubs.
 Uses agents/store.py and the paystubs/cases Convex functions from the anusha branch.
 """
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -18,6 +19,7 @@ from agents import store
 from agents.messaging import heard, tell
 from agents.convex_files import upload_and_attach
 from agents.agentverse import add_mailbox_check
+from agents.chat import add_chat, no_student, student
 from agents.messages import PORTS, LocalFirstResolver, NewPaystub, RefundMatched, WatchRefund
 from agents.ledger.service import match_refunds, process_paystubs, sync_bank
 from seed.nessie import Nessie
@@ -84,25 +86,33 @@ def profile_id() -> str | None:
 
 @agent.on_interval(period=POLL_SECONDS)
 async def tick(ctx: Context):
-    pid = profile_id()
+    # Every call in this tick is blocking I/O, and process_paystubs is the slowest thing the agent
+    # does: one Claude transcription per PDF, tens of seconds for a full reset. Run directly, it
+    # holds the event loop the whole time, and an agent that cannot reach its own event loop cannot
+    # answer anything -- not a message from the Tax agent, and not the /connect request that creates
+    # its Agentverse mailbox, which is how this surfaced: the Ledger was the one agent whose mailbox
+    # would not connect, and it looked like a network problem rather than a blocked loop.
+    pid = await asyncio.to_thread(profile_id)
     if pid is None:
         ctx.logger.info(f"no profile named {PROFILE_NAME}; run python -m seed.reset")
         return
-    new_txns = sync_bank(ledger_store, nessie, account_id(), pid) if nessie else []
+    new_txns = await asyncio.to_thread(
+        sync_bank, ledger_store, nessie, account_id(), pid) if nessie else []
     if pid != last_profile["id"]:
         done_files.clear()  # a reset made a new student file, so read every PDF again
         last_profile["id"] = pid
-    new_stubs = process_paystubs(ledger_store, pid, PAYSTUB_DIR, done=done_files)
-    if store.query("profiles:get", {"profileId": pid}) is None:
+    new_stubs = await asyncio.to_thread(
+        process_paystubs, ledger_store, pid, PAYSTUB_DIR, done=done_files)
+    if await asyncio.to_thread(store.query, "profiles:get", {"profileId": pid}) is None:
         return  # reset while this tick ran; the next tick starts over with the new profile
     if new_stubs:
         # Tax checks them right away, before Priya asks.
         await tell(ctx, "ledger", "TAX", NewPaystub(profile_id=pid, count=len(new_stubs)),
                    f"{len(new_stubs)} new paystubs recorded", inputIds=new_stubs)
-    matches = match_refunds(ledger_store, pid, new_txns)
+    matches = await asyncio.to_thread(match_refunds, ledger_store, pid, new_txns)
     for case_id, txn_id in matches:
         # The Caseworker closes the case and tells the Coordinator, who tells Priya.
-        case = store.query("cases:get", {"caseId": case_id})
+        case = await asyncio.to_thread(store.query, "cases:get", {"caseId": case_id})
         txn = next(t for t in new_txns if t["_id"] == txn_id)
         await tell(ctx, "ledger", "CASEWORKER", RefundMatched(
             profile_id=pid, case_id=case_id, transaction_id=txn_id, amount_cents=case["amountCents"],
@@ -123,6 +133,37 @@ async def on_watch(ctx: Context, sender: str, msg: WatchRefund):
     watching = ctx.storage.get("watching") or {}
     watching[msg.case_id] = msg.amount_cents
     ctx.storage.set("watching", watching)
+
+
+# --- ASI:One ------------------------------------------------------------------
+# What this agent read out of the bank and the paystub PDFs. Numbers come from the rows it wrote.
+def answer(question: str) -> str:
+    from agents.store import dollars, query
+    p = student()
+    if p is None:
+        return no_student()
+    stubs = query("paystubs:listByProfile", {"profileId": p["_id"]})
+    txns = query("transactions:listByProfile", {"profileId": p["_id"]})
+    if not stubs and not txns:
+        return "I haven't read anything yet. No paystubs on file and no bank rows synced."
+    gross = sum(s.get("grossCents") or 0 for s in stubs)
+    fica = sum((s.get("ssCents") or 0) + (s.get("medicareCents") or 0) for s in stubs)
+    linked = sum(1 for s in stubs if s.get("depositId"))
+    employers = sorted({s.get("employer", "") for s in stubs if s.get("employer")})
+    return (
+        f"I'm Docket's Ledger. I read the bank feed and the paystub PDFs, and every number below is "
+        f"one I wrote into the student file.\n\n"
+        f"- **{len(stubs)} paystubs** from {', '.join(employers) or 'an unnamed employer'}\n"
+        f"- **{dollars(gross)}** gross across them\n"
+        f"- **{dollars(fica)}** withheld as Social Security and Medicare\n"
+        f"- **{linked} of {len(stubs)}** matched to a bank deposit of exactly their net pay\n"
+        f"- **{len(txns)} bank rows** synced from the account\n\n"
+        f"Claude transcribes what each paystub prints; the arithmetic and the matching are done in "
+        f"code. Whether that withholding is owed is the Tax agent's call, not mine."
+    )
+
+
+add_chat(agent, "ledger", answer)
 
 
 if __name__ == "__main__":

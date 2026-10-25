@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from uagents import Agent, Context
 
 from agents.agentverse import add_mailbox_check
+from agents.chat import add_chat, no_student, student
 from agents.filer import engine
 from agents.messages import PORTS, DocumentReady, FillDocument, LocalFirstResolver, address_of
 from agents.messaging import heard, tell
@@ -61,6 +62,30 @@ async def sweep(ctx: Context):
             ctx.logger.info(f"submitted {sent} approved document(s)")
     except Exception:
         ctx.logger.exception("the filer sweep failed")
+
+
+# --- ASI:One ------------------------------------------------------------------
+# Forms filled from stored records. Every field names the record it came from; none are model-written.
+def answer(question: str) -> str:
+    from agents.store import query
+    p = student()
+    docs = query("documents:forProfile", {"profileId": p["_id"]}) if p else []
+    out = ["I'm Docket's Filer. I fill the student's forms in from records already in her file - "
+           "Form 8843, the refund request, and Forms 843 and 8316 for the IRS route - and I submit "
+           "only what she has approved.\n"]
+    if not docs:
+        out.append("Nothing is filled in yet for this student.")
+    else:
+        for d in docs:
+            out.append(f"- **{d.get('kind', 'a form')}** - {d.get('state', 'draft').replace('_', ' ')}"
+                       f" ({len(d.get('fields') or [])} fields)")
+    out.append("\nEvery field shows which record it came from, so nothing on a tax form was written "
+               "by a model. A fact I don't have stops the form rather than being filled with a "
+               "plausible guess. **Docket cannot file with the IRS** and says so plainly.")
+    return "\n".join(out)
+
+
+add_chat(agent, "filer", answer)
 
 
 if __name__ == "__main__":

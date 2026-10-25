@@ -1,6 +1,55 @@
-import { query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 const FICA = "FICA_EXEMPT_F1";
+
+// A browser cannot send a uAgent message, so the game asks for a hearing by leaving a row here and
+// the Tax agent picks it up on its next pass. Without this the game replayed the hearing the agents
+// held earlier, which looks identical on screen but means nothing is running while you watch: the
+// Agentverse interaction counts stay flat and the agents are a recording, not a system.
+export const requestHearing = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").take(20);
+    const profile = profiles.find((p) => !p.simulated);
+    if (profile === undefined) return null;
+    // activity.at and hearings.createdAt are both ISO strings, and the comparison below is a
+    // string comparison, which only orders correctly because ISO-8601 sorts lexicographically.
+    const at = new Date().toISOString();
+    const id = await ctx.db.insert("activity", {
+      agent: "game",
+      action: "hearing_requested",
+      detail: "The Hearing game asked the agents to hold this hearing again, live",
+      at,
+    });
+    return { requestedAt: at, id };
+  },
+});
+
+// The Tax agent polls this. True when a hearing was asked for after the newest hearing was held,
+// so a request is answered exactly once however often the game is opened.
+export const hearingRequested = query({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").take(20);
+    const profile = profiles.find((p) => !p.simulated);
+    if (profile === undefined) return { requested: false, profileId: null };
+
+    const asks = await ctx.db
+      .query("activity")
+      .order("desc")
+      .filter((q) => q.eq(q.field("action"), "hearing_requested"))
+      .take(1);
+    if (asks.length === 0) return { requested: false, profileId: profile._id };
+
+    const hearings = await ctx.db
+      .query("hearings")
+      .withIndex("by_profile", (q) => q.eq("profileId", profile._id))
+      .order("desc")
+      .take(1);
+    const heldAt = hearings.length ? hearings[0].createdAt : "";
+    return { requested: asks[0].at > heldAt, profileId: profile._id };
+  },
+});
 
 // The live case file the Hearing game (docket-game.html) plays: the demo student, the FICA finding,
 // the hearing the agents actually held, and what the case, the payroll call and the bank say now.

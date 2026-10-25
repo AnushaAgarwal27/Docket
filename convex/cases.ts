@@ -285,3 +285,46 @@ export const recordCallStart = mutation({
     });
   },
 });
+
+// Put a case back to the moment before the student approved it, and forget the call that followed.
+//
+// Rehearsing the payroll call means doing it over and over, and a full demo_reset costs about a
+// minute because it re-reads every paystub through Claude. Nothing about the paystubs, the flags or
+// the hearing changes between takes -- only the case state and the call do -- so this rewinds just
+// those. The amount stays exactly what the rules computed, which is the point: a redo must not be a
+// chance for the total to drift.
+//
+// Demo-only, and deliberately not part of the state machine: every other transition is forward and
+// has to be, or "approved" stops meaning anything. This one is called by hand between takes.
+export const rewindForDemo = mutation({
+  args: { caseId: v.id("cases") },
+  handler: async (ctx, { caseId }) => {
+    const theCase = await ctx.db.get(caseId);
+    if (theCase === null) throw new Error("no such case");
+
+    const calls = await ctx.db
+      .query("calls")
+      .withIndex("by_case", (q) => q.eq("caseId", caseId))
+      .collect();
+    for (const call of calls) await ctx.db.delete(call._id);
+
+    await ctx.db.patch(caseId, {
+      state: "awaiting_approval",
+      nextFollowUp: new Date().toISOString().slice(0, 10),
+      outcome: undefined,
+      callRequestedAt: undefined,
+      callRequestId: undefined,
+      callError: undefined,
+      callAttempts: 0,
+      writtenRequest: undefined,
+      writtenRequestAt: undefined,
+    });
+    await ctx.db.insert("activity", {
+      agent: "caseworker",
+      action: "case_rewound",
+      detail: `Demo rewind: ${calls.length} call(s) forgotten, case back to awaiting_approval`,
+      at: new Date().toISOString(),
+    });
+    return { callsDeleted: calls.length, from: theCase.state };
+  },
+});

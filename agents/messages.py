@@ -31,12 +31,30 @@ def local_endpoint(name: str) -> list[str]:
     return [f"http://127.0.0.1:{PORTS[name]}/submit"]
 
 
+def local_routing() -> bool:
+    """Whether agents on this machine talk to each other directly. Set DOCKET_LOCAL_ROUTING=0 to
+    send every message through Agentverse instead.
+
+    Direct is the better default: it is faster and it keeps the agents working when Agentverse is
+    slow or unreachable, which during a demo matters more than anything. The cost is that
+    Agentverse cannot count what never reaches it, so every agent except the Coordinator shows
+    "0 interactions" on the My Agents page -- the agents are talking, but only the Coordinator's
+    ASI:One traffic goes through a mailbox. Turn this off when you want those counts to move,
+    for a judge looking at the page or a screenshot of it.
+    """
+    return os.environ.get("DOCKET_LOCAL_ROUTING", "1").strip().lower() not in ("0", "false", "no")
+
+
 class LocalFirstResolver(Resolver):
     """Docket's agents run on one machine, so they reach each other directly instead of
-    round-tripping through Agentverse. Every other address (ASI:One users) resolves normally."""
+    round-tripping through Agentverse. Every other address (ASI:One users) resolves normally.
+
+    With DOCKET_LOCAL_ROUTING=0 there are no local shortcuts and everything resolves globally,
+    so agent-to-agent messages travel through Agentverse mailboxes and show up in its counts."""
 
     def __init__(self):
-        self._local = {address_of(name): local_endpoint(name) for name in configured()}
+        self._local = ({address_of(name): local_endpoint(name) for name in configured()}
+                       if local_routing() else {})
         self._global = GlobalResolver()
 
     async def resolve(self, destination: str) -> tuple[str | None, list[str]]:

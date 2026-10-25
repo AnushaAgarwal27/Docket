@@ -58,7 +58,7 @@ Addresses (print them yourself with `.venv/bin/python -m scripts.print_agents --
 docket-coordinator  agent1qdcydhdy3drfp5amt48hqqspvyzu8ggv6me59v8rek7mvk8y4q6csnk3dz2
 docket-ledger       agent1qfx8zr76aza0tvrxszqgzyu6skdf3ulr3kqflve9tewj2xdvj44q52m32vd
 docket-tax          agent1qt4l5mr37zcvfhk0fqt9cs0pzlp60t5qy8vqcf3r2qlwlcu7gpkq79vevvr
-docket-auditor      agent1qvqezkjvxsf7uv0eakd0mtvntx2tts5h7ceqejqcautyhqhc2t62kh7lvsl
+docket-auditor      agent1qffq4j2pl49yzdm5yt7027a2qadw3c6jp030tzuq64xvqmqkjkcc22g22n6
 docket-caseworker   agent1qdl8d9m2ul4sr7r48r5ayakwwhdm6x40j65ax5sjww6hc2m2hqezszkma2j
 docket-researcher   agent1qtlke98gyp2ynpgn5ztpmps094kup2hwjd583u4jg4q62jt407dhj08y9nd
 docket-organizer    agent1q25kkfyjnx9kp370e5qnqagx6hy065q7z7pvqa284tnckwvltnukvpqanzf

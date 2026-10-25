@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from uagents import Agent, Context
 
 from agents.agentverse import add_mailbox_check
+from agents.chat import add_chat, no_student, student
 from agents.messages import PORTS, GroupDecision, LocalFirstResolver, PatternFound, address_of
 from agents.messaging import heard
 from agents.organizer import engine
@@ -69,6 +70,31 @@ async def sweep(ctx: Context):
             ctx.logger.info(f"prepared the combined request for {acted} group(s)")
     except Exception:
         ctx.logger.exception("the organizer sweep failed")
+
+
+# --- ASI:One ------------------------------------------------------------------
+# Group cases. Counts only ever include students who said yes; no name or amount crosses between them.
+def answer(question: str) -> str:
+    from agents.store import query
+    p = student()
+    groups = query("groups:forProfile", {"profileId": p["_id"]}) if p else []
+    out = ["I'm Docket's Organizer. When several students at one employer hit the same problem, I "
+           "ask each of them whether they want to go in together. One student is easy to put off; "
+           "four is a payroll configuration error.\n"]
+    if not groups:
+        out.append("No group has formed for this student yet.")
+    else:
+        for g in groups:
+            out.append(f"**{g.get('employer', 'an employer')} - {g.get('state', 'forming').replace('_', ' ')}**")
+            out.append(f"- {g.get('joinedCount', 0)} joined, {g.get('invitedCount', 0)} invited")
+    out.append("\n**Nobody is counted until they say yes.** An invited student's amount is not in "
+               "the total and their name is not in the letter. The invitation carries a count and "
+               "an employer, never another student's name or what they are owed. Joining never "
+               "pauses or weakens anyone's own case.")
+    return "\n".join(out)
+
+
+add_chat(agent, "organizer", answer)
 
 
 if __name__ == "__main__":

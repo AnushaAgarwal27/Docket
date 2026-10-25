@@ -1,6 +1,11 @@
 """One command to put the demo back to a clean, dialable state.
 
-    .venv/bin/python -m scripts.demo_reset
+    .venv/bin/python -m scripts.demo_reset               # ready to call
+    .venv/bin/python -m scripts.demo_reset --no-approve  # ready for her to say yes
+
+Use --no-approve when the approval is the thing you are demonstrating: the Hearing game's live
+case and ASI:One's review card each place the call themselves, and with the case already approved
+there is nothing left for them to do, so the button looks broken.
 
 Runs the whole chain in order, without needing the agents running:
 
@@ -76,6 +81,7 @@ def step(n: int, what: str) -> None:
 
 def main() -> None:
     started = time.time()
+    no_approve = "--no-approve" in sys.argv
 
     step(1, "Wiping and re-seeding")
     from seed import reset as seed_reset
@@ -119,6 +125,19 @@ def main() -> None:
         sys.exit(1)
     case = cases[0]
     print(f"   {case['_id']}  {dollars(case['amountCents'])}")
+
+    if no_approve:
+        # Leave the case where the student's "yes" is still to come. The Hearing game's live case
+        # and the review card in ASI:One both do their own approving, and neither has anything to
+        # approve if this script already did it -- which looks exactly like a broken button.
+        print(f"\n{GREEN}Ready in {time.time() - started:.0f}s.{OFF} The case is waiting for her yes.")
+        print(f"   state: {query('cases:get', {'caseId': case['_id']})['state']}")
+        print("\nApprove it from whichever surface you are showing:")
+        print("  the Hearing game   http://localhost:5173/game.html  -> the Live case -> Approve the call")
+        print("  ASI:One            say \"yes, contact payroll\" to docket-coordinator")
+        print("  the dashboard      the Approve button on the case")
+        print(f"\n{DIM}Either way the Caseworker places the real call within ~5s.{OFF}\n")
+        return
 
     step(5, "Approving it, the way the student's yes does")
     mutation("cases:approve", {"caseId": case["_id"]})
