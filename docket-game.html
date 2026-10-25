@@ -184,6 +184,8 @@
   /* Reserved spot for a guide avatar that will hover over the right card. Empty and invisible for now;
      choose() keeps it on the right card's top-right corner. Add ?slot=show to the URL to see where it sits. */
   .avatar-slot { position: absolute; width: 56px; height: 56px; pointer-events: none; z-index: 2; }
+  .dex-mini { position: fixed; z-index: 21; width: 150px; height: 150px; pointer-events: none; opacity: 0; transition: opacity .25s ease; }
+  .dex-mini.on { opacity: 1; }
   body.show-slot .avatar-slot { border: 2px dashed rgba(74,56,38,0.45); border-radius: 50%; }
   .choice {
     text-align: left; padding: 10px 14px 10px 18px; border-radius: 6px; border: 1px solid rgba(74,56,38,0.14);
@@ -1950,6 +1952,357 @@ Promise.all(["800 30px Bitter", "900 30px Bitter", "600 30px Newsreader", "500 2
   drawFace(judge, "code");
   drawCard(false);
 }).catch(() => {});
+/* ============================================================
+   Dex, Docket's caseworker fox (from Soham's handoff, case-fox.js, inlined so the page stays one file)
+   ============================================================ */
+// Dex — Docket's caseworker fox. An origami fox in a navy suit with a Docket-blue tie,
+// round glasses, and the student's case file tucked under one arm.
+// Same controls as Folder Pup, so either character drops into the same code:
+//
+//   import { createCaseFox } from "./case-fox.js";
+//   const fox = createCaseFox(THREE);
+//   scene.add(fox.object);
+//   // every frame:  fox.update(deltaSeconds);
+//   fox.setState("guide", { lookAt: someVector3 });
+//
+// States: idle, talk, think, guide, alert, approve, celebrate, run.
+// approve, celebrate and alert play once, then return to the state that was looping before.
+
+const FOX_STATES = ["idle", "talk", "think", "guide", "alert", "approve", "celebrate", "run"];
+const FOX_ONE_SHOT = { approve: 1.4, celebrate: 2.0, alert: 2.2 };
+
+const FOX_COLORS = {
+  fur: 0xE07A3C,       // fox orange
+  cream: 0xFBF3E6,     // muzzle, chest, tail tip, hands
+  tips: 0x3A2A22,      // ear tips
+  suit: 0x24344F,      // navy jacket
+  suitDark: 0x1B2840,  // lapels, trousers
+  shirt: 0xFFFFFF,
+  tie: 0x4F7CF0,       // Docket blue
+  brass: 0xB8925A,     // lapel pin, buttons
+  frames: 0x3A3026,    // glasses
+  shoes: 0x2A1E18,
+  ink: 0x15110E,
+  folder: 0x4F7CF0,
+  tongue: 0xE58A86
+};
+
+function createCaseFox(THREE, options = {}) {
+  const { scale = 1, shadows = true, colors = {} } = options;
+  const C = { ...FOX_COLORS, ...colors };
+
+  /* ---------- materials + helpers ---------- */
+  const disposables = [];
+  const track = (x) => { disposables.push(x); return x; };
+  const foldMat = (color) => track(new THREE.MeshStandardMaterial({ color, roughness: 0.86, flatShading: true, vertexColors: true, side: THREE.DoubleSide }));
+  const flatMat = (color, rough = 0.8, metal = 0) => track(new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, flatShading: true }));
+  const inkMat = flatMat(C.ink, 0.25), brassMat = flatMat(C.brass, 0.35, 0.6), shine = track(new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  function paperGeo(tris, jitter = 0.07) {
+    const pos = [], col = [];
+    tris.forEach((t, i) => { const s = 1 - jitter + (((i * 37) % 11) / 10) * jitter * 2; for (const v of t) { pos.push(...v); col.push(s, s, s); } });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+    g.computeVertexNormals(); return track(g);
+  }
+  const mirror = (tris) => tris.map((t) => t.map((v) => [-v[0], v[1], v[2]]).reverse());
+  const paper = (tris, color, parent) => { const m = new THREE.Mesh(paperGeo(tris), foldMat(color)); m.castShadow = shadows; m.receiveShadow = shadows; parent.add(m); return m; };
+  const solid = (geo, material, parent, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(track(geo), material); m.position.set(x, y, z); m.castShadow = shadows; parent.add(m); return m; };
+  const group = (parent, x = 0, y = 0, z = 0) => { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; };
+  // A folded limb: a six-sided paper tube that narrows from top to bottom
+  const limb = (len, top, bottom) => {
+    const a = [-top, 0, top * 0.6], b = [top, 0, top * 0.6], c = [0, 0, -top];
+    const fa = [-bottom, -len, bottom * 0.6], fb = [bottom, -len, bottom * 0.6], fc = [0, -len, -bottom];
+    return [[a, b, fb], [a, fb, fa], [b, c, fc], [b, fc, fb], [c, a, fa], [c, fa, fc]];
+  };
+
+  /* ---------- rig ---------- */
+  const root = new THREE.Group(); root.name = "CaseFox";
+  const rig = group(root); rig.scale.setScalar(scale);
+  const blobTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 128; const x = c.getContext("2d"); const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, "rgba(0,0,0,0.3)"); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); return track(new THREE.CanvasTexture(c)); })();
+  const blob = new THREE.Mesh(track(new THREE.PlaneGeometry(0.9 * scale, 0.9 * scale)), track(new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false })));
+  blob.rotation.x = -Math.PI / 2; blob.position.y = 0.004; root.add(blob);
+
+  // Legs in navy trousers, dark shoes
+  const hips = {};
+  for (const [k, x] of [["l", -0.1], ["r", 0.1]]) {
+    const hip = group(rig, x, 0.58, 0);
+    paper(limb(0.52, 0.075, 0.06), C.suitDark, hip);
+    solid(new THREE.BoxGeometry(0.11, 0.06, 0.2), flatMat(C.shoes, 0.5), hip, 0, -0.53, 0.04);
+    hips[k] = hip;
+  }
+
+  // Jacket: a six-sided folded body, flat face to the front
+  const jacket = solid(new THREE.CylinderGeometry(0.21, 0.25, 0.52, 6), flatMat(C.suit, 0.75), rig, 0, 0.83, 0);
+  jacket.rotation.y = Math.PI / 6;
+  const zf = (y) => 0.2165 + (y - 0.57) / 0.52 * (0.182 - 0.2165) + 0.006;   // the jacket's front face at height y
+  paper([[[-0.075, 1.07, zf(1.07)], [0.075, 1.07, zf(1.07)], [0, 0.8, zf(0.8)]]], C.shirt, rig);                  // shirt
+  paper([[[0, 1.05, zf(1.05) + 0.004], [-0.026, 0.99, zf(0.99) + 0.004], [0, 0.84, zf(0.84) + 0.004]],
+         [[0, 1.05, zf(1.05) + 0.004], [0, 0.84, zf(0.84) + 0.004], [0.026, 0.99, zf(0.99) + 0.004]]], C.tie, rig);  // tie
+  const lapel = [[[-0.075, 1.075, zf(1.07) + 0.002], [-0.15, 1.04, zf(1.04)], [-0.02, 0.84, zf(0.84) + 0.003]]];
+  paper(lapel, C.suitDark, rig); paper(mirror(lapel), C.suitDark, rig);
+  solid(new THREE.SphereGeometry(0.014, 8, 6), brassMat, rig, -0.11, 1.0, zf(1.0) + 0.006);                     // lapel pin
+  solid(new THREE.SphereGeometry(0.013, 8, 6), brassMat, rig, 0, 0.74, zf(0.74) + 0.004);                        // buttons
+  solid(new THREE.SphereGeometry(0.013, 8, 6), brassMat, rig, 0, 0.66, zf(0.66) + 0.004);
+  paper([[[-0.07, 1.09, 0.12], [0.07, 1.09, 0.12], [0, 1.15, 0.05]]], C.shirt, rig);                              // collar
+
+  // Arms: shoulder -> elbow -> hand, in suit sleeves with white cuffs
+  function arm(side) {
+    const sh = group(rig, 0.26 * side, 1.03, 0);
+    paper(limb(0.27, 0.06, 0.05), C.suit, sh);
+    const el = group(sh, 0, -0.27, 0);
+    paper(limb(0.24, 0.05, 0.045), C.suit, el);
+    solid(new THREE.CylinderGeometry(0.047, 0.047, 0.03, 6), flatMat(C.shirt, 0.8), el, 0, -0.235, 0);
+    const hand = group(el, 0, -0.25, 0);
+    paper([[[-0.04, 0, 0.02], [0.04, 0, 0.02], [0, -0.08, 0.03]], [[0.04, 0, 0.02], [0, 0, -0.03], [0, -0.08, 0.03]], [[0, 0, -0.03], [-0.04, 0, 0.02], [0, -0.08, 0.03]]], C.cream, hand);
+    sh.rotation.z = 0.08 * side;
+    return { sh, el, hand };
+  }
+  const armL = arm(-1), armR = arm(1);
+
+  // The case file, tucked under the left arm
+  const file = group(armL.el, 0.045, -0.12, 0.02);
+  solid(new THREE.BoxGeometry(0.02, 0.24, 0.32), flatMat(C.folder, 0.7), file);
+  solid(new THREE.BoxGeometry(0.012, 0.21, 0.29), flatMat(0xFBF8F1, 0.9), file, -0.012, 0.01, 0);
+  solid(new THREE.BoxGeometry(0.022, 0.05, 0.08), flatMat(0xFBF8F1, 0.9), file, 0.002, 0.13, -0.08);   // tab
+
+  // Big fluffy tail
+  // One closed, folded spindle: five-sided rings along a curve, widest in the middle, cream tip
+  const tail = group(rig, 0, 0.62, -0.2);
+  {
+    const path = [[0, 0, 0, 0.035], [0.03, 0.05, -0.12, 0.08], [0.07, 0.16, -0.25, 0.115], [0.1, 0.3, -0.32, 0.11], [0.12, 0.43, -0.32, 0.08], [0.12, 0.55, -0.27, 0]];
+    const N = 5, rings = path.map(([x, y, z, r], i) => {
+      const a = new THREE.Vector3(...path[Math.max(0, i - 1)]), b = new THREE.Vector3(...path[Math.min(path.length - 1, i + 1)]);
+      const t = b.sub(a).normalize(), u = new THREE.Vector3().crossVectors(t, new THREE.Vector3(1, 0, 0)).normalize(), v = new THREE.Vector3().crossVectors(t, u);
+      return Array.from({ length: N }, (_, k) => { const ang = (k / N) * Math.PI * 2 + i * 0.35; return [x + r * (Math.cos(ang) * u.x + Math.sin(ang) * v.x), y + r * (Math.cos(ang) * u.y + Math.sin(ang) * v.y), z + r * (Math.cos(ang) * u.z + Math.sin(ang) * v.z)]; });
+    });
+    const band = (i) => { const out = []; for (let k = 0; k < N; k++) { const a = rings[i][k], b = rings[i][(k + 1) % N], c = rings[i + 1][(k + 1) % N], d = rings[i + 1][k]; out.push([a, b, c], [a, c, d]); } return out; };
+    paper([...band(0), ...band(1), ...band(2)], C.fur, tail);
+    paper([...band(3), ...band(4)], C.cream, tail);
+  }
+
+  // Head: orange top, cream muzzle, tall ears with dark tips, round glasses
+  const neck = group(rig, 0, 1.12, 0.0);
+  const head = group(neck, 0, 0.12, 0.02);
+  head.scale.setScalar(1.22);   // a slightly big head reads friendlier at small sizes
+  const L = [-0.27, 0.13, 0.02], R = [0.27, 0.13, 0.02], HT = [0, 0.28, -0.05], HB = [0, -0.1, 0.04], S = [0, 0.02, 0.42], K = [0, 0.06, -0.16];
+  paper([[L, HT, S], [HT, R, S], [HT, L, K], [R, HT, K]], C.fur, head);
+  paper([[L, S, HB], [S, R, HB], [K, L, HB], [R, K, HB]], C.cream, head);
+  solid(new THREE.SphereGeometry(0.038, 12, 8), inkMat, head, 0, 0.025, 0.42);                                     // nose
+  const eyes = [];
+  for (const x of [-0.105, 0.105]) {
+    const e = solid(new THREE.SphereGeometry(0.033, 12, 8), inkMat, head, x, 0.165, 0.125);
+    const g = new THREE.Mesh(track(new THREE.SphereGeometry(0.009, 8, 6)), shine); g.position.set(0.011, 0.012, 0.028); e.add(g);
+    eyes.push(e);
+  }
+  const frames = flatMat(C.frames, 0.4, 0.3);
+  for (const x of [-0.105, 0.105]) { const rim = solid(new THREE.TorusGeometry(0.058, 0.009, 6, 20), frames, head, x, 0.165, 0.165); rim.rotation.y = x < 0 ? 0.25 : -0.25; }
+  const bridge = solid(new THREE.CylinderGeometry(0.007, 0.007, 0.09, 6), frames, head, 0, 0.17, 0.2); bridge.rotation.z = Math.PI / 2;
+  const earTris = [[[-0.1, 0, 0.03], [0.06, 0, 0.01], [-0.04, 0.3, -0.03]], [[0.06, 0, 0.01], [-0.02, 0, -0.08], [-0.04, 0.3, -0.03]], [[-0.02, 0, -0.08], [-0.1, 0, 0.03], [-0.04, 0.3, -0.03]]];
+  const earInner = [[[-0.07, 0.02, 0.034], [0.035, 0.02, 0.02], [-0.04, 0.2, 0.0]]];
+  const earTip = [[[-0.065, 0.2, 0.0], [-0.01, 0.2, -0.01], [-0.04, 0.3, -0.03]]];
+  const earL = group(head, -0.15, 0.22, -0.03), earR = group(head, 0.15, 0.22, -0.03);
+  for (const [ear, f] of [[earL, (t) => t], [earR, mirror]]) { paper(f(earTris), C.fur, ear); paper(f(earInner), C.cream, ear); paper(f(earTip), C.tips, ear); }
+  const jaw = group(head, 0, -0.06, 0.12);
+  paper([[[-0.09, 0, 0], [0.09, 0, 0], [0, -0.03, 0.24]], [[-0.09, 0, 0], [0, -0.03, 0.24], [0, -0.06, 0.02]], [[0.09, 0, 0], [0, -0.06, 0.02], [0, -0.03, 0.24]]], C.cream, jaw);
+  paper([[[-0.04, 0.004, 0.04], [0.04, 0.004, 0.04], [0, 0, 0.19]]], C.tongue, jaw);
+
+  // Confetti for celebrate (paper bits, parented to the fox's parent so they don't spin with it)
+  const bits = [];
+  const bitGeo = track(new THREE.PlaneGeometry(0.07, 0.045));
+  const bitMats = [C.tie, C.fur, 0x43D18A, C.brass, C.cream].map((c) => track(new THREE.MeshStandardMaterial({ color: c, side: THREE.DoubleSide, roughness: 0.9 })));
+  function burst(n = 30) {
+    const parent = root.parent || root;
+    const o = new THREE.Vector3(0, 1.3 * scale, 0); root.localToWorld(o); parent.worldToLocal(o);
+    for (let i = 0; i < n; i++) {
+      const m = new THREE.Mesh(bitGeo, bitMats[i % bitMats.length]); m.position.copy(o);
+      const a = Math.random() * Math.PI * 2, sp = (0.8 + Math.random() * 1.6) * scale;
+      bits.push({ m, v: new THREE.Vector3(Math.cos(a) * sp, (2 + Math.random() * 2) * scale, Math.sin(a) * sp), r: new THREE.Vector3(Math.random() * 9, Math.random() * 9, 0), life: 1.9, floor: parent === root ? 0 : root.position.y });
+      parent.add(m);
+    }
+  }
+
+  /* ---------- behaviour ---------- */
+  let state = "idle", loopState = "idle", age = 0, oneShotLeft = 0, time = 0;
+  let talking = false, carrying = true, lookTarget = null, move = null;
+  const seed = Math.random() * 10;
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const angleLerp = (a, b, k) => { let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI; if (d < -Math.PI) d += Math.PI * 2; return a + d * k; };
+  const tmp = new THREE.Vector3();
+  // every animated value eases toward its target, so changes blend
+  const P = {};
+  const ease = (key, target, k) => (P[key] = lerp(P[key] ?? target, target, k));
+
+  function setState(name, opts = {}) {
+    if (!FOX_STATES.includes(name)) { console.warn(`[CaseFox] unknown state "${name}"`); return api; }
+    if (opts.lookAt !== undefined) lookTarget = opts.lookAt ? opts.lookAt.clone() : null;
+    if (name === "talk") talking = true; else if (state === "talk") talking = false;
+    state = name; age = 0;
+    if (FOX_ONE_SHOT[name]) { oneShotLeft = opts.duration ?? FOX_ONE_SHOT[name]; if (name === "celebrate") burst(); }
+    else { loopState = name; oneShotLeft = opts.duration ?? 0; }
+    return api;
+  }
+
+  function update(dt) {
+    dt = Math.min(dt, 0.05); time += dt; age += dt;
+    const t = time;
+    if (oneShotLeft > 0) { oneShotLeft -= dt; if (oneShotLeft <= 0) { const back = FOX_ONE_SHOT[state] ? loopState : "idle"; state = back; age = 0; if (back === "idle") loopState = "idle"; } }
+
+    let running = state === "run";
+    if (move) {
+      tmp.copy(move.to).sub(root.position); tmp.y = 0;
+      const d = tmp.length();
+      if (d < 0.04) { root.position.x = move.to.x; root.position.z = move.to.z; const done = move.onArrive; move = null; setState(loopState === "run" ? "idle" : loopState); done && done(); }
+      else { running = true; root.position.addScaledVector(tmp.normalize(), Math.min(d, move.speed * dt)); root.rotation.y = angleLerp(root.rotation.y, Math.atan2(tmp.x, tmp.z), 1 - Math.pow(0.0005, dt)); }
+    } else if (lookTarget && (state === "guide" || state === "alert")) {
+      tmp.copy(lookTarget).sub(root.position);
+      root.rotation.y = angleLerp(root.rotation.y, Math.atan2(tmp.x, tmp.z), 1 - Math.pow(0.02, dt));
+    }
+
+    // target pose — arms in radians: sh.x < 0 swings forward/up; el.x < 0 bends the forearm up
+    let rShX = 0, rShZ = 0.08, rElX = -0.15, lShX = -0.25, lShZ = -0.12, lElX = -1.25;   // left arm holds the file
+    let earP = 0.05, earRL = 0, earRR = 0, tilt = 0, pitch = 0, lean = 0, tailAmp = 0.15, tailSpd = 2.4, tailPuff = 1, eyeY = 1, eyeS = 1;
+    let hop = 0, spin = 0, shiver = 0, legSwing = 0;
+    if (running) {
+      const s = Math.sin(t * 11);
+      legSwing = s * 0.6; rShX = -s * 0.6; rElX = -0.5; lean = 0.08; earP = -0.25; tailAmp = 0.35; tailSpd = 11;
+    } else switch (state) {
+      case "talk":
+        rShX = -0.55 + Math.sin(t * 3.2) * 0.2; rShZ = 0.25; rElX = -0.9 + Math.sin(t * 4.1) * 0.25; earP = 0.12; pitch = Math.sin(t * 6) * 0.04; break;
+      case "think":
+        rShX = -1.2; rShZ = -0.1; rElX = -1.6; tilt = 0.28; pitch = -0.06; earRL = 0.3; earRR = -0.12; eyeY = 0.75; tailAmp = 0.08; tailSpd = 1.5; break;   // paw on chin
+      case "guide":
+        rShX = -1.35; rShZ = 0.12; rElX = -0.05; earP = 0.25; tilt = 0.1; tailAmp = 0.25; tailSpd = 5; break;                                            // points the way
+      case "alert":
+        rShX = -0.7; rShZ = 0.45; rElX = -0.9; lShZ = -0.35; earP = -0.85; lean = -0.12; tailPuff = 1.2; tailAmp = 0.05; eyeS = 1.2;
+        shiver = age < 0.7 ? Math.sin(t * 70) * 0.008 : 0; break;
+      case "approve":
+        rShX = -2.5; rShZ = 0.15; rElX = -0.7; earP = 0.3; eyeY = 0.4; tailAmp = 0.45; tailSpd = 12;                                                   // fist pump
+        hop = age < 0.9 ? Math.abs(Math.sin(age * Math.PI / 0.45)) * 0.12 : 0; break;
+      case "celebrate": {
+        const j = Math.min(1, age / 0.85);
+        rShX = -2.9; rShZ = 0.35; rElX = -0.2; lShX = -2.6; lShZ = -0.35; lElX = -0.3; earP = 0.35; eyeY = 0.4; tailAmp = 0.5; tailSpd = 14;
+        hop = age < 0.85 ? Math.sin(Math.PI * j) * 0.4 : 0; spin = (1 - Math.pow(1 - j, 3)) * Math.PI * 2; break;
+      }
+      default: {  // idle: breathes, flicks an ear, now and then pushes up its glasses
+        const cyc = (t + seed) % 8;
+        if (cyc > 6.6 && cyc < 7.5) { rShX = -1.9; rShZ = -0.15; rElX = -1.4; }
+        earRL = ((t + seed) % 5.3) < 0.18 ? 0.3 : 0;
+        if (!lookTarget) tilt = Math.sin(t * 0.6 + seed) * 0.04;
+      }
+    }
+
+    const k = 1 - Math.pow(0.0008, dt);
+    armR.sh.rotation.x = ease("rShX", rShX, k); armR.sh.rotation.z = ease("rShZ", rShZ, k); armR.el.rotation.x = ease("rElX", rElX, k);
+    armL.sh.rotation.x = ease("lShX", carrying ? lShX : (running ? Math.sin(t * 11) * 0.6 : 0), k);
+    armL.sh.rotation.z = ease("lShZ", carrying ? lShZ : -0.08, k);
+    armL.el.rotation.x = ease("lElX", carrying ? lElX : -0.15, k);
+    file.visible = carrying;
+    hips.l.rotation.x = running ? legSwing : ease("hl", 0, k); hips.r.rotation.x = running ? -legSwing : ease("hr", 0, k);
+
+    const breathe = Math.sin(t * 2 + seed) * 0.01;
+    const bob = running ? Math.abs(Math.sin(t * 11)) * 0.04 : 0;
+    rig.position.set(shiver, (hop + bob) * scale, 0);
+    rig.rotation.y = spin;
+    rig.rotation.x = ease("lean", lean, k);
+    rig.scale.set(scale, scale * (1 + breathe), scale);
+
+    tail.rotation.y = Math.sin(t * ease("tailSpd", tailSpd, k)) * ease("tailAmp", tailAmp, k);
+    tail.scale.setScalar(ease("tailPuff", tailPuff, k));
+    tail.rotation.x = state === "alert" ? ease("tailX", -0.5, k) : ease("tailX", 0, k);
+
+    let yaw = 0, nod = 0;
+    if (lookTarget && !running) {
+      tmp.copy(lookTarget); root.worldToLocal(tmp); tmp.y -= 1.25 * scale;
+      yaw = clamp(Math.atan2(tmp.x, Math.max(0.05, tmp.z)), -0.7, 0.7);
+      nod = clamp(-Math.atan2(tmp.y, Math.hypot(tmp.x, tmp.z)), -0.35, 0.35);
+    }
+    neck.rotation.y = lerp(neck.rotation.y, yaw, 0.12);
+    neck.rotation.x = lerp(neck.rotation.x, nod + ease("pitch", pitch, k), 0.12);
+    head.rotation.z = ease("tilt", tilt, k);
+    earL.rotation.x = earR.rotation.x = ease("earP", earP, k);
+    earL.rotation.z = ease("earRL", earRL, k); earR.rotation.z = -ease("earRR", earRR, k);
+
+    let jawOpen = 0;
+    if (talking && !running) jawOpen = (0.5 + 0.5 * Math.sin(t * 15)) * (0.6 + 0.4 * Math.sin(t * 3.1)) * 0.36;
+    if (state === "celebrate" && age > 0.85) jawOpen = Math.max(jawOpen, Math.abs(Math.sin(age * 9)) * 0.4);
+    jaw.rotation.x = ease("jaw", jawOpen, 0.35);
+
+    const happy = state === "approve" || state === "celebrate";
+    const eY = ease("eyeY", happy ? 0.4 : eyeY, 1 - Math.pow(0.00001, dt)), eS = ease("eyeS", eyeS, k);
+    const blink = ((t + seed) % 3.9) < 0.1 && eY > 0.9;
+    for (const e of eyes) e.scale.set(eS, (blink ? 0.12 : eY) * eS, eS);
+
+    for (let i = bits.length - 1; i >= 0; i--) {
+      const b = bits[i];
+      b.v.y -= 7 * scale * dt; b.m.position.addScaledVector(b.v, dt);
+      b.m.rotation.x += b.r.x * dt; b.m.rotation.y += b.r.y * dt;
+      if (b.m.position.y < b.floor + 0.01) { b.m.position.y = b.floor + 0.01; b.v.multiplyScalar(0.25); }
+      b.life -= dt; if (b.life <= 0) { b.m.parent && b.m.parent.remove(b.m); bits.splice(i, 1); }
+    }
+  }
+
+  const api = {
+    object: root,
+    get state() { return state; },
+    setState,
+    talk(on = true) { talking = !!on; return api; },
+    lookAt(vec3) { lookTarget = vec3 ? vec3.clone() : null; return api; },
+    moveTo(vec3, { speed = 1.6, onArrive } = {}) { move = { to: vec3.clone(), speed: speed * scale, onArrive }; return api; },
+    /** The case file under its arm: true (default) or false. */
+    carryFile(on = true) { carrying = on !== false; return api; },
+    update, burst,
+    dispose() { root.parent && root.parent.remove(root); bits.forEach((b) => b.m.parent && b.m.parent.remove(b.m)); disposables.forEach((d) => d.dispose && d.dispose()); }
+  };
+  return api;
+}
+
+// A small Dex standing on the top edge of the dialog while a choice is up. One transparent renderer,
+// reused for every question. Watching: he points toward the right card. Arguing it yourself: he waits,
+// thinking, so he never gives the answer away. A right pick gets a fist pump, a wrong one a flinch.
+const dexMini = (() => {
+  const SIZE = 150;
+  const cnv = document.createElement("canvas"); cnv.className = "dex-mini"; cnv.setAttribute("aria-hidden", "true");
+  let r;
+  try { r = new THREE.WebGLRenderer({ canvas: cnv, alpha: true, antialias: true }); } catch { return null; }
+  r.setPixelRatio(Math.min(devicePixelRatio, 2)); r.setSize(SIZE, SIZE, true);
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  document.body.append(cnv);
+  const sc = new THREE.Scene();
+  sc.add(new THREE.HemisphereLight(0xFFF6E8, 0xC9B79C, 1.6));
+  const sun = new THREE.DirectionalLight(0xFFFFFF, 1.6); sun.position.set(1.5, 3, 2.5); sc.add(sun);
+  const cm = new THREE.PerspectiveCamera(30, 1, 0.1, 20); cm.position.set(0.3, 1.0, 4.0); cm.lookAt(0, 0.88, 0);
+  const dex = createCaseFox(THREE, { shadows: false, colors: { tie: 0x2B7A78, folder: 0x2B7A78 } });
+  dex.object.rotation.y = -0.35;   // three-quarter view, turned toward the cards
+  sc.add(dex.object);
+  const ck = new THREE.Clock();
+  let lingerUntil = 0;   // stays up briefly after a pick so the reaction is seen
+  (function loop() {
+    requestAnimationFrame(loop);
+    const dt = ck.getDelta();
+    const d = $("dialog");
+    const on = d.classList.contains("show") && (d.classList.contains("choosing") && $("choice-area").childElementCount > 0 || performance.now() < lingerUntil);
+    cnv.classList.toggle("on", on);
+    if (!on) return;
+    const rect = d.getBoundingClientRect();
+    cnv.style.left = `${rect.right - SIZE - 18}px`; cnv.style.top = `${rect.top - SIZE + 14}px`;
+    dex.update(dt); r.render(sc, cm);
+  })();
+  return { dex, linger: (ms) => { lingerUntil = performance.now() + ms; } };
+})();
+addEventListener("docket:choices", (e) => {
+  if (!dexMini) return;
+  const { correctIndex, buttons, mode: m } = e.detail;
+  const { dex } = dexMini;
+  if (m === "watch") {
+    // point down toward the right card: further left the further left the card sits
+    const n = buttons.length, x = n > 1 ? -2.4 + (correctIndex / (n - 1)) * 2.4 : -1.2;
+    dex.setState("guide", { lookAt: new THREE.Vector3(x, 0, 2) });
+  } else dex.setState("think", { lookAt: null });
+  buttons.forEach((b, i) => b.addEventListener("click", () => { dex.setState(i === correctIndex ? "approve" : "alert"); dexMini.linger(1500); }, { once: true }));
+});
+
 requestAnimationFrame(animate);
 window.__game = { play, setCase, setMode, stats, get running() { return running; } };
 </script>
