@@ -33,7 +33,13 @@ PROFILE = {
     "workAuth": "on-campus",
     "phoneMasked": "(***) ***-4821",
     # Not in the starter Convex schema yet: the 8843 rule needs to know what she already filed.
-    "filed8843Years": [2024, 2025],
+    #
+    # She filed for 2024 and has not filed for 2025, which is the year a form filed now covers. That
+    # is the whole point of the rule: every F-1 student owes a Form 8843 for every year, income or
+    # not, and most have never heard of it. Listing 2025 as filed left the Filer with nothing to do
+    # and "my forms" answering that it had filled nothing in -- a correct answer to a student who
+    # was, by her own file, already up to date.
+    "filed8843Years": [2024],
 }
 
 SCHOOL_CALENDAR = {
