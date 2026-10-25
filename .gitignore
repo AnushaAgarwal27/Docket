@@ -17,3 +17,4 @@ agent1*_data.json
 sources/*.txt
 sources/*.sha256
 .gstack/
+cartesia-paste/
