@@ -184,8 +184,6 @@
   /* Reserved spot for a guide avatar that will hover over the right card. Empty and invisible for now;
      choose() keeps it on the right card's top-right corner. Add ?slot=show to the URL to see where it sits. */
   .avatar-slot { position: absolute; width: 56px; height: 56px; pointer-events: none; z-index: 2; }
-  .dex-mini { position: fixed; z-index: 21; width: 150px; height: 150px; pointer-events: none; opacity: 0; transition: opacity .25s ease; }
-  .dex-mini.on { opacity: 1; }
   body.show-slot .avatar-slot { border: 2px dashed rgba(74,56,38,0.45); border-radius: 50%; }
   .choice {
     text-align: left; padding: 10px 14px 10px 18px; border-radius: 6px; border: 1px solid rgba(74,56,38,0.14);
@@ -1324,6 +1322,7 @@ async function throwCard(from, to, title, body, color, opts = {}) {
   const card = argCard(title, body, color);
   const a = from.group.position, b = to.group.position;
   from.arms[1].rotation.x = -1.4;
+  if (from === dexHost) dex.setState("guide", { lookAt: to.group.getWorldPosition(V(0, 1.6, 0)) });
   const air = V((a.x + b.x) / 2, 2.85, 2.8);   // low enough to stay clear of the top HUD
   await fly(card, V(a.x, 2.3, a.z + 0.4), air, 650, 0.6, 0.2);
   from.arms[1].rotation.x = 0;
@@ -1406,6 +1405,7 @@ async function rule(result, reason, card, proof) {
   judge.arms[1].rotation.x = 0;
   const colors = { Overruled: "#8A7458", Sustained: "#B7791F", Struck: "#8A4F7D", Admitted: "#1F8F55", Dismissed: "#8A4F7D" };
   const color = colors[result] || "#8A7458";
+  if (dexHost === adv && result !== "Sustained") dex.setState("approve");
   for (const old of stamps.splice(0)) drop(old);   // only one verdict stamp on screen at a time
   if (card && result !== "Struck") { await stampDown(card, result, color); }
   else {
@@ -1594,6 +1594,7 @@ async function roundCall() {
   for (const old of stamps.splice(0)) drop(old);
   shot("call", 1.4);
   await roundCard("Round 2", "The call", "With the ruling in hand, Docket calls payroll. It says it's an AI. It never mentions her hours.");
+  await dexArrive(caller);
   showHud("call");
   ["cs1", "cs2", "cs3", "cs4"].forEach((id) => stepState(id, ""));
   await say("Docket", "The court said: ask payroll first. May I call University Dining Services payroll for you?", { shot: "caller", lean: true });
@@ -1676,6 +1677,7 @@ async function roundMoney() {
   setRounds(3); showHud(null);
   shot("money", 1.4);
   await roundCard("Round 3", "The money", "Docket doesn't stop at a promise. It watches the bank until the exact amount lands.");
+  await dexArrive(moneySpot);
   showHud("money");
   drawCard(false);
   $("money").innerHTML = "$0.00<small>recovered of $440.64</small>"; $("money").className = "money";
@@ -1729,6 +1731,7 @@ async function roundMoney() {
 let running = false;
 let skipTo = 0;
 function resetWorld() {
+  dexReset();
   for (const a of [adv, counsel, judge, caller, clerk, guardian, ledger]) { a.hurt = a.joy = a.slump = a.lean = a.raise = 0; a.group.position.copy(a.home); drawFace(a, a === judge ? "code" : "idle"); }
   for (const s of stamps) drop(s); stamps.length = 0;
   for (const f of flyers.splice(0)) f.resolve();
@@ -2258,50 +2261,82 @@ function createCaseFox(THREE, options = {}) {
   return api;
 }
 
-// A small Dex standing on the top edge of the dialog while a choice is up. One transparent renderer,
-// reused for every question. Watching: he points toward the right card. Arguing it yourself: he waits,
-// thinking, so he never gives the answer away. A right pick gets a fist pump, a wrong one a flinch.
-const dexMini = (() => {
-  const SIZE = 150;
-  const cnv = document.createElement("canvas"); cnv.className = "dex-mini"; cnv.setAttribute("aria-hidden", "true");
-  let r;
-  try { r = new THREE.WebGLRenderer({ canvas: cnv, alpha: true, antialias: true }); } catch { return null; }
-  r.setPixelRatio(Math.min(devicePixelRatio, 2)); r.setSize(SIZE, SIZE, true);
-  r.outputColorSpace = THREE.SRGBColorSpace;
-  document.body.append(cnv);
-  const sc = new THREE.Scene();
-  sc.add(new THREE.HemisphereLight(0xFFF6E8, 0xC9B79C, 1.6));
-  const sun = new THREE.DirectionalLight(0xFFFFFF, 1.6); sun.position.set(1.5, 3, 2.5); sc.add(sun);
-  const cm = new THREE.PerspectiveCamera(30, 1, 0.1, 20); cm.position.set(0.3, 1.0, 4.0); cm.lookAt(0, 0.88, 0);
-  const dex = createCaseFox(THREE, { shadows: false, colors: { tie: 0x2B7A78, folder: 0x2B7A78 } });
-  dex.object.rotation.y = -0.35;   // three-quarter view, turned toward the cards
-  sc.add(dex.object);
+// Dex walks the whole case (Soham's handoff, section 7). He stands in for the Advocate in the hearing and the
+// Docket caller on the phone, then waits by the bank. Their figures are hidden and Dex follows their spots,
+// so the script keeps driving the same agents; their talk / hurt / joy / slump flags become Dex's moods.
+const DEX_SCALE = 1.15;
+const dex = createCaseFox(THREE, { scale: DEX_SCALE, colors: { tie: 0x2B7A78, folder: 0x2B7A78 } });
+scene.add(dex.object);
+adv.body.visible = false; caller.body.visible = false;
+const moneySpot = { group: new THREE.Group(), talk: 0, hurt: 0, joy: 0, slump: 0 };
+moneySpot.group.position.set(MX + 2.4, 0, 1.6); moneySpot.group.rotation.y = -0.45; scene.add(moneySpot.group);
+let dexHost = adv;            // whose spot Dex is standing on
+let dexWalk = null;           // { to, resolve } while walking in, then a hop up onto a pedestal
+const dexEdges = {};          // last seen flags, so only a change sets a mood
+function dexReset() {
+  dexHost = adv; dexWalk = null;
+  dex.object.position.copy(adv.group.position); dex.object.rotation.y = adv.group.rotation.y;
+  dex.setState("idle", { lookAt: null }); dex.talk(false); dex.carryFile(true);
+  for (const k in dexEdges) delete dexEdges[k];
+}
+// Walks in from the left of the next spot while the round opens, then hops up if the spot is raised.
+function dexArrive(host) {
+  dexHost = host;
+  const to = host.group.position.clone();
+  dex.object.position.set(to.x - 7, 0, to.z + 1.2);
+  dex.setState("run");
+  return new Promise((resolve) => {
+    dexWalk = { to, resolve, phase: "walk" };
+    if (skipping()) { dexWalk = null; dex.object.position.copy(to); dex.setState("idle"); resolve(); return; }
+    dex.moveTo(new THREE.Vector3(to.x, 0, to.z + 0.02), { speed: 3.2 * SPEED, onArrive: () => {
+      if (to.y > 0.05) { dexWalk.phase = "hop"; dexWalk.t = 0; } else { dexWalk = null; dex.setState("idle"); resolve(); }
+    } });
+  });
+}
+addEventListener("docket:choices", (e) => {
+  const { correctIndex, buttons } = e.detail;
+  if (dexHost !== adv) return;
+  dex.setState("think", { lookAt: null });
+  buttons.forEach((b, i) => b.addEventListener("click", () => dex.setState(i === correctIndex ? "approve" : "alert"), { once: true }));
+});
+{
   const ck = new THREE.Clock();
-  let lingerUntil = 0;   // stays up briefly after a pick so the reaction is seen
+  const others = () => [counsel, judge, clerk, guardian, ledger];
+  const head = new THREE.Vector3();
   (function loop() {
     requestAnimationFrame(loop);
     const dt = ck.getDelta();
-    const d = $("dialog");
-    const on = d.classList.contains("show") && (d.classList.contains("choosing") && $("choice-area").childElementCount > 0 || performance.now() < lingerUntil);
-    cnv.classList.toggle("on", on);
-    if (!on) return;
-    const rect = d.getBoundingClientRect();
-    cnv.style.left = `${rect.right - SIZE - 18}px`; cnv.style.top = `${rect.top - SIZE + 14}px`;
-    dex.update(dt); r.render(sc, cm);
+    const h = dexHost, o = dex.object;
+    if (dexWalk && dexWalk.phase === "hop") {
+      dexWalk.t += dt * 2.6 * SPEED;
+      const p = Math.min(1, dexWalk.t);
+      o.position.y = dexWalk.to.y * p + Math.sin(Math.PI * p) * 0.45;
+      if (p >= 1) { const r = dexWalk.resolve; dexWalk = null; dex.setState("idle"); r(); }
+    } else if (!dexWalk) {
+      o.position.copy(h.group.position);
+      const st = dex.state;
+      if (st !== "guide" && st !== "alert" && st !== "run") o.rotation.y += (h.group.rotation.y - o.rotation.y) * Math.min(1, dt * 6);
+    }
+    if (!dexWalk) {
+      // the script's flags on the agent Dex stands in for
+      const rise = (k) => { const v = !!h[k]; const was = dexEdges[k]; dexEdges[k] = v; return v && !was; };
+      const fall = (k) => !h[k] && dexEdges[k];
+      if (fall("talk")) { dex.talk(false); if (dex.state === "talk") dex.setState("idle"); }
+      if (rise("talk")) { dex.setState("talk"); }
+      if (rise("hurt")) dex.setState("alert");
+      const paid = h === moneySpot && !!ledger.joy;   // the teller cheers when the money lands
+      if (rise("joy") || (paid && !dexEdges.paid)) dex.setState("celebrate");
+      dexEdges.paid = paid;
+      if (rise("slump")) dex.setState("think");
+      fall("hurt"); fall("joy"); fall("slump");
+      // look at whoever else is talking nearby
+      const talker = others().find((a) => a.talk && Math.abs(a.group.position.x - o.position.x) < 30);
+      if (talker && dex.state !== "guide") { talker.group.getWorldPosition(head); head.y += 2; dex.lookAt(head); }
+      else if (!talker && dex.state === "idle") dex.lookAt(null);
+    }
+    dex.update(dt);
   })();
-  return { dex, linger: (ms) => { lingerUntil = performance.now() + ms; } };
-})();
-addEventListener("docket:choices", (e) => {
-  if (!dexMini) return;
-  const { correctIndex, buttons, mode: m } = e.detail;
-  const { dex } = dexMini;
-  if (m === "watch") {
-    // point down toward the right card: further left the further left the card sits
-    const n = buttons.length, x = n > 1 ? -2.4 + (correctIndex / (n - 1)) * 2.4 : -1.2;
-    dex.setState("guide", { lookAt: new THREE.Vector3(x, 0, 2) });
-  } else dex.setState("think", { lookAt: null });
-  buttons.forEach((b, i) => b.addEventListener("click", () => { dex.setState(i === correctIndex ? "approve" : "alert"); dexMini.linger(1500); }, { once: true }));
-});
+}
 
 requestAnimationFrame(animate);
 window.__game = { play, setCase, setMode, stats, get running() { return running; } };
