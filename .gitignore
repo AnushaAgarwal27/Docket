@@ -18,3 +18,7 @@ sources/*.txt
 sources/*.sha256
 .gstack/
 cartesia-paste/
+.vercel
+.env*
+game-site/
+video-assets/

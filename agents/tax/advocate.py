@@ -82,7 +82,7 @@ def rebut(obj: dict, claim: dict, profile: dict) -> dict:
                                     "the exemption applies.")
     if oid == "employer_is_contractor":
         if f["employment_type"] == "employee":
-            return answer("rebutted", f"{profile['name']} is on {f['employer']}'s payroll as an employee, not a "
+            return answer("rebutted", f"{profile['name']} is on the {f['employer']} payroll as an employee, not a "
                                       f"contractor, and the paystubs show taxes withheld by the employer.")
         if f["employment_type"] == "contractor":
             return answer("unresolved", "The student file says contractor, but the paystubs show payroll "

@@ -17,6 +17,7 @@ import type * as dashboard from "../dashboard.js";
 import type * as documents from "../documents.js";
 import type * as files from "../files.js";
 import type * as flags from "../flags.js";
+import type * as game from "../game.js";
 import type * as groups from "../groups.js";
 import type * as hearings from "../hearings.js";
 import type * as http from "../http.js";
@@ -30,6 +31,7 @@ import type * as sources from "../sources.js";
 import type * as timeline from "../timeline.js";
 import type * as transactions from "../transactions.js";
 import type * as voice from "../voice.js";
+import type * as waitlist from "../waitlist.js";
 
 import type {
   ApiFromModules,
@@ -47,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   documents: typeof documents;
   files: typeof files;
   flags: typeof flags;
+  game: typeof game;
   groups: typeof groups;
   hearings: typeof hearings;
   http: typeof http;
@@ -60,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   timeline: typeof timeline;
   transactions: typeof transactions;
   voice: typeof voice;
+  waitlist: typeof waitlist;
 }>;
 
 /**

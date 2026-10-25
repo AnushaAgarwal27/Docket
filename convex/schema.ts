@@ -202,6 +202,14 @@ export default defineSchema({
     flagId: v.optional(v.id("flags")),
     createdAt: v.string(),
   }).index("by_flag", ["flagId"]).index("by_paystub", ["paystubId"]),
+  // Waitlist sign-ups from the public page (dashboard/waitlist.html). Not demo data: a reset keeps them.
+  waitlist: defineTable({
+    name: v.string(),
+    email: v.string(), // lowercased; one row per email
+    school: v.optional(v.string()),
+    visa: v.optional(v.union(v.literal("F-1"), v.literal("J-1"), v.literal("Neither"))),
+    createdAt: v.string(),
+  }).index("by_email", ["email"]),
   activity: defineTable({
     agent: v.string(), action: v.string(), detail: v.string(),
     sourceId: v.optional(v.id("sources")), at: v.string(),

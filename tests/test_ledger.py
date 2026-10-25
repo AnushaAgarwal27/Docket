@@ -160,6 +160,16 @@ def test_transcript_round_trips_to_demo_paystub():
     assert row == {"profileId": "p1", **stub} and rate == 1800 and federal == 0
 
 
+def test_hourly_rate_with_its_unit_still_reads():
+    stub = d.paystubs()[0]
+    for printed in ("$18.00 per hour", "$18.00/hr", "$18.00 / hour"):
+        _, rate, _ = transcript_to_paystub(transcript_for(stub).model_copy(update={"hourlyRate": printed}), "p1", "x.pdf")
+        assert rate == 1800
+    # an unreadable rate skips only the hours x rate cross-check; the paystub itself is kept
+    row, rate, _ = transcript_to_paystub(transcript_for(stub).model_copy(update={"hourlyRate": "about $18"}), "p1", "x.pdf")
+    assert rate is None and row["grossCents"] == stub["grossCents"]
+
+
 def test_process_paystubs_links_deposits_and_skips_known(tmp_path: Path):
     store = MemoryStore()
     sync_bank(store, FakeNessie(*nessie_rows()), "acct", "p1")

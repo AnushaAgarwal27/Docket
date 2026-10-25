@@ -1,0 +1,9 @@
+# The Vercel site is only the Hearing game (docket-game.vercel.app). Upload nothing else:
+# no .env (keys and agent seeds), no agents, no Python, no student data.
+/*
+!/vercel.json
+!/docket-game.html
+!/scripts
+/scripts/*
+!/scripts/build_game_site.mjs
+!/api

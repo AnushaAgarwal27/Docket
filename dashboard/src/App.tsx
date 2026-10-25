@@ -241,6 +241,8 @@ function Dashboard({ mode, snap, feed, timeline, patterns, ...actions }: { mode:
               </button>
             ))}
           </nav>
+          {/* The Hearing game plays this same student file: the agents' real hearing, approval, call and refund. */}
+          <a className="nav-game" href={mode === "demo" ? "/game.html" : "/game.html?case=live"}>Watch the hearing ↗</a>
         </div>
       </header>
 
