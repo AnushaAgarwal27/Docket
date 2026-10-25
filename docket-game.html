@@ -50,7 +50,7 @@
   .rounds span.done { color: var(--win); border-color: rgba(67,209,138,0.5); }
   .controls { display: flex; gap: 8px; align-items: center; }
   .chip-btn {
-    min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong);
+    white-space: nowrap; min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong);
     background: rgba(28,22,18,0.85); font-family: var(--mono); font-size: 12px; color: var(--ink-2);
   }
   .chip-btn:hover { color: var(--ink); border-color: var(--ink-2); }
@@ -77,9 +77,9 @@
   .bar .fill.counsel { background: var(--counsel); }
   .bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(18,14,11,0.9) calc(10% - 2px) 10%); }
   .meter-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  .center-hud { text-align: center; padding-top: 2px; }
+  .center-hud { text-align: center; padding-top: 2px; max-width: 34vw; }
   .center-hud .round { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
-  .center-hud .claim { font-family: var(--display); font-weight: 900; font-size: 34px; letter-spacing: -0.02em; line-height: 1.1; }
+  .center-hud .claim { font-family: var(--display); font-weight: 900; font-size: clamp(22px, 2.4vw, 34px); letter-spacing: -0.02em; line-height: 1.1; }
   .center-hud .claim.win { color: var(--win); }
   .center-hud .claim.lose { color: var(--counsel); text-decoration: line-through; }
   .conditions { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
@@ -104,32 +104,42 @@
   /* ---------- Dialogue box ---------- */
   .dialog {
     position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); z-index: 20;
-    width: min(940px, calc(100vw - 32px)); background: rgba(24,19,15,0.96); border: 1px solid var(--line-strong);
-    border-radius: 14px; padding: 18px 22px 16px; opacity: 0; pointer-events: none;
+    width: min(900px, calc(100vw - 32px)); max-height: calc(100vh - 150px); overflow-y: auto;
+    background: rgba(24,19,15,0.94); border: 1px solid var(--line-strong);
+    border-radius: 14px; padding: 16px 22px 14px; opacity: 0; pointer-events: none;
     transition: opacity .3s ease, transform .3s ease;
   }
+  /* Between lines (while cards fly or a banner plays) the last line stays readable but steps back */
+  .dialog.show.stale { opacity: 0.55; }
   .dialog.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
   .speaker { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 800; font-size: 15px; margin-bottom: 6px; }
   .speaker::before { content: ""; width: 10px; height: 10px; border-radius: 2px; background: var(--dot, var(--ink)); }
-  .line { font-size: 21px; line-height: 1.5; min-height: 64px; }
+  .line { font-size: 20px; line-height: 1.5; min-height: 60px; }
+  .dialog.choosing .line { min-height: 0; }
   .line q { quotes: "“" "”"; font-style: italic; }
-  .sub { font-family: var(--mono); font-size: 13px; color: var(--ink-2); margin-top: 6px; min-height: 18px; }
-  .dialog-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
+  .sub { font-family: var(--mono); font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+  .sub:empty { display: none; }
+  .dialog-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }
   .hint { font-family: var(--mono); font-size: 12px; color: var(--muted); }
   .next-btn { min-height: 42px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--ink); background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 15px; }
   .next-btn[disabled] { opacity: .35; cursor: default; }
-  .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 12px; }
+  .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 10px; }
   .choice {
-    text-align: left; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line-strong);
-    background: var(--panel-2); display: flex; flex-direction: column; gap: 4px; min-height: 64px;
+    text-align: left; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line-strong);
+    background: var(--panel-2); display: flex; flex-direction: column; gap: 3px; min-height: 56px;
     transition: transform .15s ease, border-color .15s ease, background .15s ease;
   }
   .choice:hover:not([disabled]) { transform: translateY(-2px); border-color: var(--ink-2); }
   .choice b { font-family: var(--display); font-weight: 700; font-size: 17px; }
   .choice span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
   .choice kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .dialog.watching .choice kbd { display: none; }
+  .dialog.watching .choice { cursor: default; }
   .choice.right { border-color: var(--win); background: rgba(67,209,138,0.12); }
   .choice.wrong { border-color: var(--counsel); background: rgba(240,122,58,0.12); opacity: .7; }
+  /* the result is spelled out too, not only colored */
+  .choice.right b::after { content: " ✓ right"; color: var(--win); font-size: 14px; }
+  .choice.wrong b::after { content: " ✗ not this"; color: var(--counsel); font-size: 14px; }
   .choice[disabled] { cursor: default; }
   .sign-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
   .sign-btn { min-height: 48px; padding: 0 22px; border-radius: 10px; border: 0; background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 16px; }
@@ -139,11 +149,11 @@
 
   /* ---------- Banners ---------- */
   .banner {
-    position: fixed; left: 0; right: 0; top: 40%; z-index: 25; text-align: center; pointer-events: none;
-    font-family: var(--display); font-weight: 900; font-size: clamp(44px, 8vw, 104px); letter-spacing: -0.03em; line-height: 1;
-    opacity: 0; transform: scale(1.25);
+    position: fixed; left: 16px; right: 16px; top: 30%; z-index: 25; text-align: center; pointer-events: none;
+    font-family: var(--display); font-weight: 900; font-size: clamp(40px, 6.5vw, 88px); letter-spacing: -0.03em; line-height: 1;
+    text-shadow: 0 2px 28px rgba(18,14,11,0.7); opacity: 0; transform: scale(1.25);
   }
-  .banner small { display: block; font-family: var(--sans); font-weight: 500; font-size: 18px; letter-spacing: 0; margin: 16px auto 0; max-width: 640px; padding: 0 16px; line-height: 1.45; color: var(--ink); text-shadow: 0 1px 12px rgba(0,0,0,0.8); }
+  .banner small { display: block; font-family: var(--sans); font-weight: 500; font-size: 18px; letter-spacing: 0; margin: 16px auto 0; max-width: 640px; width: fit-content; padding: 8px 14px; border-radius: 10px; background: rgba(18,14,11,0.82); line-height: 1.45; color: var(--ink); text-shadow: none; }
   .banner.go { animation: bannerIn 1.9s cubic-bezier(.2,.8,.2,1) forwards; }
   @keyframes bannerIn {
     0% { opacity: 0; transform: scale(1.35); }
@@ -153,6 +163,8 @@
   }
   .banner.hold { animation: bannerHold .5s cubic-bezier(.2,.8,.2,1) forwards; }
   @keyframes bannerHold { 0% { opacity: 0; transform: scale(1.35); } 100% { opacity: 1; transform: scale(1); } }
+  @keyframes bannerFade { 0% { opacity: 0; } 12% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes bannerHoldFade { 0% { opacity: 0; } 100% { opacity: 1; } }
 
   /* ---------- Round card ---------- */
   .roundcard {
@@ -199,14 +211,24 @@
   .screen .fine { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.6; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-  .stat b { display: block; font-family: var(--display); font-weight: 900; font-size: 28px; letter-spacing: -0.02em; }
+  .stat b { display: block; font-family: var(--display); font-weight: 900; font-size: 24px; line-height: 1.15; letter-spacing: -0.02em; }
   .stat span { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .link { color: var(--ink); font-family: var(--mono); font-size: 13px; }
-  .proto { position: fixed; left: 22px; bottom: 8px; z-index: 18; font-family: var(--mono); font-size: 11px; color: var(--muted); pointer-events: none; }
+  .proto { position: fixed; left: 22px; bottom: 6px; z-index: 18; font-family: var(--mono); font-size: 11px; color: var(--muted); pointer-events: none; }
+  /* On the title and end screens, the game-only controls step aside */
+  body.menu .rounds, body.menu #btn-skip, body.menu .proto { visibility: hidden; }
 
   @media (max-width: 760px) {
     .rounds { display: none; }
+    .topbar { padding: 0 16px; }
+    .brand small { display: none; }
+    .fighters { left: 16px; right: 16px; top: 58px; }
+    .fighter .role, .meter-label { display: none; }
+    .dialog { bottom: 16px; padding: 12px 16px 12px; max-height: calc(100vh - 150px); }
+    .hint { display: none; }
+    .proto { display: none; }
+    .banner small { font-size: 15px; }
     .fighters { grid-template-columns: 1fr 1fr; }
     .center-hud { display: none; }
     .fighter .name { font-size: 16px; }
@@ -216,11 +238,16 @@
     .cases, .stats { grid-template-columns: 1fr; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .banner.go, .roundcard.go { animation-duration: .01s; }
+    /* fades only: no zoom, so banners stay readable without motion */
+    .banner { transform: none; }
+    .banner.go { animation-name: bannerFade; }
+    .banner.hold { animation-name: bannerHoldFade; }
+    .dialog, .fighters { transform: none !important; }
+    .choice:hover:not([disabled]), .case-card:hover { transform: none; }
   }
 </style>
 </head>
-<body>
+<body class="menu">
 <canvas id="gl" role="img" aria-label="A 3D courtroom where Docket's agents argue a student's case."></canvas>
 
 <header class="topbar">
@@ -528,7 +555,8 @@ function plate(text, sub, w = 1.5, h = 0.42) {
     ctx.fillText(text, cw / 2, sub ? 70 : ch / 2);
     if (sub) { let s2 = 34; do { ctx.font = M(500, s2); s2 -= 1; } while (ctx.measureText(sub).width > cw - 60 && s2 > 14); ctx.fillStyle = "#5C4F40"; ctx.fillText(sub, cw / 2, 128); }
   });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }));
+  // polygon offset: a plate sits a hair in front of its wall or bench and must always win the depth test
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 }));
   return m;
 }
 
@@ -548,11 +576,13 @@ for (const s of [-1, 1]) box(0.5, 6.5, 0.5, woodDark, 7.2 * s, 3.25, -6.4);
 const railMat = mat(0x5A4030, 0.6);
 for (let i = -6; i <= 6; i++) if (Math.abs(i) > 1) box(0.08, 0.9, 0.08, railMat, i * 0.9, 0.45, 3.2);
 box(11.4, 0.1, 0.14, railMat, 0, 0.92, 3.2);
-// seal on the wall: an original geometric emblem (scales of a ledger), not any real seal
+// seal on the wall: an original geometric emblem (scales of a ledger), not any real seal.
+// Disc and sign share one group facing the room, clear of the wall, so neither can cut through the other.
+const sealGroup = new THREE.Group(); sealGroup.position.set(0, 5.2, -6.7); scene.add(sealGroup);
 const seal = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.08, 48), brass);
-seal.rotation.x = Math.PI / 2; seal.position.set(0, 5.2, -6.75); scene.add(seal);
+seal.rotation.x = Math.PI / 2; sealGroup.add(seal);
 const sealFace = plate("Docket", "every claim gets a hearing", 1.7, 0.48);
-sealFace.position.set(0, 5.2, -6.68); scene.add(sealFace);
+sealFace.position.z = 0.07; sealGroup.add(sealFace);
 
 const adv = makeAgent({ kind: "crane", color: 0x4F7CF0, scale: 1.45, label: "Advocate" });
 adv.group.position.set(-3.2, 0.9, 0.8); adv.group.rotation.y = 0.5; adv.home = adv.group.position.clone();
@@ -702,10 +732,21 @@ function argCard(title, body, color) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.15, 0.02), [mat(0xEDE4D3), mat(0xEDE4D3), mat(0xEDE4D3), mat(0xEDE4D3), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }), mat(0xEDE4D3)]);
   m.castShadow = true; m.userData.isArg = true; scene.add(m); return m;
 }
-function fly(mesh, from, to, dur = 900, arc = 1.4, spin = 0) {
+// `land`: { scale, quat } to shrink and settle the mesh into a resting pose on arrival instead of facing the camera
+function fly(mesh, from, to, dur = 900, arc = 1.4, spin = 0, land = null) {
   return new Promise((resolve) => {
-    flyers.push({ mesh, from: from.clone(), to: to.clone(), t: 0, dur: dur / (SPEED * boost), arc, spin, resolve });
+    flyers.push({ mesh, from: from.clone(), to: to.clone(), t: 0, dur: dur / SPEED, arc, spin, resolve, land,
+      s0: mesh.scale.x, q0: mesh.quaternion.clone() });
   });
+}
+// Removes a mesh made for one moment and frees its GPU memory, so replays don't pile up textures.
+function drop(m) {
+  scene.remove(m);
+  m.geometry.dispose();
+  for (const mt of [].concat(m.material)) {
+    if (mt.map) { mt.map.dispose(); const i = texRegistry.findIndex((r) => r.t === mt.map); if (i >= 0) texRegistry.splice(i, 1); }
+    mt.dispose();
+  }
 }
 function stampMesh(text, color) {
   const t = tex(900, 260, (ctx, w, h) => {
@@ -713,13 +754,17 @@ function stampMesh(text, color) {
     ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = F(900, 150);
     ctx.fillText(text, w / 2, h / 2 + 6);
   });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.98), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0, depthWrite: false }));
+  // drawn over the scene like a HUD stamp: no depth test, so nearby props can't flicker through it
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.98), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0, depthWrite: false, depthTest: false }));
+  m.renderOrder = 10;
   scene.add(m); return m;
 }
 const bits = [];
+const bitGeo = new THREE.PlaneGeometry(0.12, 0.08), bitMats = {};   // shared: bursts never allocate new GPU buffers
 function burst(at, color = 0xF2E8D5, n = 46, power = 1) {
+  const m = bitMats[color] ??= new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, roughness: 0.9 });
   for (let i = 0; i < n; i++) {
-    const p = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.08), new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, roughness: 0.9 }));
+    const p = new THREE.Mesh(bitGeo, m);
     p.position.copy(at);
     const a = Math.random() * Math.PI * 2, s = (1.2 + Math.random() * 2.4) * power;
     bits.push({ m: p, v: new THREE.Vector3(Math.cos(a) * s, 2 + Math.random() * 3 * power, Math.sin(a) * s * 0.6), r: new THREE.Vector3(Math.random() * 8, Math.random() * 8, Math.random() * 8), life: 2.2 });
@@ -742,7 +787,7 @@ const SHOTS = {
   clerk: { pos: [CX + 0.4, 2.9, 5.8], look: [CX + 3.0, 2.0, -0.4] },
   board: { pos: [CX, 3.1, 4.2], look: [CX, 2.8, -3.1] },
   money: { pos: [MX, 3.6, 10.2], look: [MX, 2.2, -1] },
-  card: { pos: [MX, 2.9, 5.2], look: [MX, 2.2, 0.4] },
+  card: { pos: [MX, 3.2, 7.4], look: [MX, 2.4, 0.4] },
   end: { pos: [MX + 6, 4.4, 11], look: [MX, 2.4, -1] }
 };
 const cam = { pos: new THREE.Vector3(...SHOTS.title.pos), look: new THREE.Vector3(...SHOTS.title.look), tPos: new THREE.Vector3(...SHOTS.title.pos), tLook: new THREE.Vector3(...SHOTS.title.look), rate: 2.2, shake: 0, orbit: true };
@@ -778,6 +823,8 @@ async function banner(text, sub, color, hold = false) {
   const b = $("banner");
   b.innerHTML = ""; b.className = "banner";
   b.style.color = color;
+  // the CSS animation runs at the game's pace, so a skipped round doesn't leave a banner over the next line
+  b.style.animationDuration = `${(hold ? 0.5 : 1.9) / (SPEED * boost)}s`;
   b.append(text);
   if (sub) { const s = document.createElement("small"); s.textContent = sub; b.append(s); }
   void b.offsetWidth;
@@ -788,6 +835,7 @@ function clearBanner() { const b = $("banner"); b.className = "banner"; b.innerH
 async function roundCard(k, t, d) {
   const rc = $("roundcard");
   $("rc-k").textContent = k; $("rc-t").textContent = t; $("rc-d").textContent = d;
+  rc.style.animationDuration = `${2.2 / (SPEED * boost)}s`;
   rc.classList.remove("go"); void rc.offsetWidth; rc.classList.add("go");
   await wait(2200);
 }
@@ -808,6 +856,13 @@ const SPEAKERS = {
   Guardian: { color: "#43D18A", agent: () => guardian },
   Ledger: { color: "#43D18A", agent: () => ledger }
 };
+// The dialog's state: the current line or choice is fully lit; between lines it steps back ("stale").
+function focusDialog(choosing = false) {
+  const d = $("dialog");
+  d.classList.add("show"); d.classList.remove("stale");
+  d.classList.toggle("choosing", choosing);
+  d.classList.toggle("watching", mode === "watch");
+}
 function onAdvance() {
   if (typing) { typing.finish(); return; }
   if (advanceResolve) { const r = advanceResolve; advanceResolve = null; r(); }
@@ -835,8 +890,7 @@ function typeText(el, text) {
 }
 async function say(speaker, text, opts = {}) {
   const sp = SPEAKERS[speaker];
-  const d = $("dialog");
-  d.classList.add("show");
+  focusDialog();
   $("speaker").textContent = speaker;
   $("speaker").style.setProperty("--dot", sp.color);
   $("sub").textContent = opts.sub || "";
@@ -852,6 +906,7 @@ async function say(speaker, text, opts = {}) {
   a.talk = 0;
   await waitAdvance(1100 + text.length * 22);
   a.lean = 0;
+  $("dialog").classList.add("stale");
 }
 function waitAdvance(autoMs) {
   return new Promise((resolve) => {
@@ -863,7 +918,7 @@ function waitAdvance(autoMs) {
 // A choice: in Play mode the viewer picks; in Watch mode the Advocate picks the right card.
 function choose(prompt, options, speakerColor = "#5B8CFF") {
   return new Promise((resolve) => {
-    $("dialog").classList.add("show");
+    focusDialog(true);
     $("speaker").textContent = mode === "watch" ? "Advocate is choosing" : "Your move";
     $("speaker").style.setProperty("--dot", speakerColor);
     $("line").textContent = prompt;
@@ -879,7 +934,7 @@ function choose(prompt, options, speakerColor = "#5B8CFF") {
       b.innerHTML = `<kbd>${i + 1}</kbd><b></b><span></span>`;
       b.querySelector("b").textContent = o.label;
       b.querySelector("span").textContent = o.detail || "";
-      b.addEventListener("click", () => pick(i));
+      b.addEventListener("click", () => { if (mode !== "watch") pick(i); });   // in Watch mode the agent picks
       grid.append(b); return b;
     });
     let locked = false;
@@ -942,15 +997,17 @@ async function rule(result, reason, card) {
   const st = stampMesh(result, colors[result] || "#E9DCC4");
   st.position.set(0, 3.7, -1.6); st.scale.setScalar(1.8); st.rotation.z = -0.06;
   // only one verdict stamp on screen at a time
-  for (const old of stamps.splice(0)) scene.remove(old);
+  for (const old of stamps.splice(0)) drop(old);
   st.userData.anim = { start: performance.now() };
   stamps.push(st);
-  if (result === "Struck" && card) { burst(card.position.clone(), 0xF2E8D5, 60, 1.1); card.visible = false; }
-  // Every other card on the floor goes onto the record pile beside the bench
-  looseCards.splice(0).forEach((c, i) => {
+  if (result === "Struck" && card) { burst(card.position.clone(), 0xF2E8D5, 60, 1.1); const i = looseCards.indexOf(card); if (i >= 0) looseCards.splice(i, 1); drop(card); }
+  // Every other card on the floor goes onto the record pile: a small stack lying flat on the bench's left end
+  looseCards.splice(0).forEach((c) => {
     if (c === card && result === "Struck") return;
     recordCount++;
-    fly(c, c.position.clone(), V(-5.2 + (recordCount % 3) * 0.3, 1.0 + recordCount * 0.03, -4.6), 700, 0.6, 0).then(() => { c.userData.rest = true; });
+    const flat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, (recordCount % 2 ? 1 : -1) * 0.07 * recordCount));
+    c.userData.rest = true;
+    fly(c, c.position.clone(), V(-1.95, 2.05 + recordCount * 0.006, -3.45), 700, 0.6, 0, { scale: 0.42, quat: flat });
   });
   await say("Judge", `${result}. ${reason}`, { sub: result === "Struck" ? "Quote not found word for word in the stored source" : "" });
 }
@@ -1093,7 +1150,7 @@ function plugCord() {
 function stepState(id, cls) { const el = $(id); el.className = cls; }
 async function roundCall() {
   setRounds(2); showHud(null);
-  for (const old of stamps.splice(0)) scene.remove(old);
+  for (const old of stamps.splice(0)) drop(old);
   shot("call", 1.4);
   await roundCard("Round 2", "The call", "With the ruling in hand, Docket calls payroll. It says it's an AI. It never mentions her hours.");
   showHud("call");
@@ -1101,6 +1158,7 @@ async function roundCall() {
   await say("Docket", "The court said: ask payroll first. May I call University Dining Services payroll for you?", { shot: "caller", lean: true });
   // Approval: a signature
   await new Promise((resolve) => {
+    focusDialog(true);
     $("speaker").textContent = mode === "watch" ? "Priya approves" : "Your approval";
     $("speaker").style.setProperty("--dot", "#6F8CFF");
     $("line").textContent = "One approval places exactly one call.";
@@ -1182,6 +1240,7 @@ async function roundMoney() {
   $("date-chip").textContent = "Oct 24, 2026";
   await say("Ledger", "Watching Priya's Capital One account for a deposit of exactly $440.64 from University Dining Payroll.", { shot: "money", lean: true });
   await new Promise((resolve) => {
+    focusDialog(true);
     $("speaker").textContent = mode === "watch" ? "Fast-forward" : "Your move";
     $("speaker").style.setProperty("--dot", "#43D18A");
     $("line").textContent = "Time passes. Payroll's next pay run is in two weeks.";
@@ -1226,11 +1285,12 @@ let running = false;
 let skipTo = 0;
 function resetWorld() {
   for (const a of [adv, counsel, judge, caller, clerk, guardian, ledger]) { a.hurt = a.joy = a.slump = a.lean = 0; a.group.position.copy(a.home); drawFace(a, a === judge ? "code" : "idle"); }
-  for (const s of stamps) scene.remove(s); stamps.length = 0;
+  for (const s of stamps) drop(s); stamps.length = 0;
   for (const f of flyers.splice(0)) f.resolve();
-  scene.children.filter((o) => o.userData && o.userData.isArg).forEach((o) => scene.remove(o));
+  scene.children.filter((o) => o.userData && o.userData.isArg).forEach(drop);
   looseCards.length = 0; recordCount = 0;
-  if (cord) { scene.remove(cord); cord = null; }
+  for (const b of bits.splice(0)) scene.remove(b.m);
+  if (cord) { scene.remove(cord); cord.geometry.dispose(); cord = null; }
   lamps.forEach((l) => l.material.color.set(0x4A4A44));
   handsetPivot.userData = {};
   letter.visible = false; letter.userData.fold = 0; letter.scale.set(1, 1, 1);
@@ -1247,6 +1307,7 @@ async function play() {
   resetWorld();
   $("title-screen").classList.add("hide");
   $("end-screen").classList.add("hide");
+  document.body.classList.remove("menu");
   $("case-label").textContent = `Case ${current.id} · ${current.name}`;
   const verdict = await roundHearing();
   $("dialog").classList.remove("show");
@@ -1260,6 +1321,7 @@ async function play() {
 }
 function end(kind) {
   showHud(null); clearBanner();
+  document.body.classList.add("menu");
   const es = $("end-screen");
   const statHtml = (b, s) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`;
   if (kind === "dismissed") {
@@ -1322,28 +1384,32 @@ addEventListener("resize", resize); resize();
 let pointer = { x: 0, y: 0 };
 addEventListener("pointermove", (e) => { pointer.x = e.clientX / innerWidth - 0.5; pointer.y = e.clientY / innerHeight - 0.5; });
 const ease = (t) => t * t * (3 - 2 * t);
+// a per-frame lerp factor tuned at 60 fps, corrected for the real frame time
+const ease60 = (k, dt) => 1 - Math.pow(1 - k, dt * 60 * SPEED * boost);
+const endHidden = (() => { const es = $("end-screen"); return () => es.classList.contains("hide"); })();
+const _fwd = new THREE.Vector3();
 
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
   // camera
-  if (cam.orbit && !running) {
+  if (cam.orbit && !running && !reduced) {
     const ang = Math.sin(t * 0.18) * 0.55;
-    const base = $("end-screen").classList.contains("hide") ? SHOTS.title : (current.key === "nadia" ? SHOTS.court : SHOTS.end);
-    const c = V(base.look[0], 0, base.look[2]);
-    cam.tPos.set(c.x + Math.sin(ang) * 11.5 + (base === SHOTS.end ? 2 : 0), base.pos[1], c.z + Math.cos(ang) * 11.5);
+    const base = endHidden() ? SHOTS.title : (current.key === "nadia" ? SHOTS.court : SHOTS.end);
+    cam.tPos.set(base.look[0] + Math.sin(ang) * 11.5 + (base === SHOTS.end ? 2 : 0), base.pos[1], base.look[2] + Math.cos(ang) * 11.5);
     cam.tLook.set(...base.look);
   }
   const k = 1 - Math.exp(-cam.rate * dt * boost * SPEED);
   cam.pos.lerp(cam.tPos, k); cam.look.lerp(cam.tLook, k);
   camera.position.copy(cam.pos);
-  camera.position.x += pointer.x * 0.5; camera.position.y -= pointer.y * 0.3;
+  if (!reduced) { camera.position.x += pointer.x * 0.5; camera.position.y -= pointer.y * 0.3; }
   if (cam.shake > 0.001) {
-    camera.position.x += (Math.random() - 0.5) * cam.shake; camera.position.y += (Math.random() - 0.5) * cam.shake;
+    camera.position.x += Math.sin(t * 61) * cam.shake * 0.5; camera.position.y += Math.sin(t * 47 + 1.3) * cam.shake * 0.5;
     cam.shake *= Math.pow(0.02, dt);
   }
   camera.lookAt(cam.look);
-  sun.position.set(cam.look.x - 6, 14, 10); sun.target.position.set(cam.look.x, 0, 0);
+  const arenaX = Math.round(cam.look.x / 60) * 60;   // the shadow camera only moves between arenas, so shadows don't crawl
+  sun.position.set(arenaX - 6, 14, 10); sun.target.position.set(arenaX, 0, 0);
   warm.position.x = cam.look.x;
 
   // agents: idle breathing, talk bob, lean, hurt recoil, joy hop, slump
@@ -1364,7 +1430,7 @@ function animate() {
     if (a.kind === "crane") { a.arms[0].rotation.z = -f; a.arms[1].rotation.z = f; }
     else if (a.kind === "clerk") { a.arms[0].rotation.z = -(0.5 + (a.talk ? f : 0)); a.arms[1].rotation.z = 0.5 + (a.talk ? f : 0); }
     else if (a.kind === "owl") { a.arms[0].rotation.z = -0.1 - (a.talk ? Math.abs(f) * 0.6 : 0); }
-    else a.arms[0].rotation.x = THREE.MathUtils.lerp(a.arms[0].rotation.x, a.talk ? Math.sin(t * 7) * 0.5 - 0.3 : 0, 0.15);
+    else a.arms[0].rotation.x = THREE.MathUtils.lerp(a.arms[0].rotation.x, a.talk ? Math.sin(t * 7) * 0.5 - 0.3 : 0, ease60(0.15, dt));
     // blink now and then while idle
     if (a.mood === "idle" || a.mood === "code") { const bl = ((t + a.seed) % 3.6) < 0.11; for (const e of a.eyes) e.scale.y = bl ? 0.12 : 1; }
   }
@@ -1377,7 +1443,7 @@ function animate() {
   }
   // folder cover
   const fo = folderCoverPivot.userData.open || 0;
-  folderCoverPivot.rotation.z = THREE.MathUtils.lerp(folderCoverPivot.rotation.z, fo ? 2.6 : 0, 0.06);
+  folderCoverPivot.rotation.z = THREE.MathUtils.lerp(folderCoverPivot.rotation.z, fo ? 2.6 : 0, ease60(0.06, dt));
   // flying things
   for (let i = flyers.length - 1; i >= 0; i--) {
     const f = flyers[i];
@@ -1385,8 +1451,13 @@ function animate() {
     const p = Math.min(1, f.t), e = ease(p);
     f.mesh.position.lerpVectors(f.from, f.to, e);
     f.mesh.position.y += Math.sin(p * Math.PI) * f.arc;
-    f.mesh.rotation.y += f.spin * dt;
-    if (!f.mesh.userData.rest) f.mesh.lookAt(camera.position);
+    if (f.land) {
+      f.mesh.scale.setScalar(THREE.MathUtils.lerp(f.s0, f.land.scale, e));
+      f.mesh.quaternion.slerpQuaternions(f.q0, f.land.quat, e);
+    } else {
+      f.mesh.rotation.y += f.spin * dt;
+      if (!f.mesh.userData.rest) f.mesh.lookAt(camera.position);
+    }
     if (p >= 1) { flyers.splice(i, 1); f.resolve(); }
   }
   // stamps
@@ -1394,8 +1465,8 @@ function animate() {
     const an = s.userData.anim; if (!an) continue;
     an.t = (performance.now() - an.start) / 1000 * SPEED * boost;   // real time, not frame time
     const p = Math.min(1, an.t / 0.35);
-    const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
-    s.position.copy(camera.position).addScaledVector(fwd, 5).addScaledVector(camera.up, 0.55);
+    camera.getWorldDirection(_fwd);
+    s.position.copy(camera.position).addScaledVector(_fwd, 5).addScaledVector(camera.up, 0.55);
     s.quaternion.copy(camera.quaternion);
     s.scale.setScalar(THREE.MathUtils.lerp(1.4, 0.72, ease(p)));
     s.material.opacity = an.t < 2.4 ? Math.min(1, p * 1.4) : Math.max(0, 1 - (an.t - 2.4) * 2);
@@ -1415,14 +1486,13 @@ function animate() {
     cord.geometry.setDrawRange(0, Math.floor(cord.geometry.index.count * cord.userData.grow));
   }
   if (handsetPivot.userData.ring && !reduced) handsetPivot.rotation.z = Math.sin(t * 40) * 0.08;
-  else handsetPivot.rotation.z = THREE.MathUtils.lerp(handsetPivot.rotation.z, handsetPivot.userData.lift ? 0.6 : 0, 0.1);
-  if (letter.userData.fold) { letter.scale.y = THREE.MathUtils.lerp(letter.scale.y, 0.36, 0.08); letter.scale.x = THREE.MathUtils.lerp(letter.scale.x, 0.95, 0.08); }
-  if (flapPivot.userData.close) flapPivot.rotation.x = THREE.MathUtils.lerp(flapPivot.rotation.x, 0, 0.12);
+  else handsetPivot.rotation.z = THREE.MathUtils.lerp(handsetPivot.rotation.z, handsetPivot.userData.lift ? 0.6 : 0, ease60(0.1, dt));
+  if (letter.userData.fold) { letter.scale.y = THREE.MathUtils.lerp(letter.scale.y, 0.36, ease60(0.08, dt)); letter.scale.x = THREE.MathUtils.lerp(letter.scale.x, 0.95, ease60(0.08, dt)); }
+  if (flapPivot.userData.close) flapPivot.rotation.x = THREE.MathUtils.lerp(flapPivot.rotation.x, 0, ease60(0.12, dt));
   // money arena
   if (wheel.userData.spin) wheel.rotation.z += dt * 4;
-  closedStamp.material.opacity = THREE.MathUtils.lerp(closedStamp.material.opacity, closedStamp.userData.show ? 1 : 0, 0.08);
+  closedStamp.material.opacity = THREE.MathUtils.lerp(closedStamp.material.opacity, closedStamp.userData.show ? 1 : 0, ease60(0.08, dt));
   if (closedStamp.userData.show) closedStamp.lookAt(camera.position);
-  seal.rotation.z += dt * 0.05;
 
   renderer.render(scene, camera);
 }
