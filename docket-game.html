@@ -1350,6 +1350,49 @@ function stampCard(card, text, color) {
   });
   const m = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.37), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
   m.position.set(0.55, -0.38, 0.015); m.rotation.z = 0.12; card.add(m);
+  return m;
+}
+// Runs fn(e) with e going 0 to 1 over dur ms (scaled by game speed); finishes at once while skipping.
+function tween(dur, fn) {
+  return new Promise((resolve) => {
+    const t0 = performance.now(), d = dur / (SPEED * boost);
+    (function step() {
+      const e = skipping() ? 1 : Math.min(1, (performance.now() - t0) / d);
+      fn(e); if (e < 1) requestAnimationFrame(step); else resolve();
+    })();
+  });
+}
+// A rubber stamp, as in the prototype: wooden block, handle and knob, rubber face pointing down local -z.
+function stampTool(color) {
+  const g = new THREE.Group();
+  const wood = mat(0x6E5034, 0.7), knob = mat(0xA06B42, 0.6);
+  box(1.4, 0.5, 0.26, wood, 0, 0, 0.2, g);
+  const rubber = box(1.34, 0.45, 0.06, flatMat(new THREE.Color(color).getHex()), 0, 0, 0.04, g);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.15, 0.7, 8), knob); neck.rotation.x = Math.PI / 2; neck.position.z = 0.68; g.add(neck);
+  const top = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), knob); top.position.z = 1.1; g.add(top);
+  g.userData.rubber = rubber;
+  return g;
+}
+// The camera moves to the pinned card, the stamp comes down on it, the ink lands with a thump, and the stamp lifts away.
+let cardShots = 0;
+async function stampDown(card, text, color) {
+  card.updateMatrixWorld(true);
+  const at = card.localToWorld(V(0.3, -0.1, 0));
+  const normal = V(0, 0, 1).applyQuaternion(card.getWorldQuaternion(new THREE.Quaternion()));
+  const name = `card${++cardShots}`;
+  SHOTS[name] = { pos: at.clone().addScaledVector(normal, 4.2).add(V(0, 0.5, 0)).toArray(), look: at.toArray() };
+  shot(name, 3);
+  await wait(950);   // let the camera settle on the card first
+  const ink = stampCard(card, text, color);
+  ink.material.opacity = 0;
+  const tool = stampTool(color);
+  tool.position.set(0.55, -0.38, 3.2); tool.rotation.z = 0.12; card.add(tool);
+  await tween(380, (e) => { tool.position.z = 0.02 + 3.2 * (1 - e * e); });
+  shake(0.14);
+  await tween(160, (e) => { tool.scale.z = 1 - 0.25 * Math.sin(Math.PI * e); ink.material.opacity = 0.92 * e; });
+  await wait(180);
+  await tween(480, (e) => { tool.position.z = 0.02 + e * 3.6; tool.position.x = 0.55 + e * 1.6; });
+  drop(tool);
 }
 async function rule(result, reason, card, proof) {
   shot("judge", 3);
@@ -1360,14 +1403,17 @@ async function rule(result, reason, card, proof) {
   shake(0.28);
   judge.arms[1].rotation.x = 0;
   const colors = { Overruled: "#8A7458", Sustained: "#B7791F", Struck: "#8A4F7D", Admitted: "#1F8F55", Dismissed: "#8A4F7D" };
-  const st = stampMesh(result, colors[result] || "#8A7458");
-  st.position.set(0, 3.7, -1.6); st.scale.setScalar(1.8); st.rotation.z = -0.06;
-  // only one verdict stamp on screen at a time
-  for (const old of stamps.splice(0)) drop(old);
-  st.userData.anim = { start: performance.now() };
-  stamps.push(st);
-  if (result === "Struck" && card) { burst(card.getWorldPosition(V(0, 0, 0)), 0xF2E8D5, 60, 1.1); drop(card); }
-  else if (card) stampCard(card, result, colors[result] || "#8A7458");
+  const color = colors[result] || "#8A7458";
+  for (const old of stamps.splice(0)) drop(old);   // only one verdict stamp on screen at a time
+  if (card && result !== "Struck") { await stampDown(card, result, color); }
+  else {
+    // no card to stamp, or a made-up quote that gets torn up: the ruling stamps the air instead
+    const st = stampMesh(result, color);
+    st.position.set(0, 3.7, -1.6); st.scale.setScalar(1.8); st.rotation.z = -0.06;
+    st.userData.anim = { start: performance.now() };
+    stamps.push(st);
+    if (card) { burst(card.getWorldPosition(V(0, 0, 0)), 0xF2E8D5, 60, 1.1); drop(card); }
+  }
   await say("Judge", `${result}. ${reason}`, { proof });
 }
 const stamps = [];
