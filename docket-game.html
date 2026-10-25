@@ -2067,7 +2067,7 @@ function resetWorld() {
   envelope.visible = false; flapPivot.userData = {}; flapPivot.rotation.x = 0;
   closedStamp.userData.show = 0; closedStamp.material.opacity = 0;
   folderCoverPivot.userData.open = 0;
-  Object.assign(BANK, current.live ? { name: current.name, amount: current.claim, from: current.employer } : { name: "Priya Sharma", amount: "$440.64", from: "University Dining Payroll" });
+  Object.assign(BANK, current.live ? { name: current.name, amount: current.claim, from: current.employer } : { name: current.name, amount: "$440.64", from: "University Dining Payroll" });
   drawCard(false);
   Object.keys(stats).forEach((k) => (stats[k] = 0));
   clearBanner();
