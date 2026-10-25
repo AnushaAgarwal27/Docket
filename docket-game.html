@@ -17,8 +17,8 @@
     --ink: #2B231C;
     --ink-2: #5F5347;
     --muted: #8A7D6E;
-    --adv: #3F6FE0;
-    --counsel: #D4581C;
+    --adv: #2B7A78;
+    --counsel: #8A4F7D;
     --judge: #8A7458;
     --win: #1F8F55;
     --warn: #B7791F;
@@ -184,6 +184,8 @@
   /* Reserved spot for a guide avatar that will hover over the right card. Empty and invisible for now;
      choose() keeps it on the right card's top-right corner. Add ?slot=show to the URL to see where it sits. */
   .avatar-slot { position: absolute; width: 56px; height: 56px; pointer-events: none; z-index: 2; }
+  .dex-mini { position: fixed; z-index: 21; width: 150px; height: 150px; pointer-events: none; opacity: 0; transition: opacity .25s ease; }
+  .dex-mini.on { opacity: 1; }
   body.show-slot .avatar-slot { border: 2px dashed rgba(74,56,38,0.45); border-radius: 50%; }
   .choice {
     text-align: left; padding: 10px 14px 10px 18px; border-radius: 6px; border: 1px solid rgba(74,56,38,0.14);
@@ -196,16 +198,16 @@
   .choice span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
   .choice kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .choice.right { border-color: var(--win); background: rgba(31,143,85,0.10); }
-  .choice.wrong { border-color: var(--counsel); background: rgba(212,88,28,0.08); opacity: .75; box-shadow: inset 5px 0 0 var(--counsel); }
-  .choice.wrong b, .choice.wrong span { text-decoration: line-through; text-decoration-color: var(--counsel); text-decoration-thickness: 2px; }
+  .choice.wrong { border-color: #B3262E; background: rgba(179,38,46,0.06); opacity: .75; box-shadow: inset 5px 0 0 #B3262E; }
+  .choice.wrong b, .choice.wrong span { text-decoration: line-through; text-decoration-color: #B3262E; text-decoration-thickness: 2px; }
   /* the result is spelled out too, not only colored */
   .choice.right b::after { content: " ✓ right"; color: var(--win); font-size: 14px; }
-  .choice.wrong b::after { content: " ✗ no"; display: inline-block; color: var(--counsel); font-size: 14px; text-decoration: none; }
+  .choice.wrong b::after { content: " ✗ no"; display: inline-block; color: #B3262E; font-size: 14px; text-decoration: none; }
   .choice[disabled] { cursor: default; }
   .sign-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
   .sign-btn { min-height: 48px; padding: 0 22px; border-radius: 10px; border: 0; background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 16px; }
   .sig { width: 200px; height: 44px; }
-  .sig path { fill: none; stroke: #3F6FE0; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 400; stroke-dashoffset: 400; }
+  .sig path { fill: none; stroke: #2B7A78; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 400; stroke-dashoffset: 400; }
   .sig.go path { transition: stroke-dashoffset .8s ease; stroke-dashoffset: 0; }
 
   /* ---------- Banners ---------- */
@@ -394,24 +396,22 @@
     <h1>Payroll took $440.64 from Priya by mistake.</h1>
     <p>Watch Docket's paper agents fight for it. The Advocate argues for Priya, Payroll's Counsel argues for the employer, and the Judge rules in code, using only her file and the IRS's own words. Win the hearing, and Docket makes the call.</p>
     <div class="cases" role="group" aria-label="Choose a case">
-      <button class="case-card" id="case-priya" aria-pressed="true">
-        <span class="k">Case file</span><span class="pick" aria-hidden="true">✓ Selected</span>
-        <b>Priya Sharma</b>
-        <span>F-1 · arrived Aug 15, 2024 · calendar year 3 of 5<br>University Dining Services · 8 paystubs</span>
-        <em>$440.64 withheld</em>
-      </button>
-      <button class="case-card" id="case-nadia" aria-pressed="false">
-        <span class="k">Case file</span><span class="pick" aria-hidden="true">Choose</span>
-        <b>Nadia Petrova</b>
-        <span>F-1 · arrived Jan 7, 2019 · calendar year 8<br>Example student from our test set</span>
-        <em class="dim">Can this claim survive?</em>
-      </button>
+      <!-- Priya's live card is the real one and carries her name, so the scripted copy of her sat
+           next to it as a second Priya Sharma with the same amount: two cards, one student, no way
+           to tell which rings a phone. Nadia stays because she is a different student making a
+           different point - a claim that should lose. -->
       <button class="case-card live" id="case-live" aria-pressed="false" hidden
               title="The real case from Docket's student file. Approving places a real payroll call.">
         <span class="k">Live · real case</span><span class="pick" aria-hidden="true">Choose</span>
         <b id="live-name">Live case</b>
         <span id="live-facts"></span>
         <em id="live-claim"></em>
+      </button>
+      <button class="case-card" id="case-nadia" aria-pressed="false">
+        <span class="k">Case file</span><span class="pick" aria-hidden="true">Choose</span>
+        <b>Nadia Petrova</b>
+        <span>F-1 · arrived Jan 7, 2019 · calendar year 8<br>Example student from our test set</span>
+        <em class="dim">Can this claim survive?</em>
       </button>
     </div>
     <div class="modes" role="group" aria-label="How do you want to play?">
@@ -555,7 +555,7 @@ const eyeMat = new THREE.MeshStandardMaterial({ color: 0x15110E, roughness: 0.3 
 
 const badgeTex = tex(100, 130, (ctx, w, h) => {
   ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = "#3F6FE0"; ctx.fillRect(0, 0, w, 34);
+  ctx.fillStyle = "#2B7A78"; ctx.fillRect(0, 0, w, 34);
   ctx.fillStyle = "#17120E"; ctx.font = F(900, 44); ctx.textAlign = "center"; ctx.fillText("AI", w / 2, 92);
 });
 const redactTex = tex(170, 210, (ctx, w, h) => {
@@ -574,12 +574,12 @@ function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
     const skinDk = new THREE.Color(skin).lerp(new THREE.Color(0x5A3A28), 0.25).getHex();
     const look = {
       judge:    { top: 0x17171B, legs: 0x17171B, shoe: 0x0F0F12, hair: 0xCFCBC4, sleeve: 0x17171B },
-      counsel:  { top: 0x2C303A, legs: 0x2C303A, shoe: 0x111114, hair: 0x2A1E16, sleeve: 0x2C303A, shirt: 0xF4F1EA, lapel: 0x3A3F4B, tie: 0xB3262E },
+      counsel:  { top: 0x2C303A, legs: 0x2C303A, shoe: 0x111114, hair: 0x2A1E16, sleeve: 0x2C303A, shirt: 0xF4F1EA, lapel: 0x3A3F4B, tie: 0x6E3B63 },
       student:  { top: 0x8E949C, legs: 0x3E5C8A, shoe: 0xF2EEE6, hair: 0x1E1612, sleeve: 0x8E949C },
       aide:     { top: 0x26365E, legs: 0x4A4F59, shoe: 0x5A3A26, hair: 0x5B3A22, sleeve: 0x26365E, shirt: 0xCFE0F2, lapel: 0x1E2B4C },
       clerk:    { top: 0xC99A3B, legs: 0x5A4A3A, shoe: 0x3A2A1E, hair: 0x8A5A34, sleeve: 0xC99A3B, shirt: 0xF6F2EA, lapel: 0xB5872E },
       guardian: { top: 0x2E6B4F, legs: 0x23282E, shoe: 0x111114, hair: 0x2A2624, sleeve: 0x2E6B4F, shirt: 0xF4F1EA, lapel: 0x245A42, tie: 0x1F4A36 },
-      teller:   { top: 0x2F5D50, legs: 0x1E1E22, shoe: 0x111114, hair: 0xA8552C, sleeve: 0xF6F2EA, shirt: 0xF6F2EA, tie: 0xB3262E }
+      teller:   { top: 0x2F5D50, legs: 0x1E1E22, shoe: 0x111114, hair: 0xA8552C, sleeve: 0xF6F2EA, shirt: 0xF6F2EA, tie: 0x1F4A36 }
     }[outfit] || {};
     // legs and shoes (the judge's robe covers them)
     if (outfit !== "judge") for (const x of [-0.1, 0.1]) {
@@ -604,12 +604,12 @@ function makeAgent({ kind, color, scale = 1, label, outfit = null }) {
         shirtV(look.shirt); lapels(look.lapel); tie(look.tie); buttons([0.84, 0.76]); hem(0x23262E);
       } else if (outfit === "aide") {   // Docket on the phone: navy blazer, open collar, a lanyard with an "AI" badge, a headset
         shirtV(look.shirt, 0.96); lapels(look.lapel); buttons([0.8]); hem(0x1E2B4C);
-        paper([[[-0.07, 1.2, 0.165], [-0.05, 1.2, 0.165], [0.0, 0.92, 0.19]], [[0.07, 1.2, 0.165], [0.0, 0.92, 0.19], [0.05, 1.2, 0.165]]], 0x3F6FE0, body);   // lanyard
+        paper([[[-0.07, 1.2, 0.165], [-0.05, 1.2, 0.165], [0.0, 0.92, 0.19]], [[0.07, 1.2, 0.165], [0.0, 0.92, 0.19], [0.05, 1.2, 0.165]]], 0x2B7A78, body);   // lanyard
         const badge = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.13), new THREE.MeshStandardMaterial({ map: badgeTex, roughness: 0.6 }));
         badge.position.set(0, 0.84, 0.195); body.add(badge);
       } else if (outfit === "clerk") {  // payroll office: mustard cardigan over a white blouse
         shirtV(look.shirt, 0.86); buttons([0.84, 0.77, 0.7], 0xF6F2EA, 0.152); hem(0xB5872E);
-        box(0.06, 0.07, 0.01, flatMat(0x3F6FE0), -0.11, 1.0, 0.152, body);                                             // pen in a pocket
+        box(0.06, 0.07, 0.01, flatMat(0x2B7A78), -0.11, 1.0, 0.152, body);                                             // pen in a pocket
       } else if (outfit === "guardian") {   // privacy officer: green suit, a small shield pin
         shirtV(look.shirt); lapels(look.lapel); tie(look.tie); buttons([0.84, 0.76]); hem(0x245A42);
         const pin = solid(new THREE.CylinderGeometry(0.025, 0.025, 0.01, 5), 0xD9B44A, body, -0.12, 1.06, 0.16); pin.rotation.x = Math.PI / 2; pin.material.metalness = 0.5;
@@ -731,9 +731,9 @@ seal.rotation.x = Math.PI / 2; sealGroup.add(seal);
 const sealFace = plate("Docket", "every claim gets a hearing", 2.55, 0.72, 2);
 sealFace.position.z = 0.07; sealGroup.add(sealFace);
 
-const adv = makeAgent({ kind: "person", outfit: "student", color: 0x4F7CF0, scale: 1.2, label: "Advocate" });
+const adv = makeAgent({ kind: "person", outfit: "student", color: 0x3A8C89, scale: 1.2, label: "Advocate" });
 adv.group.position.set(-3.2, 0.54, 0.8); adv.group.rotation.y = 0.5; adv.home = adv.group.position.clone();
-const counsel = makeAgent({ kind: "person", outfit: "counsel", color: 0xE8743B, scale: 1.2, label: "Payroll's Counsel" });
+const counsel = makeAgent({ kind: "person", outfit: "counsel", color: 0x9C5E8F, scale: 1.2, label: "Payroll's Counsel" });
 counsel.group.position.set(3.2, 0.54, 0.8); counsel.group.rotation.y = -0.5; counsel.home = counsel.group.position.clone();
 const judge = makeAgent({ kind: "person", outfit: "judge", color: 0x17171B, scale: 1.3, label: "Judge" });
 judge.group.position.set(0, 1.0, -4.4); judge.home = judge.group.position.clone();
@@ -746,7 +746,7 @@ function pedestal(x, z, rotY, name, sub, accent) {
   const pl = plate(name, sub, 1.36, 0.38); pl.position.set(0, 0.27, 0.86); pl.rotation.x = -0.17; g.add(pl);
   return g;
 }
-pedestal(-3.2, 0.8, 0.5, "Advocate", "argues for the student", 0x4F7CF0);
+pedestal(-3.2, 0.8, 0.5, "Advocate", "argues for the student", 0x3A8C89);
 // A display stand behind each side: every card that side plays is pinned to it and stays readable
 function easel(x, z, rotY, name, accent) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
@@ -760,8 +760,8 @@ function easel(x, z, rotY, name, accent) {
   solid(new THREE.BoxGeometry(3.1, 0.05, 0.02), accent, board, 0, 1.0, 0.0);
   return { group: g, board, slots: [[-0.74, 0.43], [0.74, 0.43], [-0.74, -0.47], [0.74, -0.47]], used: 0 };
 }
-pedestal(3.2, 0.8, -0.5, "Payroll's Counsel", "argues for the employer", 0xE8743B);
-const easels = new Map([[adv, easel(-5.1, -1.0, 0.42, "Advocate's cards", 0x4F7CF0)], [counsel, easel(5.1, -1.0, -0.42, "Counsel's objections", 0xE8743B)]]);
+pedestal(3.2, 0.8, -0.5, "Payroll's Counsel", "argues for the employer", 0x9C5E8F);
+const easels = new Map([[adv, easel(-5.1, -1.0, 0.42, "Advocate's cards", 0x3A8C89)], [counsel, easel(5.1, -1.0, -0.42, "Counsel's objections", 0x9C5E8F)]]);
 
 // Gavel in the judge's hand + sound block on the bench
 const gavelPivot = new THREE.Group(); gavelPivot.position.set(1.15, 2.05, -3.2); scene.add(gavelPivot);
@@ -832,7 +832,7 @@ handset.rotation.z = Math.PI / 2; handset.castShadow = true; handsetPivot.add(ha
 // and the Guardian (privacy officer) standing by with a redacted page
 const caller = makeAgent({ kind: "person", outfit: "aide", scale: 1.2, label: "Docket" });
 caller.group.position.set(CX - 2.6, 0.54, 0.6); caller.group.rotation.y = 0.45; caller.home = caller.group.position.clone();
-pedestal(CX - 2.6, 0.6, 0.45, "Docket", "the caller · an AI", 0x4F7CF0);
+pedestal(CX - 2.6, 0.6, 0.45, "Docket", "the caller · an AI", 0x3A8C89);
 const clerk = makeAgent({ kind: "person", outfit: "clerk", scale: 1.2, label: "Payroll" });
 clerk.group.position.set(CX + 3.1, 0, -0.6); clerk.group.rotation.y = -0.35; clerk.home = clerk.group.position.clone();
 const guardian = makeAgent({ kind: "person", outfit: "guardian", scale: 1.2, label: "Guardian" });
@@ -842,7 +842,7 @@ const monitor = new THREE.Group(); monitor.position.set(CX + 2.3, 0.9, 0.3); mon
 box(0.08, 0.3, 0.08, mat(0x2B2B2B, 0.5), 0, 0.15, 0, monitor);
 box(0.75, 0.48, 0.05, mat(0x2B2B2B, 0.5), 0, 0.5, 0, monitor);
 const screenTex = tex(300, 190, (ctx, w, h) => {
-  ctx.fillStyle = "#EEF3F8"; ctx.fillRect(0, 0, w, h); ctx.fillStyle = "#3F6FE0"; ctx.fillRect(0, 0, w, 26);
+  ctx.fillStyle = "#EEF3F8"; ctx.fillRect(0, 0, w, h); ctx.fillStyle = "#2B7A78"; ctx.fillRect(0, 0, w, 26);
   ctx.fillStyle = "#FFFFFF"; ctx.font = M(600, 15); ctx.fillText("PAYROLL · Priya Sharma", 10, 18);
   for (let i = 0; i < 6; i++) { ctx.fillStyle = "#9AA6B2"; ctx.fillRect(12, 44 + i * 23, 150, 8); ctx.fillStyle = "#56616C"; ctx.fillRect(210, 44 + i * 23, 70, 8); }
 });
@@ -868,7 +868,7 @@ const letterTex = tex(512, 660, (ctx, w, h) => {
   ctx.font = M(400, 19); ctx.fillStyle = "#3D332A";
   const body = "To: University Dining Services Payroll. Re: refund of Social Security and Medicare withheld in error, Priya Sharma. $357.12 + $83.52 = $440.64 across 8 paychecks, Jan 12 to May 3, 2026. Calendar year 3 of 5 on F-1. Docket will follow up by phone on Tue, Oct 27.";
   wrap(ctx, body, w - 80).forEach((l, i) => ctx.fillText(l, 40, 130 + i * 32));
-  ctx.strokeStyle = "#3F6FE0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(40, 600); ctx.bezierCurveTo(90, 560, 120, 630, 170, 585); ctx.bezierCurveTo(200, 560, 220, 610, 260, 590); ctx.stroke();
+  ctx.strokeStyle = "#2B7A78"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(40, 600); ctx.bezierCurveTo(90, 560, 120, 630, 170, 585); ctx.bezierCurveTo(200, 560, 220, 610, 260, 590); ctx.stroke();
 });
 const letter = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.29), new THREE.MeshStandardMaterial({ map: letterTex, roughness: 0.85, side: THREE.DoubleSide }));
 letter.visible = false; scene.add(letter);
@@ -1107,10 +1107,10 @@ let typing = null;
 const stats = { picks: 0, right: 0, wrong: 0, overruled: 0, sustained: 0, struck: 0, calls: 0, letters: 0 };
 const SPEAKERS = {
   Judge: { color: "#8A7458", agent: () => judge },
-  Advocate: { color: "#3F6FE0", agent: () => adv },
-  "Payroll's Counsel": { color: "#D4581C", agent: () => counsel },
-  Auditor: { color: "#D4581C", agent: () => counsel },
-  Docket: { color: "#3F6FE0", agent: () => caller },
+  Advocate: { color: "#2B7A78", agent: () => adv },
+  "Payroll's Counsel": { color: "#8A4F7D", agent: () => counsel },
+  Auditor: { color: "#8A4F7D", agent: () => counsel },
+  Docket: { color: "#2B7A78", agent: () => caller },
   Payroll: { color: "#6E7782", agent: () => clerk },
   Guardian: { color: "#1F8F55", agent: () => guardian },
   Ledger: { color: "#1F8F55", agent: () => ledger }
@@ -1263,7 +1263,7 @@ function waitAdvance() {
   });
 }
 // A choice: the viewer always picks. Nothing is pre-selected or picked for them (Skip round aside).
-function choose(prompt, options, speakerColor = "#3F6FE0", ruledOut = new Set()) {
+function choose(prompt, options, speakerColor = "#2B7A78", ruledOut = new Set()) {
   return new Promise((resolve) => {
     const right = options.findIndex((o) => o.correct);
     if (skipping()) { resolve(options[right]); return; }
@@ -1362,6 +1362,49 @@ function stampCard(card, text, color) {
   });
   const m = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.37), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
   m.position.set(0.55, -0.38, 0.015); m.rotation.z = 0.12; card.add(m);
+  return m;
+}
+// Runs fn(e) with e going 0 to 1 over dur ms (scaled by game speed); finishes at once while skipping.
+function tween(dur, fn) {
+  return new Promise((resolve) => {
+    const t0 = performance.now(), d = dur / (SPEED * boost);
+    (function step() {
+      const e = skipping() ? 1 : Math.min(1, (performance.now() - t0) / d);
+      fn(e); if (e < 1) requestAnimationFrame(step); else resolve();
+    })();
+  });
+}
+// A rubber stamp, as in the prototype: wooden block, handle and knob, rubber face pointing down local -z.
+function stampTool(color) {
+  const g = new THREE.Group();
+  const wood = mat(0x6E5034, 0.7), knob = mat(0xA06B42, 0.6);
+  box(1.4, 0.5, 0.26, wood, 0, 0, 0.2, g);
+  const rubber = box(1.34, 0.45, 0.06, flatMat(new THREE.Color(color).getHex()), 0, 0, 0.04, g);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.15, 0.7, 8), knob); neck.rotation.x = Math.PI / 2; neck.position.z = 0.68; g.add(neck);
+  const top = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), knob); top.position.z = 1.1; g.add(top);
+  g.userData.rubber = rubber;
+  return g;
+}
+// The camera moves to the pinned card, the stamp comes down on it, the ink lands with a thump, and the stamp lifts away.
+let cardShots = 0;
+async function stampDown(card, text, color) {
+  card.updateMatrixWorld(true);
+  const at = card.localToWorld(V(0.3, -0.1, 0));
+  const normal = V(0, 0, 1).applyQuaternion(card.getWorldQuaternion(new THREE.Quaternion()));
+  const name = `card${++cardShots}`;
+  SHOTS[name] = { pos: at.clone().addScaledVector(normal, 4.2).add(V(0, 0.5, 0)).toArray(), look: at.toArray() };
+  shot(name, 3);
+  await wait(950);   // let the camera settle on the card first
+  const ink = stampCard(card, text, color);
+  ink.material.opacity = 0;
+  const tool = stampTool(color);
+  tool.position.set(0.55, -0.38, 3.2); tool.rotation.z = 0.12; card.add(tool);
+  await tween(380, (e) => { tool.position.z = 0.02 + 3.2 * (1 - e * e); });
+  shake(0.14);
+  await tween(160, (e) => { tool.scale.z = 1 - 0.25 * Math.sin(Math.PI * e); ink.material.opacity = 0.92 * e; });
+  await wait(180);
+  await tween(480, (e) => { tool.position.z = 0.02 + e * 3.6; tool.position.x = 0.55 + e * 1.6; });
+  drop(tool);
 }
 async function rule(result, reason, card, proof) {
   shot("judge", 3);
@@ -1371,15 +1414,18 @@ async function rule(result, reason, card, proof) {
   gavelPivot.userData.strike = 1;
   shake(0.28);
   judge.arms[1].rotation.x = 0;
-  const colors = { Overruled: "#8A7458", Sustained: "#B7791F", Struck: "#D4581C", Admitted: "#1F8F55", Dismissed: "#D4581C" };
-  const st = stampMesh(result, colors[result] || "#8A7458");
-  st.position.set(0, 3.7, -1.6); st.scale.setScalar(1.8); st.rotation.z = -0.06;
-  // only one verdict stamp on screen at a time
-  for (const old of stamps.splice(0)) drop(old);
-  st.userData.anim = { start: performance.now() };
-  stamps.push(st);
-  if (result === "Struck" && card) { burst(card.getWorldPosition(V(0, 0, 0)), 0xF2E8D5, 60, 1.1); drop(card); }
-  else if (card) stampCard(card, result, colors[result] || "#8A7458");
+  const colors = { Overruled: "#8A7458", Sustained: "#B7791F", Struck: "#8A4F7D", Admitted: "#1F8F55", Dismissed: "#8A4F7D" };
+  const color = colors[result] || "#8A7458";
+  for (const old of stamps.splice(0)) drop(old);   // only one verdict stamp on screen at a time
+  if (card && result !== "Struck") { await stampDown(card, result, color); }
+  else {
+    // no card to stamp, or a made-up quote that gets torn up: the ruling stamps the air instead
+    const st = stampMesh(result, color);
+    st.position.set(0, 3.7, -1.6); st.scale.setScalar(1.8); st.rotation.z = -0.06;
+    st.userData.anim = { start: performance.now() };
+    stamps.push(st);
+    if (card) { burst(card.getWorldPosition(V(0, 0, 0)), 0xF2E8D5, 60, 1.1); drop(card); }
+  }
   await say("Judge", `${result}. ${reason}`, { proof });
 }
 const stamps = [];
@@ -1406,15 +1452,15 @@ async function roundHearing() {
   await say("Judge", `Case ${c.id}. ${c.name}, F-1, working for ${c.employer}. The claim: Social Security and Medicare withheld that she likely didn't owe${c.amount ? ", $440.64 in total" : ""}. Advocate, open.`, { shot: "judge" });
   await say("Advocate", `${c.first} is on an F-1 visa and works on campus. IRS Publication 519 says these taxes aren't withheld from F-1 students unless they're resident aliens.`, { shot: "adv", lean: true });
   const proofQuote = { href: IRS_QUOTE_LINK, label: "See it in IRS Publication 519" };
-  const exhibitA = await throwCard(adv, judge, "Exhibit A · IRS Publication 519", QUOTE, "#3F6FE0", { proof: proofQuote });
+  const exhibitA = await throwCard(adv, judge, "Exhibit A · IRS Publication 519", QUOTE, "#2B7A78", { proof: proofQuote });
   await rule("Admitted", "The quote matches the stored IRS text word for word.", exhibitA, proofQuote);
   if (aborted) return;
 
   // Objection 1: residency
   shot("counsel");
   counsel.lean = 1;
-  await banner("Objection!", null, "#D4581C");
-  const o1 = await throwCard(counsel, adv, "Payroll's Counsel", "After five calendar years, students can be taxed as residents.", "#D4581C");
+  await banner("Objection!", null, "#8A4F7D");
+  const o1 = await throwCard(counsel, adv, "Payroll's Counsel", "After five calendar years, students can be taxed as residents.", "#8A4F7D");
   adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 8); shake(0.12);
   await say("Payroll's Counsel", "Objection. After five calendar years, F-1 students can be taxed as residents. She may owe these taxes.", { shot: "counsel" });
   counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
@@ -1430,7 +1476,7 @@ async function roundHearing() {
     damage("left", 100); drawFace(adv, "sad"); adv.slump = 1; counsel.joy = 1; drawFace(counsel, "joy");
     $("hud-claim").className = "claim long lose";
     shot("court", 1.8);
-    await banner("Claim dismissed", "Docket won't call payroll", "#D4581C");
+    await banner("Claim dismissed", "Docket won't call payroll", "#8A4F7D");
     await say("Judge", "Claim dismissed. Nadia is likely a resident for tax purposes in 2026, so these taxes likely apply. Docket tells her honestly and doesn't call anyone.", { shot: "judge" });
     return "dismissed";
   }
@@ -1441,7 +1487,7 @@ async function roundHearing() {
     { label: "Medicare · $10.44", detail: "Per paycheck" }
   ], async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "Not relevant to residency. Answer the objection.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
   await say("Advocate", "She arrived August 15, 2024. That makes 2026 her calendar year 3 of 5. She's still in her exempt years.", { shot: "adv", lean: true });
-  await throwCard(adv, counsel, "Advocate", "Arrived Aug 15, 2024: year 3 of 5.", "#3F6FE0");
+  await throwCard(adv, counsel, "Advocate", "Arrived Aug 15, 2024: year 3 of 5.", "#2B7A78");
   counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 25); stats.overruled++;
   await rule("Overruled", "She arrived Aug 15, 2024, so 2026 is calendar year 3 of 5.", o1);
   counsel.hurt = 0; drawFace(counsel, "idle");
@@ -1449,8 +1495,8 @@ async function roundHearing() {
 
   // Objection 2: is the job allowed?
   shot("counsel"); counsel.lean = 1;
-  await banner("Objection!", null, "#D4581C");
-  const o2 = await throwCard(counsel, adv, "Payroll's Counsel", "This job may not be allowed under her visa.", "#D4581C");
+  await banner("Objection!", null, "#8A4F7D");
+  const o2 = await throwCard(counsel, adv, "Payroll's Counsel", "This job may not be allowed under her visa.", "#8A4F7D");
   adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 6); shake(0.1);
   await say("Payroll's Counsel", "Objection. The exemption only covers work her visa allows. This job may not qualify.", { shot: "counsel" });
   counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
@@ -1460,7 +1506,7 @@ async function roundHearing() {
     { label: "Net pay · $664.92", detail: "Per paycheck" }
   ], async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "That doesn't show the job is allowed. Try again.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
   await say("Advocate", "Her employer is University Dining Services. It's an on-campus job, the kind F-1 students are allowed to do.", { shot: "adv", lean: true });
-  await throwCard(adv, counsel, "Advocate", "University Dining Services: on campus.", "#3F6FE0");
+  await throwCard(adv, counsel, "Advocate", "University Dining Services: on campus.", "#2B7A78");
   counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 25); stats.overruled++;
   await rule("Overruled", "The employer is University Dining Services, an on-campus job.", o2);
   counsel.hurt = 0; drawFace(counsel, "idle");
@@ -1468,7 +1514,7 @@ async function roundHearing() {
 
   // Objection 3: a made-up quote gets struck
   shot("counsel"); counsel.lean = 1;
-  const o3 = await throwCard(counsel, judge, "Payroll's Counsel cites", "“All student wages are subject to FICA.”", "#D4581C");
+  const o3 = await throwCard(counsel, judge, "Payroll's Counsel cites", "“All student wages are subject to FICA.”", "#8A4F7D");
   await say("Payroll's Counsel", "The rule is clear: “All student wages are subject to FICA.”", { shot: "counsel" });
   counsel.lean = 0;
   await present("Counsel quoted a rule. What does the Advocate do?", [
@@ -1480,13 +1526,13 @@ async function roundHearing() {
   counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 30); stats.struck++;
   await rule("Struck", "Counsel's quote, “All student wages are subject to FICA,” isn't in IRS Publication 519. The real rule says the opposite for F-1 students. Struck from the record.", o3,
     { href: IRS_QUOTE_LINK, label: "Read the real rule in Publication 519", note: "opens irs.gov with it highlighted" });
-  await banner("Made-up rule caught", "An AI agent invented a quote. Docket's code checked it against the IRS text and threw it out.", "#D4581C");
+  await banner("Made-up rule caught", "An AI agent invented a quote. Docket's code checked it against the IRS text and threw it out.", "#8A4F7D");
   counsel.hurt = 0; drawFace(counsel, "idle");
   if (aborted) return;
 
   // Objection 4: employer first (sustained — becomes a condition)
   shot("counsel"); counsel.lean = 1;
-  const o4 = await throwCard(counsel, adv, "Payroll's Counsel", "The refund has to be requested from the employer first.", "#D4581C");
+  const o4 = await throwCard(counsel, adv, "Payroll's Counsel", "The refund has to be requested from the employer first.", "#8A4F7D");
   await say("Payroll's Counsel", "Objection. A refund like this has to be requested from the employer first, not the IRS.", { shot: "counsel" });
   counsel.lean = 0;
   await present("Counsel says: ask the employer first. How does the Advocate answer?", [
@@ -1568,7 +1614,7 @@ async function roundCall() {
   await new Promise((resolve) => {
     focusDialog(true); liveIsFrame = false; updateBack(); $("proof").innerHTML = "";
     $("speaker").textContent = "Your approval";
-    $("speaker").style.setProperty("--dot", "#3F6FE0");
+    $("speaker").style.setProperty("--dot", "#2B7A78");
     $("line").textContent = "One approval places exactly one call.";
     $("sub").textContent = "";
     $("btn-next").disabled = true;
@@ -1770,7 +1816,20 @@ async function loadLive() {
 const liveVerdictLabel = { upheld: "Claim stands", downgraded: "Claim stands, with a condition", needs_human: "Needs a person", defeated: "Claim dismissed" };
 
 async function liveHearing(c) {
-  const f = c.file.finding, h = c.file.hearing;
+  // Ask the agents to argue it again, now, rather than replaying the hearing they held earlier.
+  // A browser cannot send a uAgent message, so the request goes through Convex and the Tax agent
+  // picks it up within a few seconds. If anything about that fails we simply play the stored
+  // hearing, which is what this always did.
+  let f = c.file.finding, h = c.file.hearing;
+  const heldBefore = h?.at || "";
+  try {
+    await convex("mutation", "game:requestHearing");
+    await say("Judge", `Calling the agents. The Tax agent is making the claim and the Auditor is preparing to object - this is happening now, not a replay.`, { shot: "judge" });
+    const fresh = await pollFile((file) => (file.hearing?.at || "") > heldBefore, 30);
+    if (fresh?.hearing) { c.file = fresh; f = fresh.finding; h = fresh.hearing; }
+  } catch (e) {
+    console.warn("Docket live hearing:", e);
+  }
   if (!f || !h) {
     await say("Judge", `Nothing to hear yet. Ask Docket “check my pay” in ASI:One. The Tax and Auditor agents hold the hearing, and it appears here.`, { shot: "judge" });
     return "pending";
@@ -1778,7 +1837,7 @@ async function liveHearing(c) {
   await say("Judge", `Case file for ${c.name}, ${c.visa}, working for ${c.employer}. The claim: Social Security and Medicare withheld that ${c.first} likely didn't owe, ${c.claim} in total. This is the hearing Docket's agents held on ${longDate(h.at.slice(0, 10))}. Advocate, open.`, { shot: "judge" });
   const [opening, ...rest] = h.rounds;
   await say("Advocate", opening.argument, { shot: "adv", lean: true });
-  const exhibit = await throwCard(adv, judge, `Exhibit A · ${(f.sourceTitle || "IRS source").split(",")[0]}`, f.quote, "#3F6FE0");
+  const exhibit = await throwCard(adv, judge, `Exhibit A · ${(f.sourceTitle || "IRS source").split(",")[0]}`, f.quote, "#2B7A78");
   await rule("Admitted", "The quote matches the stored IRS text word for word.", exhibit);
   if (aborted) return;
   for (let i = 0; i < rest.length; i++) {
@@ -1787,8 +1846,8 @@ async function liveHearing(c) {
     const reply = rest[i + 1] && rest[i + 1].side === "advocate" && rest[i + 1].objectionId === o.objectionId ? rest[i + 1] : null;
     const label = OBJECTION[o.objectionId] || o.objectionId;
     shot("counsel"); counsel.lean = 1;
-    await banner("Objection!", null, "#D4581C");
-    const card = await throwCard(counsel, adv, "The Auditor objects", label, "#D4581C");
+    await banner("Objection!", null, "#8A4F7D");
+    const card = await throwCard(counsel, adv, "The Auditor objects", label, "#8A4F7D");
     adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 8); shake(0.12);
     await say("Auditor", `Objection. ${o.argument}`, { shot: "counsel" });
     counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
@@ -1814,7 +1873,7 @@ async function liveHearing(c) {
     drawFace(adv, "sad"); adv.slump = 1; counsel.joy = 1; drawFace(counsel, "joy");
     $("hud-claim").className = "claim long lose"; shot("court", 1.8);
   }
-  await banner(liveVerdictLabel[h.verdict], win ? `${c.claim} · ${h.verdict === "upheld" ? "ask payroll first" : `${c.first} decides`}` : "Docket won't call payroll", win ? "#1F8F55" : "#D4581C");
+  await banner(liveVerdictLabel[h.verdict], win ? `${c.claim} · ${h.verdict === "upheld" ? "ask payroll first" : `${c.first} decides`}` : "Docket won't call payroll", win ? "#1F8F55" : "#8A4F7D");
   await say("Judge", `${liveVerdictLabel[h.verdict]}. ${h.reason}${win ? ` Docket may ask ${c.employer} payroll for the refund, with ${c.first}'s approval.` : ""}`, { shot: "judge" });
   return win ? "stands" : h.verdict === "defeated" ? "dismissed" : "needs_human";
 }
@@ -1841,7 +1900,7 @@ async function liveCall(c) {
     const approved = await new Promise((resolve) => {
       focusDialog(true);
       $("speaker").textContent = "Your approval";
-      $("speaker").style.setProperty("--dot", "#3F6FE0");
+      $("speaker").style.setProperty("--dot", "#2B7A78");
       $("line").textContent = "This is the real case. Approving places one real payroll call through Cartesia.";
       $("sub").textContent = "The same approval as the review card in ASI:One or the dashboard button";
       $("btn-next").disabled = true;
@@ -1872,7 +1931,7 @@ async function liveCall(c) {
   lamps[0].material.color.set(0x43D18A);
   handsetPivot.userData.ring = 1;
   focusDialog();
-  $("speaker").textContent = "Docket"; $("speaker").style.setProperty("--dot", "#3F6FE0");
+  $("speaker").textContent = "Docket"; $("speaker").style.setProperty("--dot", "#2B7A78");
   $("line").textContent = `Calling ${c.employer} payroll. The Cartesia agent logs what payroll says when the call ends.`;
   $("sub").textContent = "Waiting for the call record…"; $("choice-area").innerHTML = ""; $("btn-next").disabled = true; $("hint").textContent = "";
   file = await pollFile((x) => x.call || x.case?.callError || ["written_request", "escalate_irs", "awaiting_response", "closed"].includes(x.case?.state) && x.call, 180);
@@ -2076,7 +2135,7 @@ function setCase(key) {
         + "no money moves. In Docket, this runs as Fetch.ai agents you talk to in ASI:One.";
     fine.classList.toggle("live-fine", !!current.live);
   }
-  for (const k of ["priya", "nadia", "live"]) {
+  for (const k of ["nadia", "live"]) {
     if (!$("case-" + k) || $("case-" + k).hidden) continue;
     $("case-" + k).setAttribute("aria-pressed", key === k);
     $("case-" + k).querySelector(".pick").textContent = key === k ? "✓ Selected" : "Choose";
@@ -2090,7 +2149,6 @@ function setMode(m) {
   $("btn-mode").textContent = m === "watch" ? "Mode: Watch" : "Mode: Play";
   $("btn-mode").setAttribute("aria-pressed", m === "play");
 }
-$("case-priya").addEventListener("click", () => setCase("priya"));
 $("case-nadia").addEventListener("click", () => setCase("nadia"));
 $("case-live").addEventListener("click", () => setCase("live"));
 $("mode-watch").addEventListener("click", () => setMode("watch"));
@@ -2098,13 +2156,15 @@ $("mode-play").addEventListener("click", () => setMode("play"));
 $("btn-mode").addEventListener("click", () => setMode(mode === "watch" ? "play" : "watch"));
 $("btn-start").addEventListener("click", play);
 $("btn-replay").addEventListener("click", () => { $("end-screen").classList.add("hide"); play(); });
-$("btn-other").addEventListener("click", () => { setCase(current.key === "priya" ? "nadia" : "priya"); $("end-screen").classList.add("hide"); play(); });
+$("btn-other").addEventListener("click", () => { setCase(current.key === "nadia" ? (CASES.live ? "live" : "nadia") : "nadia"); $("end-screen").classList.add("hide"); play(); });
 $("btn-skip").addEventListener("click", () => { if (!running) return; exitReview(); boost = 8; updateBack(); onAdvance(); if (skipHook) skipHook(); });
 if (params.get("payroll") === "agree") payrollWill = "agree";
 if (params.get("case") === "nadia") setCase("nadia");
 // The live case appears once Convex answers, and refreshes while the menu is up, so a hearing the agents
 // hold while this page is open shows up without a reload.
-loadLive().then(() => { if (DEFAULT_CASE === "live" && CASES.live) setCase("live"); });
+loadLive().then(() => {
+  if (CASES.live && DEFAULT_CASE !== "nadia" && params.get("case") !== "nadia") setCase("live");
+});
 setInterval(() => { if (!running) loadLive(); }, 5000);
 if (params.get("mode") === "play") setMode("play");
 if (params.get("slot") === "show") document.body.classList.add("show-slot");
@@ -2239,6 +2299,357 @@ Promise.all(["800 30px Bitter", "900 30px Bitter", "600 30px Newsreader", "500 2
   drawFace(judge, "code");
   drawCard(false);
 }).catch(() => {});
+/* ============================================================
+   Dex, Docket's caseworker fox (from Soham's handoff, case-fox.js, inlined so the page stays one file)
+   ============================================================ */
+// Dex — Docket's caseworker fox. An origami fox in a navy suit with a Docket-blue tie,
+// round glasses, and the student's case file tucked under one arm.
+// Same controls as Folder Pup, so either character drops into the same code:
+//
+//   import { createCaseFox } from "./case-fox.js";
+//   const fox = createCaseFox(THREE);
+//   scene.add(fox.object);
+//   // every frame:  fox.update(deltaSeconds);
+//   fox.setState("guide", { lookAt: someVector3 });
+//
+// States: idle, talk, think, guide, alert, approve, celebrate, run.
+// approve, celebrate and alert play once, then return to the state that was looping before.
+
+const FOX_STATES = ["idle", "talk", "think", "guide", "alert", "approve", "celebrate", "run"];
+const FOX_ONE_SHOT = { approve: 1.4, celebrate: 2.0, alert: 2.2 };
+
+const FOX_COLORS = {
+  fur: 0xE07A3C,       // fox orange
+  cream: 0xFBF3E6,     // muzzle, chest, tail tip, hands
+  tips: 0x3A2A22,      // ear tips
+  suit: 0x24344F,      // navy jacket
+  suitDark: 0x1B2840,  // lapels, trousers
+  shirt: 0xFFFFFF,
+  tie: 0x4F7CF0,       // Docket blue
+  brass: 0xB8925A,     // lapel pin, buttons
+  frames: 0x3A3026,    // glasses
+  shoes: 0x2A1E18,
+  ink: 0x15110E,
+  folder: 0x4F7CF0,
+  tongue: 0xE58A86
+};
+
+function createCaseFox(THREE, options = {}) {
+  const { scale = 1, shadows = true, colors = {} } = options;
+  const C = { ...FOX_COLORS, ...colors };
+
+  /* ---------- materials + helpers ---------- */
+  const disposables = [];
+  const track = (x) => { disposables.push(x); return x; };
+  const foldMat = (color) => track(new THREE.MeshStandardMaterial({ color, roughness: 0.86, flatShading: true, vertexColors: true, side: THREE.DoubleSide }));
+  const flatMat = (color, rough = 0.8, metal = 0) => track(new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, flatShading: true }));
+  const inkMat = flatMat(C.ink, 0.25), brassMat = flatMat(C.brass, 0.35, 0.6), shine = track(new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  function paperGeo(tris, jitter = 0.07) {
+    const pos = [], col = [];
+    tris.forEach((t, i) => { const s = 1 - jitter + (((i * 37) % 11) / 10) * jitter * 2; for (const v of t) { pos.push(...v); col.push(s, s, s); } });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+    g.computeVertexNormals(); return track(g);
+  }
+  const mirror = (tris) => tris.map((t) => t.map((v) => [-v[0], v[1], v[2]]).reverse());
+  const paper = (tris, color, parent) => { const m = new THREE.Mesh(paperGeo(tris), foldMat(color)); m.castShadow = shadows; m.receiveShadow = shadows; parent.add(m); return m; };
+  const solid = (geo, material, parent, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(track(geo), material); m.position.set(x, y, z); m.castShadow = shadows; parent.add(m); return m; };
+  const group = (parent, x = 0, y = 0, z = 0) => { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; };
+  // A folded limb: a six-sided paper tube that narrows from top to bottom
+  const limb = (len, top, bottom) => {
+    const a = [-top, 0, top * 0.6], b = [top, 0, top * 0.6], c = [0, 0, -top];
+    const fa = [-bottom, -len, bottom * 0.6], fb = [bottom, -len, bottom * 0.6], fc = [0, -len, -bottom];
+    return [[a, b, fb], [a, fb, fa], [b, c, fc], [b, fc, fb], [c, a, fa], [c, fa, fc]];
+  };
+
+  /* ---------- rig ---------- */
+  const root = new THREE.Group(); root.name = "CaseFox";
+  const rig = group(root); rig.scale.setScalar(scale);
+  const blobTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 128; const x = c.getContext("2d"); const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, "rgba(0,0,0,0.3)"); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); return track(new THREE.CanvasTexture(c)); })();
+  const blob = new THREE.Mesh(track(new THREE.PlaneGeometry(0.9 * scale, 0.9 * scale)), track(new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false })));
+  blob.rotation.x = -Math.PI / 2; blob.position.y = 0.004; root.add(blob);
+
+  // Legs in navy trousers, dark shoes
+  const hips = {};
+  for (const [k, x] of [["l", -0.1], ["r", 0.1]]) {
+    const hip = group(rig, x, 0.58, 0);
+    paper(limb(0.52, 0.075, 0.06), C.suitDark, hip);
+    solid(new THREE.BoxGeometry(0.11, 0.06, 0.2), flatMat(C.shoes, 0.5), hip, 0, -0.53, 0.04);
+    hips[k] = hip;
+  }
+
+  // Jacket: a six-sided folded body, flat face to the front
+  const jacket = solid(new THREE.CylinderGeometry(0.21, 0.25, 0.52, 6), flatMat(C.suit, 0.75), rig, 0, 0.83, 0);
+  jacket.rotation.y = Math.PI / 6;
+  const zf = (y) => 0.2165 + (y - 0.57) / 0.52 * (0.182 - 0.2165) + 0.006;   // the jacket's front face at height y
+  paper([[[-0.075, 1.07, zf(1.07)], [0.075, 1.07, zf(1.07)], [0, 0.8, zf(0.8)]]], C.shirt, rig);                  // shirt
+  paper([[[0, 1.05, zf(1.05) + 0.004], [-0.026, 0.99, zf(0.99) + 0.004], [0, 0.84, zf(0.84) + 0.004]],
+         [[0, 1.05, zf(1.05) + 0.004], [0, 0.84, zf(0.84) + 0.004], [0.026, 0.99, zf(0.99) + 0.004]]], C.tie, rig);  // tie
+  const lapel = [[[-0.075, 1.075, zf(1.07) + 0.002], [-0.15, 1.04, zf(1.04)], [-0.02, 0.84, zf(0.84) + 0.003]]];
+  paper(lapel, C.suitDark, rig); paper(mirror(lapel), C.suitDark, rig);
+  solid(new THREE.SphereGeometry(0.014, 8, 6), brassMat, rig, -0.11, 1.0, zf(1.0) + 0.006);                     // lapel pin
+  solid(new THREE.SphereGeometry(0.013, 8, 6), brassMat, rig, 0, 0.74, zf(0.74) + 0.004);                        // buttons
+  solid(new THREE.SphereGeometry(0.013, 8, 6), brassMat, rig, 0, 0.66, zf(0.66) + 0.004);
+  paper([[[-0.07, 1.09, 0.12], [0.07, 1.09, 0.12], [0, 1.15, 0.05]]], C.shirt, rig);                              // collar
+
+  // Arms: shoulder -> elbow -> hand, in suit sleeves with white cuffs
+  function arm(side) {
+    const sh = group(rig, 0.26 * side, 1.03, 0);
+    paper(limb(0.27, 0.06, 0.05), C.suit, sh);
+    const el = group(sh, 0, -0.27, 0);
+    paper(limb(0.24, 0.05, 0.045), C.suit, el);
+    solid(new THREE.CylinderGeometry(0.047, 0.047, 0.03, 6), flatMat(C.shirt, 0.8), el, 0, -0.235, 0);
+    const hand = group(el, 0, -0.25, 0);
+    paper([[[-0.04, 0, 0.02], [0.04, 0, 0.02], [0, -0.08, 0.03]], [[0.04, 0, 0.02], [0, 0, -0.03], [0, -0.08, 0.03]], [[0, 0, -0.03], [-0.04, 0, 0.02], [0, -0.08, 0.03]]], C.cream, hand);
+    sh.rotation.z = 0.08 * side;
+    return { sh, el, hand };
+  }
+  const armL = arm(-1), armR = arm(1);
+
+  // The case file, tucked under the left arm
+  const file = group(armL.el, 0.045, -0.12, 0.02);
+  solid(new THREE.BoxGeometry(0.02, 0.24, 0.32), flatMat(C.folder, 0.7), file);
+  solid(new THREE.BoxGeometry(0.012, 0.21, 0.29), flatMat(0xFBF8F1, 0.9), file, -0.012, 0.01, 0);
+  solid(new THREE.BoxGeometry(0.022, 0.05, 0.08), flatMat(0xFBF8F1, 0.9), file, 0.002, 0.13, -0.08);   // tab
+
+  // Big fluffy tail
+  // One closed, folded spindle: five-sided rings along a curve, widest in the middle, cream tip
+  const tail = group(rig, 0, 0.62, -0.2);
+  {
+    const path = [[0, 0, 0, 0.035], [0.03, 0.05, -0.12, 0.08], [0.07, 0.16, -0.25, 0.115], [0.1, 0.3, -0.32, 0.11], [0.12, 0.43, -0.32, 0.08], [0.12, 0.55, -0.27, 0]];
+    const N = 5, rings = path.map(([x, y, z, r], i) => {
+      const a = new THREE.Vector3(...path[Math.max(0, i - 1)]), b = new THREE.Vector3(...path[Math.min(path.length - 1, i + 1)]);
+      const t = b.sub(a).normalize(), u = new THREE.Vector3().crossVectors(t, new THREE.Vector3(1, 0, 0)).normalize(), v = new THREE.Vector3().crossVectors(t, u);
+      return Array.from({ length: N }, (_, k) => { const ang = (k / N) * Math.PI * 2 + i * 0.35; return [x + r * (Math.cos(ang) * u.x + Math.sin(ang) * v.x), y + r * (Math.cos(ang) * u.y + Math.sin(ang) * v.y), z + r * (Math.cos(ang) * u.z + Math.sin(ang) * v.z)]; });
+    });
+    const band = (i) => { const out = []; for (let k = 0; k < N; k++) { const a = rings[i][k], b = rings[i][(k + 1) % N], c = rings[i + 1][(k + 1) % N], d = rings[i + 1][k]; out.push([a, b, c], [a, c, d]); } return out; };
+    paper([...band(0), ...band(1), ...band(2)], C.fur, tail);
+    paper([...band(3), ...band(4)], C.cream, tail);
+  }
+
+  // Head: orange top, cream muzzle, tall ears with dark tips, round glasses
+  const neck = group(rig, 0, 1.12, 0.0);
+  const head = group(neck, 0, 0.12, 0.02);
+  head.scale.setScalar(1.22);   // a slightly big head reads friendlier at small sizes
+  const L = [-0.27, 0.13, 0.02], R = [0.27, 0.13, 0.02], HT = [0, 0.28, -0.05], HB = [0, -0.1, 0.04], S = [0, 0.02, 0.42], K = [0, 0.06, -0.16];
+  paper([[L, HT, S], [HT, R, S], [HT, L, K], [R, HT, K]], C.fur, head);
+  paper([[L, S, HB], [S, R, HB], [K, L, HB], [R, K, HB]], C.cream, head);
+  solid(new THREE.SphereGeometry(0.038, 12, 8), inkMat, head, 0, 0.025, 0.42);                                     // nose
+  const eyes = [];
+  for (const x of [-0.105, 0.105]) {
+    const e = solid(new THREE.SphereGeometry(0.033, 12, 8), inkMat, head, x, 0.165, 0.125);
+    const g = new THREE.Mesh(track(new THREE.SphereGeometry(0.009, 8, 6)), shine); g.position.set(0.011, 0.012, 0.028); e.add(g);
+    eyes.push(e);
+  }
+  const frames = flatMat(C.frames, 0.4, 0.3);
+  for (const x of [-0.105, 0.105]) { const rim = solid(new THREE.TorusGeometry(0.058, 0.009, 6, 20), frames, head, x, 0.165, 0.165); rim.rotation.y = x < 0 ? 0.25 : -0.25; }
+  const bridge = solid(new THREE.CylinderGeometry(0.007, 0.007, 0.09, 6), frames, head, 0, 0.17, 0.2); bridge.rotation.z = Math.PI / 2;
+  const earTris = [[[-0.1, 0, 0.03], [0.06, 0, 0.01], [-0.04, 0.3, -0.03]], [[0.06, 0, 0.01], [-0.02, 0, -0.08], [-0.04, 0.3, -0.03]], [[-0.02, 0, -0.08], [-0.1, 0, 0.03], [-0.04, 0.3, -0.03]]];
+  const earInner = [[[-0.07, 0.02, 0.034], [0.035, 0.02, 0.02], [-0.04, 0.2, 0.0]]];
+  const earTip = [[[-0.065, 0.2, 0.0], [-0.01, 0.2, -0.01], [-0.04, 0.3, -0.03]]];
+  const earL = group(head, -0.15, 0.22, -0.03), earR = group(head, 0.15, 0.22, -0.03);
+  for (const [ear, f] of [[earL, (t) => t], [earR, mirror]]) { paper(f(earTris), C.fur, ear); paper(f(earInner), C.cream, ear); paper(f(earTip), C.tips, ear); }
+  const jaw = group(head, 0, -0.06, 0.12);
+  paper([[[-0.09, 0, 0], [0.09, 0, 0], [0, -0.03, 0.24]], [[-0.09, 0, 0], [0, -0.03, 0.24], [0, -0.06, 0.02]], [[0.09, 0, 0], [0, -0.06, 0.02], [0, -0.03, 0.24]]], C.cream, jaw);
+  paper([[[-0.04, 0.004, 0.04], [0.04, 0.004, 0.04], [0, 0, 0.19]]], C.tongue, jaw);
+
+  // Confetti for celebrate (paper bits, parented to the fox's parent so they don't spin with it)
+  const bits = [];
+  const bitGeo = track(new THREE.PlaneGeometry(0.07, 0.045));
+  const bitMats = [C.tie, C.fur, 0x43D18A, C.brass, C.cream].map((c) => track(new THREE.MeshStandardMaterial({ color: c, side: THREE.DoubleSide, roughness: 0.9 })));
+  function burst(n = 30) {
+    const parent = root.parent || root;
+    const o = new THREE.Vector3(0, 1.3 * scale, 0); root.localToWorld(o); parent.worldToLocal(o);
+    for (let i = 0; i < n; i++) {
+      const m = new THREE.Mesh(bitGeo, bitMats[i % bitMats.length]); m.position.copy(o);
+      const a = Math.random() * Math.PI * 2, sp = (0.8 + Math.random() * 1.6) * scale;
+      bits.push({ m, v: new THREE.Vector3(Math.cos(a) * sp, (2 + Math.random() * 2) * scale, Math.sin(a) * sp), r: new THREE.Vector3(Math.random() * 9, Math.random() * 9, 0), life: 1.9, floor: parent === root ? 0 : root.position.y });
+      parent.add(m);
+    }
+  }
+
+  /* ---------- behaviour ---------- */
+  let state = "idle", loopState = "idle", age = 0, oneShotLeft = 0, time = 0;
+  let talking = false, carrying = true, lookTarget = null, move = null;
+  const seed = Math.random() * 10;
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const angleLerp = (a, b, k) => { let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI; if (d < -Math.PI) d += Math.PI * 2; return a + d * k; };
+  const tmp = new THREE.Vector3();
+  // every animated value eases toward its target, so changes blend
+  const P = {};
+  const ease = (key, target, k) => (P[key] = lerp(P[key] ?? target, target, k));
+
+  function setState(name, opts = {}) {
+    if (!FOX_STATES.includes(name)) { console.warn(`[CaseFox] unknown state "${name}"`); return api; }
+    if (opts.lookAt !== undefined) lookTarget = opts.lookAt ? opts.lookAt.clone() : null;
+    if (name === "talk") talking = true; else if (state === "talk") talking = false;
+    state = name; age = 0;
+    if (FOX_ONE_SHOT[name]) { oneShotLeft = opts.duration ?? FOX_ONE_SHOT[name]; if (name === "celebrate") burst(); }
+    else { loopState = name; oneShotLeft = opts.duration ?? 0; }
+    return api;
+  }
+
+  function update(dt) {
+    dt = Math.min(dt, 0.05); time += dt; age += dt;
+    const t = time;
+    if (oneShotLeft > 0) { oneShotLeft -= dt; if (oneShotLeft <= 0) { const back = FOX_ONE_SHOT[state] ? loopState : "idle"; state = back; age = 0; if (back === "idle") loopState = "idle"; } }
+
+    let running = state === "run";
+    if (move) {
+      tmp.copy(move.to).sub(root.position); tmp.y = 0;
+      const d = tmp.length();
+      if (d < 0.04) { root.position.x = move.to.x; root.position.z = move.to.z; const done = move.onArrive; move = null; setState(loopState === "run" ? "idle" : loopState); done && done(); }
+      else { running = true; root.position.addScaledVector(tmp.normalize(), Math.min(d, move.speed * dt)); root.rotation.y = angleLerp(root.rotation.y, Math.atan2(tmp.x, tmp.z), 1 - Math.pow(0.0005, dt)); }
+    } else if (lookTarget && (state === "guide" || state === "alert")) {
+      tmp.copy(lookTarget).sub(root.position);
+      root.rotation.y = angleLerp(root.rotation.y, Math.atan2(tmp.x, tmp.z), 1 - Math.pow(0.02, dt));
+    }
+
+    // target pose — arms in radians: sh.x < 0 swings forward/up; el.x < 0 bends the forearm up
+    let rShX = 0, rShZ = 0.08, rElX = -0.15, lShX = -0.25, lShZ = -0.12, lElX = -1.25;   // left arm holds the file
+    let earP = 0.05, earRL = 0, earRR = 0, tilt = 0, pitch = 0, lean = 0, tailAmp = 0.15, tailSpd = 2.4, tailPuff = 1, eyeY = 1, eyeS = 1;
+    let hop = 0, spin = 0, shiver = 0, legSwing = 0;
+    if (running) {
+      const s = Math.sin(t * 11);
+      legSwing = s * 0.6; rShX = -s * 0.6; rElX = -0.5; lean = 0.08; earP = -0.25; tailAmp = 0.35; tailSpd = 11;
+    } else switch (state) {
+      case "talk":
+        rShX = -0.55 + Math.sin(t * 3.2) * 0.2; rShZ = 0.25; rElX = -0.9 + Math.sin(t * 4.1) * 0.25; earP = 0.12; pitch = Math.sin(t * 6) * 0.04; break;
+      case "think":
+        rShX = -1.2; rShZ = -0.1; rElX = -1.6; tilt = 0.28; pitch = -0.06; earRL = 0.3; earRR = -0.12; eyeY = 0.75; tailAmp = 0.08; tailSpd = 1.5; break;   // paw on chin
+      case "guide":
+        rShX = -1.35; rShZ = 0.12; rElX = -0.05; earP = 0.25; tilt = 0.1; tailAmp = 0.25; tailSpd = 5; break;                                            // points the way
+      case "alert":
+        rShX = -0.7; rShZ = 0.45; rElX = -0.9; lShZ = -0.35; earP = -0.85; lean = -0.12; tailPuff = 1.2; tailAmp = 0.05; eyeS = 1.2;
+        shiver = age < 0.7 ? Math.sin(t * 70) * 0.008 : 0; break;
+      case "approve":
+        rShX = -2.5; rShZ = 0.15; rElX = -0.7; earP = 0.3; eyeY = 0.4; tailAmp = 0.45; tailSpd = 12;                                                   // fist pump
+        hop = age < 0.9 ? Math.abs(Math.sin(age * Math.PI / 0.45)) * 0.12 : 0; break;
+      case "celebrate": {
+        const j = Math.min(1, age / 0.85);
+        rShX = -2.9; rShZ = 0.35; rElX = -0.2; lShX = -2.6; lShZ = -0.35; lElX = -0.3; earP = 0.35; eyeY = 0.4; tailAmp = 0.5; tailSpd = 14;
+        hop = age < 0.85 ? Math.sin(Math.PI * j) * 0.4 : 0; spin = (1 - Math.pow(1 - j, 3)) * Math.PI * 2; break;
+      }
+      default: {  // idle: breathes, flicks an ear, now and then pushes up its glasses
+        const cyc = (t + seed) % 8;
+        if (cyc > 6.6 && cyc < 7.5) { rShX = -1.9; rShZ = -0.15; rElX = -1.4; }
+        earRL = ((t + seed) % 5.3) < 0.18 ? 0.3 : 0;
+        if (!lookTarget) tilt = Math.sin(t * 0.6 + seed) * 0.04;
+      }
+    }
+
+    const k = 1 - Math.pow(0.0008, dt);
+    armR.sh.rotation.x = ease("rShX", rShX, k); armR.sh.rotation.z = ease("rShZ", rShZ, k); armR.el.rotation.x = ease("rElX", rElX, k);
+    armL.sh.rotation.x = ease("lShX", carrying ? lShX : (running ? Math.sin(t * 11) * 0.6 : 0), k);
+    armL.sh.rotation.z = ease("lShZ", carrying ? lShZ : -0.08, k);
+    armL.el.rotation.x = ease("lElX", carrying ? lElX : -0.15, k);
+    file.visible = carrying;
+    hips.l.rotation.x = running ? legSwing : ease("hl", 0, k); hips.r.rotation.x = running ? -legSwing : ease("hr", 0, k);
+
+    const breathe = Math.sin(t * 2 + seed) * 0.01;
+    const bob = running ? Math.abs(Math.sin(t * 11)) * 0.04 : 0;
+    rig.position.set(shiver, (hop + bob) * scale, 0);
+    rig.rotation.y = spin;
+    rig.rotation.x = ease("lean", lean, k);
+    rig.scale.set(scale, scale * (1 + breathe), scale);
+
+    tail.rotation.y = Math.sin(t * ease("tailSpd", tailSpd, k)) * ease("tailAmp", tailAmp, k);
+    tail.scale.setScalar(ease("tailPuff", tailPuff, k));
+    tail.rotation.x = state === "alert" ? ease("tailX", -0.5, k) : ease("tailX", 0, k);
+
+    let yaw = 0, nod = 0;
+    if (lookTarget && !running) {
+      tmp.copy(lookTarget); root.worldToLocal(tmp); tmp.y -= 1.25 * scale;
+      yaw = clamp(Math.atan2(tmp.x, Math.max(0.05, tmp.z)), -0.7, 0.7);
+      nod = clamp(-Math.atan2(tmp.y, Math.hypot(tmp.x, tmp.z)), -0.35, 0.35);
+    }
+    neck.rotation.y = lerp(neck.rotation.y, yaw, 0.12);
+    neck.rotation.x = lerp(neck.rotation.x, nod + ease("pitch", pitch, k), 0.12);
+    head.rotation.z = ease("tilt", tilt, k);
+    earL.rotation.x = earR.rotation.x = ease("earP", earP, k);
+    earL.rotation.z = ease("earRL", earRL, k); earR.rotation.z = -ease("earRR", earRR, k);
+
+    let jawOpen = 0;
+    if (talking && !running) jawOpen = (0.5 + 0.5 * Math.sin(t * 15)) * (0.6 + 0.4 * Math.sin(t * 3.1)) * 0.36;
+    if (state === "celebrate" && age > 0.85) jawOpen = Math.max(jawOpen, Math.abs(Math.sin(age * 9)) * 0.4);
+    jaw.rotation.x = ease("jaw", jawOpen, 0.35);
+
+    const happy = state === "approve" || state === "celebrate";
+    const eY = ease("eyeY", happy ? 0.4 : eyeY, 1 - Math.pow(0.00001, dt)), eS = ease("eyeS", eyeS, k);
+    const blink = ((t + seed) % 3.9) < 0.1 && eY > 0.9;
+    for (const e of eyes) e.scale.set(eS, (blink ? 0.12 : eY) * eS, eS);
+
+    for (let i = bits.length - 1; i >= 0; i--) {
+      const b = bits[i];
+      b.v.y -= 7 * scale * dt; b.m.position.addScaledVector(b.v, dt);
+      b.m.rotation.x += b.r.x * dt; b.m.rotation.y += b.r.y * dt;
+      if (b.m.position.y < b.floor + 0.01) { b.m.position.y = b.floor + 0.01; b.v.multiplyScalar(0.25); }
+      b.life -= dt; if (b.life <= 0) { b.m.parent && b.m.parent.remove(b.m); bits.splice(i, 1); }
+    }
+  }
+
+  const api = {
+    object: root,
+    get state() { return state; },
+    setState,
+    talk(on = true) { talking = !!on; return api; },
+    lookAt(vec3) { lookTarget = vec3 ? vec3.clone() : null; return api; },
+    moveTo(vec3, { speed = 1.6, onArrive } = {}) { move = { to: vec3.clone(), speed: speed * scale, onArrive }; return api; },
+    /** The case file under its arm: true (default) or false. */
+    carryFile(on = true) { carrying = on !== false; return api; },
+    update, burst,
+    dispose() { root.parent && root.parent.remove(root); bits.forEach((b) => b.m.parent && b.m.parent.remove(b.m)); disposables.forEach((d) => d.dispose && d.dispose()); }
+  };
+  return api;
+}
+
+// A small Dex standing on the top edge of the dialog while a choice is up. One transparent renderer,
+// reused for every question. Watching: he points toward the right card. Arguing it yourself: he waits,
+// thinking, so he never gives the answer away. A right pick gets a fist pump, a wrong one a flinch.
+const dexMini = (() => {
+  const SIZE = 150;
+  const cnv = document.createElement("canvas"); cnv.className = "dex-mini"; cnv.setAttribute("aria-hidden", "true");
+  let r;
+  try { r = new THREE.WebGLRenderer({ canvas: cnv, alpha: true, antialias: true }); } catch { return null; }
+  r.setPixelRatio(Math.min(devicePixelRatio, 2)); r.setSize(SIZE, SIZE, true);
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  document.body.append(cnv);
+  const sc = new THREE.Scene();
+  sc.add(new THREE.HemisphereLight(0xFFF6E8, 0xC9B79C, 1.6));
+  const sun = new THREE.DirectionalLight(0xFFFFFF, 1.6); sun.position.set(1.5, 3, 2.5); sc.add(sun);
+  const cm = new THREE.PerspectiveCamera(30, 1, 0.1, 20); cm.position.set(0.3, 1.0, 4.0); cm.lookAt(0, 0.88, 0);
+  const dex = createCaseFox(THREE, { shadows: false, colors: { tie: 0x2B7A78, folder: 0x2B7A78 } });
+  dex.object.rotation.y = -0.35;   // three-quarter view, turned toward the cards
+  sc.add(dex.object);
+  const ck = new THREE.Clock();
+  let lingerUntil = 0;   // stays up briefly after a pick so the reaction is seen
+  (function loop() {
+    requestAnimationFrame(loop);
+    const dt = ck.getDelta();
+    const d = $("dialog");
+    const on = d.classList.contains("show") && (d.classList.contains("choosing") && $("choice-area").childElementCount > 0 || performance.now() < lingerUntil);
+    cnv.classList.toggle("on", on);
+    if (!on) return;
+    const rect = d.getBoundingClientRect();
+    cnv.style.left = `${rect.right - SIZE - 18}px`; cnv.style.top = `${rect.top - SIZE + 14}px`;
+    dex.update(dt); r.render(sc, cm);
+  })();
+  return { dex, linger: (ms) => { lingerUntil = performance.now() + ms; } };
+})();
+addEventListener("docket:choices", (e) => {
+  if (!dexMini) return;
+  const { correctIndex, buttons, mode: m } = e.detail;
+  const { dex } = dexMini;
+  if (m === "watch") {
+    // point down toward the right card: further left the further left the card sits
+    const n = buttons.length, x = n > 1 ? -2.4 + (correctIndex / (n - 1)) * 2.4 : -1.2;
+    dex.setState("guide", { lookAt: new THREE.Vector3(x, 0, 2) });
+  } else dex.setState("think", { lookAt: null });
+  buttons.forEach((b, i) => b.addEventListener("click", () => { dex.setState(i === correctIndex ? "approve" : "alert"); dexMini.linger(1500); }, { once: true }));
+});
+
 requestAnimationFrame(animate);
 window.__game = { play, setCase, setMode, stats, get running() { return running; } };
 </script>

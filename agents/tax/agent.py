@@ -86,6 +86,32 @@ async def hold_hearings(ctx: Context, profile_id: str, written: list[dict]) -> l
     return results
 
 
+@agent.on_interval(period=float(os.environ.get("TAX_HEARING_POLL_SECONDS", "4")))
+async def hearing_on_request(ctx: Context):
+    """Hold the hearing again when the Hearing game asks for one.
+
+    The game runs in a browser and cannot send a uAgent message, so it leaves a request in Convex
+    and this picks it up. Without it the game replayed the hearing the agents held earlier: the
+    same words on screen, but nothing actually running while you watch, and the Agentverse
+    interaction counts never moved. Now watching the game and watching the agents argue are the
+    same thing.
+    """
+    try:
+        ask_row = await asyncio.to_thread(query, "game:hearingRequested")
+    except Exception:  # noqa: BLE001 - a Convex blip must not kill the interval
+        return
+    if not ask_row or not ask_row.get("requested") or not ask_row.get("profileId"):
+        return
+    pid = ask_row["profileId"]
+    await asyncio.to_thread(log, "tax", "hearing_rerun",
+                            "The Hearing game asked for this hearing live; arguing it again")
+    try:
+        flags = await asyncio.to_thread(engine.run, pid)
+        await hold_hearings(ctx, pid, flags)
+    except Exception:
+        ctx.logger.exception("the requested hearing failed")
+
+
 @agent.on_message(RunRules, replies=RulesResult)
 async def run_rules(ctx: Context, sender: str, msg: RunRules):
     try:
