@@ -64,7 +64,24 @@ http.route({
     const caseId = body && field(body, "case_id", "caseId");
     if (!caseId) return text("Missing case_id.", 400);
     const summary = await ctx.runQuery(internal.cartesia.caseSummary, { caseId });
-    if (summary === null) return text(`No case found for ${caseId}. Apologize, say you will call back, and end the call.`, 404);
+    // Log both outcomes. Until this existed, a tool call left no trace until log_call_outcome, so
+    // "the agent never called the tool" and "the agent called it with a stale case id" looked
+    // identical from here — and on the call itself they sound the same too.
+    if (summary === null) {
+      await ctx.runMutation(api.activity.log, {
+        agent: "voice",
+        action: "case_summary_missing",
+        detail: `A call asked for case ${caseId}, which does not exist. The agent was told to ` +
+          `apologise and end the call. Usually a stale case id in the dialler's dynamic variables.`,
+      });
+      return text(`No case found for ${caseId}. Apologize, say you will call back, and end the call.`, 404);
+    }
+    await ctx.runMutation(api.activity.log, {
+      agent: "voice",
+      action: "case_summary_read",
+      detail: `Payroll call read the case: ${summary.text.slice(0, 120)}…`,
+      inputIds: [summary.caseId],
+    });
     return text(summary.text);
   }),
 });
