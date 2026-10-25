@@ -12,7 +12,11 @@
     "homeCurrency": "USD",
     "workAuth": "on-campus",
     "phoneMasked": "(***) ***-0000",
-    "filed8843Years": []
+    "filed8843Years": [],
+    "employer": {
+      "name": "Recreational Sports",
+      "type": "university"
+    }
   },
   "schoolCalendar": {
     "school": "Golden Bear University",

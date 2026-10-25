@@ -14,7 +14,11 @@
     "phoneMasked": "(***) ***-0000",
     "filed8843Years": [
       2025
-    ]
+    ],
+    "employer": {
+      "name": "Recreational Sports",
+      "type": "university"
+    }
   },
   "schoolCalendar": {
     "school": "Golden Bear University",
@@ -40,7 +44,7 @@
     {
       "periodStart": "2026-01-12",
       "periodEnd": "2026-01-25",
-      "employer": "University Dining Services",
+      "employer": "Recreational Sports",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -54,7 +58,7 @@
     {
       "periodStart": "2026-01-26",
       "periodEnd": "2026-02-08",
-      "employer": "University Dining Services",
+      "employer": "Recreational Sports",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -68,7 +72,7 @@
     {
       "periodStart": "2026-02-09",
       "periodEnd": "2026-02-22",
-      "employer": "University Dining Services",
+      "employer": "Recreational Sports",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -82,7 +86,7 @@
     {
       "periodStart": "2026-02-23",
       "periodEnd": "2026-03-08",
-      "employer": "University Dining Services",
+      "employer": "Recreational Sports",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -96,7 +100,7 @@
     {
       "periodStart": "2026-03-09",
       "periodEnd": "2026-03-22",
-      "employer": "University Dining Services",
+      "employer": "Recreational Sports",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -110,7 +114,7 @@
     {
       "periodStart": "2026-03-23",
       "periodEnd": "2026-04-05",
-      "employer": "University Dining Services",
+      "employer": "Recreational Sports",
       "grossCents": 72000,
       "hoursByWeek": [
         20,

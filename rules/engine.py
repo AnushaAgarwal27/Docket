@@ -11,10 +11,11 @@ from pathlib import Path
 
 import yaml
 
-from rules.quote_checker import check_quote
-from rules.rules import CHECKS
+from rules.quote_checker import check_quote, source_status
+from rules.rules import DECISIONS, NoFlag
 
 RULES_PATH = Path(__file__).with_name("rules.yaml")
+SOURCES_DIR = Path(__file__).resolve().parents[1] / "sources"
 DISCLAIMER = "Confirm with your school's international office."
 
 
@@ -23,9 +24,15 @@ def load_rules(path: Path = RULES_PATH) -> list[dict]:
     rules = loaded["rules"] if isinstance(loaded, dict) else loaded
     for r in rules:
         r.setdefault("source_id", r["id"])
-        if r["check"] not in CHECKS:
+        if r["check"] not in DECISIONS:
             raise ValueError(f"rule {r['id']} names unknown check {r['check']!r}")
     return rules
+
+
+def load_local_sources(rules: list[dict], directory: Path = SOURCES_DIR) -> dict[str, str]:
+    """source_id -> page text downloaded by `python -m rules.download_sources`."""
+    return {r["source_id"]: (directory / f"{r['source_id']}.txt").read_text()
+            for r in rules if (directory / f"{r['source_id']}.txt").exists()}
 
 
 @dataclass
@@ -44,13 +51,18 @@ def evaluate(
     quotes: dict[str, str] | None = None,
 ) -> Evaluation:
     """`sources` maps source_id to stored page text. `quotes` optionally overrides the clause a
-    rule cites (the model's returned clause), so it goes through the same check."""
+    rule cites (the model's returned clause), so it goes through the same check.
+
+    No flag is produced unless the quote is found word for word in the stored page. A source
+    outside the allow-list still produces its flag, marked `sourceStatus: "unverified"`.
+    """
     out = Evaluation()
     for rule in rules if rules is not None else load_rules():
-        hit = CHECKS[rule["check"]](profile, paystubs, calendar, as_of)
-        if hit is None:
-            out.activity.append(_activity(rule, "rule_not_triggered", "no match on student facts"))
+        decision = DECISIONS[rule["check"]](profile, paystubs, calendar, as_of)
+        if isinstance(decision, NoFlag):
+            out.activity.append(_activity(rule, "rule_not_triggered", decision.reason))
             continue
+        hit = decision.detail
         quote = (quotes or {}).get(rule["id"], rule["quote"])
         text = sources.get(rule["source_id"])
         result = check_quote(quote, text) if text is not None else None
@@ -58,16 +70,21 @@ def evaluate(
             reason = "source not fetched" if result is None else result.reason
             out.activity.append(_activity(rule, "flag_rejected", reason, quote=quote))
             continue
+        status = source_status(rule["source_url"])
         out.flags.append({
             "ruleId": rule["id"],
             "action": rule["action"],
+            "severity": hit.get("severity", "flag"),
             "amountCents": hit["amountCents"],
             "detail": hit,
             "quote": quote,
             "sourceId": rule["source_id"],
+            "sourceUrl": rule["source_url"],
+            "sourceStatus": status,
             "status": "open",
         })
-        out.activity.append(_activity(rule, "flag_raised", f"amountCents={hit['amountCents']}"))
+        note = "" if status == "verified" else f"; source {rule['source_url']} is not on the allow-list"
+        out.activity.append(_activity(rule, "flag_raised", f"amountCents={hit['amountCents']}{note}"))
     return out
 
 

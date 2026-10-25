@@ -15,7 +15,11 @@
     "filed8843Years": [
       2024,
       2025
-    ]
+    ],
+    "employer": {
+      "name": "Golden Bear University Library",
+      "type": "university"
+    }
   },
   "schoolCalendar": {
     "school": "Golden Bear University",
@@ -41,7 +45,7 @@
     {
       "periodStart": "2026-01-12",
       "periodEnd": "2026-01-25",
-      "employer": "University Dining Services",
+      "employer": "Golden Bear University Library",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -55,7 +59,7 @@
     {
       "periodStart": "2026-01-26",
       "periodEnd": "2026-02-08",
-      "employer": "University Dining Services",
+      "employer": "Golden Bear University Library",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -69,7 +73,7 @@
     {
       "periodStart": "2026-02-09",
       "periodEnd": "2026-02-22",
-      "employer": "University Dining Services",
+      "employer": "Golden Bear University Library",
       "grossCents": 68400,
       "hoursByWeek": [
         12,

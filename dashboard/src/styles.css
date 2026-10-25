@@ -468,3 +468,17 @@ body { background:
   .h2-hint span:last-child { display: none; }
 }
 .panel.constellation { background: radial-gradient(ellipse 70% 60% at 50% 45%, #1b2150 0%, #0d1022 55%, #080a14 100%); box-shadow: 0 30px 80px rgba(8, 10, 24, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+
+/* Source update popup: fixed under the nav so it shows over the home screen */
+.src-toast { position: fixed; top: 76px; right: 16px; z-index: 30; width: min(380px, calc(100vw - 32px)); border-radius: 14px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--ev-line); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 6px; animation: toast-in 0.35s ease-out; }
+.src-toast-t { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+.src-toast .sq { width: 8px; height: 8px; border-radius: 2px; background: var(--ev); flex: none; }
+.src-toast p { font-size: 13.5px; opacity: 0.85; }
+.src-toast-a { display: flex; gap: 16px; }
+.src-toast-a .link { color: var(--ev); }
+.src-toast-when { font-size: 12px; color: var(--faint); }
+.src-toast.held { border-color: var(--risk); }
+.src-toast.held .sq { background: var(--risk); }
+.src-toast.held .src-toast-a .link { color: var(--risk); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .src-toast { animation: none; } }

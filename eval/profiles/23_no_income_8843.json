@@ -14,7 +14,11 @@
     "phoneMasked": "(***) ***-0000",
     "filed8843Years": [
       2024
-    ]
+    ],
+    "employer": {
+      "name": "Residential Life",
+      "type": "university"
+    }
   },
   "schoolCalendar": {
     "school": "Golden Bear University",

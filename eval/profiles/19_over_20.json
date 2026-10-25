@@ -15,7 +15,11 @@
     "filed8843Years": [
       2024,
       2025
-    ]
+    ],
+    "employer": {
+      "name": "Residential Life",
+      "type": "university"
+    }
   },
   "schoolCalendar": {
     "school": "Golden Bear University",
@@ -41,7 +45,7 @@
     {
       "periodStart": "2026-08-31",
       "periodEnd": "2026-09-13",
-      "employer": "University Dining Services",
+      "employer": "Residential Life",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -55,7 +59,7 @@
     {
       "periodStart": "2026-09-14",
       "periodEnd": "2026-09-27",
-      "employer": "University Dining Services",
+      "employer": "Residential Life",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -69,7 +73,7 @@
     {
       "periodStart": "2026-09-28",
       "periodEnd": "2026-10-11",
-      "employer": "University Dining Services",
+      "employer": "Residential Life",
       "grossCents": 72000,
       "hoursByWeek": [
         21,

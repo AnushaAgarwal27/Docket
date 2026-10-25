@@ -15,7 +15,11 @@
     "filed8843Years": [
       2024,
       2025
-    ]
+    ],
+    "employer": {
+      "name": "Engineering Computer Lab",
+      "type": "university"
+    }
   },
   "schoolCalendar": {
     "school": "Golden Bear University",
@@ -41,7 +45,7 @@
     {
       "periodStart": "2025-09-01",
       "periodEnd": "2025-09-14",
-      "employer": "University Dining Services",
+      "employer": "Engineering Computer Lab",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -55,7 +59,7 @@
     {
       "periodStart": "2025-09-15",
       "periodEnd": "2025-09-28",
-      "employer": "University Dining Services",
+      "employer": "Engineering Computer Lab",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -69,7 +73,7 @@
     {
       "periodStart": "2025-09-29",
       "periodEnd": "2025-10-12",
-      "employer": "University Dining Services",
+      "employer": "Engineering Computer Lab",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -83,7 +87,7 @@
     {
       "periodStart": "2025-10-13",
       "periodEnd": "2025-10-26",
-      "employer": "University Dining Services",
+      "employer": "Engineering Computer Lab",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -97,7 +101,7 @@
     {
       "periodStart": "2025-10-27",
       "periodEnd": "2025-11-09",
-      "employer": "University Dining Services",
+      "employer": "Engineering Computer Lab",
       "grossCents": 72000,
       "hoursByWeek": [
         20,
@@ -111,7 +115,7 @@
     {
       "periodStart": "2025-11-10",
       "periodEnd": "2025-11-23",
-      "employer": "University Dining Services",
+      "employer": "Engineering Computer Lab",
       "grossCents": 86400,
       "hoursByWeek": [
         18,
