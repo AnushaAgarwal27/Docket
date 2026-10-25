@@ -80,6 +80,7 @@ export const ACTION_LABEL: Record<string, string> = {
   case_summary_missing: "Call asked for a case that does not exist",
   tool_call_unauthorized: "Tool call REJECTED: bad token",
   unknown_endpoint: "Tool called a URL that does not exist",
+  call_outcome_updated: "Call outcome filled in",
   refund_matched: "Refund deposit matched",
   case_open: "Case opened",
   case_awaiting_approval: "Waiting for approval",
