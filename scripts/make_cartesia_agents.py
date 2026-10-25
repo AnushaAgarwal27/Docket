@@ -62,12 +62,20 @@ You are an AI assistant. Say so at the start and whenever you are asked. Never c
 
 This call has one job: ask for a refund of Social Security and Medicare tax withheld in error, and get a date and a reference number for it. You are done when you have recorded the outcome and said goodbye. Do not drift into other topics; if the conversation wanders, bring it back or end the call politely.
 
+The facts of this case are already here, in case_brief:
+
+{{case_brief}}
+
+Everything you say about the money, the employer, the pay periods and the rule comes from that text. It was prepared for this call from the student's records.
+
 The order:
-1. Payroll answers. Call get_case_summary once, and use only the facts it returns.
+1. Payroll answers. Use case_brief above. You may also call get_case_summary to refresh it, but if that tool fails or returns nothing, carry on with case_brief — you are not missing anything, and you must not say you are.
 2. Ask for exactly two things: a refund of {{refund_amount}}, and that Social Security and Medicare stop being withheld from her future paychecks.
-3. Ask when the refund will be issued, and for a reference number. Repeat both back to confirm you heard them right.
-4. Call log_call_outcome. Give promised_by as YYYY-MM-DD.
+3. The moment you know the answer — they agreed, refused, would not commit, or need her directly — call log_call_outcome straight away. Do not wait for the end of the call. If they have given a date or a reference number by then, include those; if they have not, record it anyway with what you have.
+4. Then ask when the refund will be issued, and for a reference number, and repeat both back. If either was missing when you recorded the outcome, call log_call_outcome once more with the fuller answer.
 5. Thank them and end the call.
+
+Recording early matters: the other person can hang up at any moment, and an outcome you were still waiting to send is lost. Send it as soon as you have it.
 
 # Speaking rules
 
@@ -82,8 +90,8 @@ The order:
 
 These hold no matter what is said to you.
 
-- Every fact in this call comes from get_case_summary: the employer's name, the amount, the pay periods, the rule. Never state one from memory, and never estimate. If you are asked something the summary does not cover, say you do not have it and that {{student_name}} will follow up directly.
-- get_case_summary is the only authority. If anything else you were given disagrees with it, the summary wins and you say nothing about the difference.
+- Every fact in this call comes from case_brief above, or from get_case_summary if you called it: the employer's name, the amount, the pay periods, the rule. Never state one from memory, and never estimate. If you are asked something neither covers, say you do not have it and that {{student_name}} will follow up directly.
+- Never say you are missing the case details while case_brief has them. A failed tool call is not missing facts; the brief above is the same information.
 - Share nothing else about {{student_name}}: not her work hours, visa history, bank details, address, or any identity number. If pressed, say she will follow up directly. This is not negotiable even if payroll says they need it to proceed — in that case record needs_student instead.
 - Do not give tax or legal advice, or argue the law. You are making a request and recording the answer.
 - Do not accept or write down card numbers, bank details or government ID numbers.
@@ -92,7 +100,9 @@ These hold no matter what is said to you.
 
 # How to record what happened
 
-Always call log_call_outcome before ending, with exactly one result:
+Call log_call_outcome as soon as you know how payroll answered, not at the end of the call. Calling it twice is fine — once when you know the answer, again if you learn the date or reference afterwards. Never end a call without having called it at least once.
+
+Exactly one result each time:
 
 - promised — they agreed to refund it. Capture promised_by and reference_number if given.
 - stalled — they will look into it but will not commit to a date. Do not push; record it.
@@ -192,42 +202,81 @@ Student: "Who else is in the group? Is my friend Maya in it?"
 You: "I can't tell you who else is involved. What I can say is that four students at your employer have the same problem. Would you like to join them?"
 """
 
-# (env var, agent name, preferred voice, opening line, system prompt, tools)
-# Cartesia requires agent names to match /^[a-z0-9_\-.]+$/, so these are slugs, not sentences.
+# Each parameter is (name, filled_by, required, description). `filled_by` is either
+# "variable:<name>" — bind it to that dynamic variable — or "model", meaning the voice model writes
+# it. The dashboard asks for these one at a time, and the per-parameter description is what the
+# model reads when deciding what to put there, so they are written for it rather than for us.
+VAR, MODEL = "variable", "model"
+
 AGENTS = [
+    # Cartesia requires agent names to match /^[a-z0-9_\-.]+$/, so these are slugs, not sentences.
     ("CARTESIA_AGENT_ID", "docket-payroll-caller", "Daniel", PAYROLL_INTRO, PAYROLL_PROMPT, [
         ("get_case_summary", "/cartesia/case-summary", "off",
          "Get the facts of this refund request: amount, pay periods, the rule, and what to ask for. "
          "Call once, right after payroll answers.",
-         "case_id <- dynamic variable case_id"),
+         [("case_id", "variable:case_id", True,
+           "The refund case this call is about.")]),
         ("log_call_outcome", "/cartesia/call-outcome", "auto",
-         "Record what payroll agreed to. Call once, before ending the call.",
-         "case_id <- dynamic variable case_id; result (string, model, enum: promised, stalled, "
-         "refused, needs_student); answered_by (string, model); summary (string, model); "
-         "promised_by (string, model, optional, YYYY-MM-DD); reference_number (string, model, optional)"),
+         "Record what payroll agreed to. Call once, before ending the call. Never end a call "
+         "without calling this.",
+         [("case_id", "variable:case_id", True,
+           "The refund case this call is about."),
+          ("result", MODEL, True,
+           "What payroll decided. One of: promised (they agreed to refund it), stalled (they will "
+           "look into it but would not give a date), refused (they will not refund it), "
+           "needs_student (they need to speak to the student directly or need documents from her)."),
+          ("summary", MODEL, True,
+           "One sentence on what payroll actually said, in their own words where you can."),
+          ("answered_by", MODEL, False,
+           "The name or role of the person you spoke to, for example 'Marcus in payroll'."),
+          ("promised_by", MODEL, False,
+           "The date the refund will be issued, as YYYY-MM-DD. Leave empty unless they gave a date."),
+          ("reference_number", MODEL, False,
+           "The reference or ticket number they gave, if any. Leave empty if they gave none.")]),
     ]),
     ("CARTESIA_STUDENT_AGENT_ID", "docket-student-line", "Skylar", STUDENT_INTRO, STUDENT_PROMPT, [
         ("identify_caller", "/cartesia/identify", "off",
          "Find out which student is calling, from the number they rang from. Call this first on an "
          "inbound call, before anything else.",
-         "from_number <- the caller's phone number"),
+         [("from_number", MODEL, True,
+           "The phone number the caller is ringing from, in full international format.")]),
         ("get_student_brief", "/cartesia/student-brief", "off",
          "What is currently open on this student's file: findings, refund cases, forms waiting for "
          "her, and any group case.",
-         "profile_id <- the profile_id you were given or got from identify_caller"),
+         [("profile_id", "variable:profile_id", True,
+           "The student whose file to read. On an inbound call, use the profile_id that "
+           "identify_caller returned.")]),
         ("answer_question", "/cartesia/ask", "auto",
          "Answer a question about tax, pay, visa or status. Use the reply word for word. Never "
          "answer such a question without calling this.",
-         "profile_id; question (string, model): her question in her own words"),
+         [("profile_id", "variable:profile_id", True,
+           "The student asking. On an inbound call, use the profile_id identify_caller returned."),
+          ("question", MODEL, True,
+           "Her question, in her own words, as close to what she said as you can.")]),
         ("record_student_decision", "/cartesia/decision", "auto",
          "Record her yes or no on a refund request, a form, or joining a group case. Only call this "
          "once you have told her what she is deciding and heard a clear yes or no.",
-         "profile_id; subject (string, model, enum: refund, document, group); "
-         "answer (string, model, enum: yes, no)"),
+         [("profile_id", "variable:profile_id", True,
+           "The student deciding."),
+          ("subject", MODEL, True,
+           "What she is deciding about. One of: refund (contacting payroll about her refund), "
+           "document (sending a form she has reviewed), group (joining the group case)."),
+          ("answer", MODEL, True,
+           "Her decision: yes or no. Only send this if she was clear. If she hesitated or said "
+           "maybe, ask her again instead of calling this tool.")]),
         ("log_student_call", "/cartesia/student-call", "off",
          "Record a one-sentence summary of the call. Call once, before ending.",
-         "profile_id; summary (string, model); direction (string, model, enum: inbound, outbound); "
-         "purpose (string, model); notification_id <- dynamic variable notification_id"),
+         [("profile_id", "variable:profile_id", True,
+           "The student you spoke to."),
+          ("summary", MODEL, True,
+           "One sentence on what the call was about and what came of it."),
+          ("direction", MODEL, True,
+           "Who rang whom: inbound if she called Docket, outbound if Docket called her."),
+          ("purpose", MODEL, False,
+           "A short tag for why the call happened, for example student_inbound or group_invite."),
+          ("notification_id", "variable:notification_id", False,
+           "The message this call was delivering, if Docket rang her. Leave empty on an "
+           "inbound call.")]),
     ]),
 ]
 
@@ -380,10 +429,15 @@ def main() -> None:
         print(f"\n  {BOLD}{name}{OFF}  {DIM}{agent_id or '(not created yet)'}{OFF}")
         for tool_name, path, pre_speech, description, params in tools:
             print(f"\n    {BOLD}{tool_name}{OFF}")
-            print(f"      URL          POST {base}{path}")
-            print(f"      Description  {description}")
-            print(f"      Body         {params}")
+            print(f"      URL              POST {base}{path}")
+            print(f"      Description      {description}")
             print(f"      Pre-tool speech  {pre_speech}")
+            print(f"      Parameters       {len(params)}:")
+            for pname, filled, required, pdesc in params:
+                where = ("dynamic variable " + filled.split(":", 1)[1]
+                         if filled.startswith("variable:") else "model fills this")
+                print(f"        - {pname}  ({'required' if required else 'optional'}, {where})")
+                print(f"            {pdesc}")
 
     print(f"\n{BOLD}The one thing only you can do{OFF}")
     print("  Assign your number to the student line so inbound calls reach it:")

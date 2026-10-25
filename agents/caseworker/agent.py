@@ -11,7 +11,7 @@ from pathlib import Path
 
 from uagents import Agent, Context
 
-from agents.caseworker import engine
+from agents.caseworker import call_record, engine
 from agents.agentverse import add_mailbox_check
 from agents.messages import (
     PORTS, CaseDecision, CaseOpened, CasesResult, DecisionResult, LocalFirstResolver, OpenCases, RefundMatched,
@@ -111,6 +111,23 @@ async def call_approved_cases(ctx: Context):
             ctx.logger.info("placed payroll call(s) for approved cases")
     except Exception:
         ctx.logger.exception("placing pending calls failed")
+
+
+@agent.on_interval(period=float(os.environ.get("CALL_RECOVERY_SECONDS", "45")))
+async def recover_unreported_calls(ctx: Context):
+    """Record any finished payroll call whose outcome never came back through the webhook.
+
+    The voice agent reports the outcome itself, and usually that is the end of it. When the report
+    does not arrive — the webhook misconfigured, the request dropped, payroll hanging up a beat
+    early — the call still happened and payroll still answered. Reading Cartesia's own record of
+    the call means a real promise is not lost because a webhook was.
+    """
+    try:
+        recovered = await asyncio.to_thread(call_record.record_finished_calls)
+        if recovered:
+            ctx.logger.info(f"recorded {recovered} call outcome(s) from Cartesia's call record")
+    except Exception:
+        ctx.logger.exception("recovering call outcomes failed")
 
 
 if __name__ == "__main__":

@@ -67,9 +67,19 @@ def transcript_to_paystub(t: PaystubTranscript, profile_id: str, source_file: st
         "netCents": to_cents(t.netPay),
         "sourceFile": source_file,
     }
-    # The rate is printed with its unit ("$18.00 per hour", "$18.00/hr"), and Claude sometimes copies the unit.
-    # Drop only that unit; anything else that isn't an amount still fails, as every money field does.
-    rate_text = re.sub(r"\s*(/\s*(hr|hour)|(per|an|a)\s+hour)\s*$", "", t.hourlyRate.strip(), flags=re.I)
-    rate = to_cents(rate_text) if rate_text else None
+    # The hourly rate is printed with its unit — "$18.00 per hour" — and the prompt asks for values
+    # exactly as printed, so that is what comes back. Strip the unit before parsing.
+    #
+    # It is also the one field here that may fail without costing anything. Every other value is
+    # money owed; the rate is only used to check that hours × rate matches gross. Letting it raise
+    # threw away the whole paystub — two of eight on one run, which quietly changed the refund
+    # total. An unreadable rate just means that one cross-check is skipped.
+    rate = None
+    printed = re.sub(r"(?i)\s*(per|an|/)\s*(hour|hr)\.?$", "", t.hourlyRate.strip())
+    if printed:
+        try:
+            rate = to_cents(printed)
+        except ValueError:
+            rate = None
     federal = to_cents(t.federalIncomeTaxWithheld or "0")
     return stub, rate, federal

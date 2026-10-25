@@ -28,12 +28,50 @@ const http = httpRouter();
 const RESULTS = ["promised", "stalled", "refused", "needs_student"] as const;
 type Result = (typeof RESULTS)[number];
 
+/** What a webhook tool hands back to the voice model.
+ *
+ *  This used to be text/plain, on the assumption that Cartesia passes the raw body to the model.
+ *  It does reach us — the feed shows case_summary_read returning the full case — but the agent
+ *  still said it could not pull the details, so the body was not being used. JSON is the format a
+ *  webhook tool is normally expected to return.
+ *
+ *  The text is repeated under a few keys on purpose. Which one a tool reads is not documented
+ *  anywhere we can reach without a Cartesia login, and a demo is the wrong place to find out by
+ *  halves; if the model is instead handed the whole object, every key says the same thing, so it
+ *  reads correctly either way.
+ */
 const text = (body: string, status = 200) =>
-  new Response(body, { status, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  new Response(JSON.stringify({ result: body, output: body, text: body, message: body }), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+  });
 
 function authorized(req: Request): boolean {
   const token = env.CARTESIA_TOOL_TOKEN;
   return typeof token === "string" && token.length > 0 && req.headers.get("Authorization") === `Bearer ${token}`;
+}
+
+/** A rejected tool call, recorded so it is not invisible.
+ *
+ *  A 401 returns before any handler runs, so a wrong bearer token in the Cartesia tool config used
+ *  to leave no trace at all: the agent says it cannot pull the details, and nothing on our side
+ *  shows a request ever arrived. That is indistinguishable from the tool never being called, which
+ *  is a very different problem. Nothing secret is logged — only which token shape arrived, never
+ *  the value, and never the one we hold.
+ */
+async function logUnauthorized(ctx: { runMutation: (ref: any, args: any) => Promise<any> },
+                               req: Request, tool: string) {
+  const header = req.headers.get("Authorization");
+  const shape = header === null ? "no Authorization header"
+    : !header.startsWith("Bearer ") ? "an Authorization header that is not a Bearer token"
+    : env.CARTESIA_TOOL_TOKEN ? `a Bearer token of ${header.length - 7} characters that does not match ours`
+    : "a Bearer token, but CARTESIA_TOOL_TOKEN is not set on this deployment";
+  await ctx.runMutation(api.activity.log, {
+    agent: "voice",
+    action: "tool_call_unauthorized",
+    detail: `A call tried ${tool} with ${shape}. Check the Bearer token on that tool in the ` +
+      `Cartesia dashboard against scripts/check_voice.`,
+  });
 }
 
 async function readObject(req: Request): Promise<Record<string, unknown> | null> {
@@ -59,12 +97,32 @@ http.route({
   path: "/cartesia/case-summary",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    if (!authorized(req)) return text("Unauthorized.", 401);
+    if (!authorized(req)) {
+      await logUnauthorized(ctx, req, "get_case_summary");
+      return text("Unauthorized.", 401);
+    }
     const body = await readObject(req);
     const caseId = body && field(body, "case_id", "caseId");
     if (!caseId) return text("Missing case_id.", 400);
     const summary = await ctx.runQuery(internal.cartesia.caseSummary, { caseId });
-    if (summary === null) return text(`No case found for ${caseId}. Apologize, say you will call back, and end the call.`, 404);
+    // Log both outcomes. Until this existed, a tool call left no trace until log_call_outcome, so
+    // "the agent never called the tool" and "the agent called it with a stale case id" looked
+    // identical from here — and on the call itself they sound the same too.
+    if (summary === null) {
+      await ctx.runMutation(api.activity.log, {
+        agent: "voice",
+        action: "case_summary_missing",
+        detail: `A call asked for case ${caseId}, which does not exist. The agent was told to ` +
+          `apologise and end the call. Usually a stale case id in the dialler's dynamic variables.`,
+      });
+      return text(`No case found for ${caseId}. Apologize, say you will call back, and end the call.`, 404);
+    }
+    await ctx.runMutation(api.activity.log, {
+      agent: "voice",
+      action: "case_summary_read",
+      detail: `Payroll call read the case: ${summary.text.slice(0, 120)}…`,
+      inputIds: [summary.caseId],
+    });
     return text(summary.text);
   }),
 });
@@ -73,7 +131,10 @@ http.route({
   path: "/cartesia/call-outcome",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    if (!authorized(req)) return text("Unauthorized.", 401);
+    if (!authorized(req)) {
+      await logUnauthorized(ctx, req, "log_call_outcome");
+      return text("Unauthorized.", 401);
+    }
     const body = await readObject(req);
     if (body === null) return text("Body must be a JSON object.", 400);
     const caseId = field(body, "case_id", "caseId");
@@ -98,6 +159,17 @@ http.route({
       });
     } catch (e) {
       const reason = e instanceof Error ? e.message.split("\n")[0] : "unknown error";
+      // The voice agent is told to end the call politely, so payroll hears a normal goodbye and a
+      // failure sounds exactly like a success. That is right for payroll and wrong for us: a
+      // rejected write would otherwise be invisible until someone went looking in the database.
+      // Leave a row saying what was lost and why.
+      await ctx.runMutation(api.activity.log, {
+        agent: "voice",
+        action: "call_outcome_rejected",
+        detail: `Payroll said "${result}" on case ${caseId} but it could not be recorded: ${reason}. ` +
+          `The call ended normally, so nothing on the call itself showed this.`,
+        inputIds: [caseId],
+      });
       return text(`Could not record the outcome (${reason}). Thank them and end the call; the team will follow up.`, 409);
     }
     const next =
@@ -117,7 +189,10 @@ http.route({
   path: "/cartesia/identify",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    if (!authorized(req)) return text("Unauthorized.", 401);
+    if (!authorized(req)) {
+      await logUnauthorized(ctx, req, "identify_caller");
+      return text("Unauthorized.", 401);
+    }
     const body = await readObject(req);
     const from = body && field(body, "from_number", "fromNumber", "caller", "from");
     if (!from) return text("Missing from_number.", 400);
@@ -140,7 +215,10 @@ http.route({
   path: "/cartesia/student-brief",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    if (!authorized(req)) return text("Unauthorized.", 401);
+    if (!authorized(req)) {
+      await logUnauthorized(ctx, req, "get_student_brief");
+      return text("Unauthorized.", 401);
+    }
     const body = await readObject(req);
     const profileId = body && field(body, "profile_id", "profileId");
     if (!profileId) return text("Missing profile_id.", 400);
@@ -154,7 +232,10 @@ http.route({
   path: "/cartesia/ask",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    if (!authorized(req)) return text("Unauthorized.", 401);
+    if (!authorized(req)) {
+      await logUnauthorized(ctx, req, "answer_question");
+      return text("Unauthorized.", 401);
+    }
     const body = await readObject(req);
     const profileId = body && field(body, "profile_id", "profileId");
     const question = body && field(body, "question", "q", "text");
@@ -183,7 +264,10 @@ http.route({
   path: "/cartesia/decision",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    if (!authorized(req)) return text("Unauthorized.", 401);
+    if (!authorized(req)) {
+      await logUnauthorized(ctx, req, "record_student_decision");
+      return text("Unauthorized.", 401);
+    }
     const body = await readObject(req);
     const profileId = body && field(body, "profile_id", "profileId");
     const subject = body && field(body, "subject", "about");
@@ -212,7 +296,10 @@ http.route({
   path: "/cartesia/student-call",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    if (!authorized(req)) return text("Unauthorized.", 401);
+    if (!authorized(req)) {
+      await logUnauthorized(ctx, req, "log_student_call");
+      return text("Unauthorized.", 401);
+    }
     const body = await readObject(req);
     const profileId = body && field(body, "profile_id", "profileId");
     const summary = body && field(body, "summary");
@@ -228,6 +315,28 @@ http.route({
         : {}),
     });
     return text("Recorded. Thank her and end the call.");
+  }),
+});
+
+// A catch-all, purely so a mistyped tool URL is not silent.
+//
+// A webhook tool pointed at the wrong path reaches this deployment and 404s with no trace, which
+// looks exactly like the tool never being called — and on the call it sounds the same too, because
+// the agent just carries on without the facts. This records what was asked for, so the feed can
+// tell "wrong path" (a row appears here) from "wrong host" (nothing appears anywhere).
+// Exact routes above take precedence, so this only ever sees requests nothing else matched.
+http.route({
+  pathPrefix: "/",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const path = new URL(req.url).pathname;
+    await ctx.runMutation(api.activity.log, {
+      agent: "voice",
+      action: "unknown_endpoint",
+      detail: `Something POSTed to ${path}, which is not a Docket endpoint. If this is a Cartesia ` +
+        `tool, its URL is wrong — compare it with scripts/check_voice.`,
+    });
+    return text(`No endpoint at ${path}.`, 404);
   }),
 });
 

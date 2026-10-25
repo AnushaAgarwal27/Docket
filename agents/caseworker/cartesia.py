@@ -50,12 +50,44 @@ def call_variables(case: dict, profile: dict, paystubs: list[dict]) -> dict:
     }
 
 
+def case_brief(case: dict, session=requests) -> str:
+    """The same sentences get_case_summary serves, fetched over our own webhook.
+
+    The voice agent is supposed to fetch these itself mid-call. When that does not work — and
+    whether it works depends on a response contract Cartesia does not document publicly — the agent
+    has no facts and says so, which ends the call. Sending the brief along as a dynamic variable
+    means the call still carries the right figures even if the tool never answers.
+
+    Deliberately read from the webhook rather than rebuilt here: one wording, one source, and
+    nothing about what the agent says depends on which path delivered it. Returns "" on any
+    failure, and the call goes ahead without it.
+    """
+    from agents.caseworker.rehearsal import site_url  # local: only needed when a call is placed
+    token = os.environ.get("CARTESIA_TOOL_TOKEN", "")
+    if not token:
+        return ""
+    try:
+        resp = session.post(f"{site_url()}/cartesia/case-summary", json={"case_id": case["_id"]},
+                            headers={"Authorization": f"Bearer {token}",
+                                     "Content-Type": "application/json"}, timeout=15)
+        if resp.status_code != 200:
+            return ""
+        body = resp.json()
+        return body.get("result", "") if isinstance(body, dict) else str(body)
+    except Exception:  # noqa: BLE001 - the call is worth placing without the brief
+        return ""
+
+
 def place_call(case: dict, profile: dict, paystubs: list[dict], session=requests) -> str:
     """Start one outbound call to payroll. Returns Cartesia's agent_call_id; raises CallError with a
     readable reason. While the demo redirect is on, DEMO_CALL_NUMBER rings instead of PAYROLL_PHONE."""
     missing = missing_settings()
     if missing:
         raise CallError(f"Cartesia not configured: set {', '.join(missing)}")
-    call_id, _dialled = place(os.environ["PAYROLL_PHONE"], call_variables(case, profile, paystubs),
+    variables = call_variables(case, profile, paystubs)
+    brief = case_brief(case, session=session)
+    if brief:
+        variables["case_brief"] = brief
+    call_id, _dialled = place(os.environ["PAYROLL_PHONE"], variables,
                               agent_env="CARTESIA_AGENT_ID", session=session)
     return call_id

@@ -165,8 +165,9 @@ def test_hourly_rate_with_its_unit_still_reads():
     for printed in ("$18.00 per hour", "$18.00/hr", "$18.00 / hour"):
         _, rate, _ = transcript_to_paystub(transcript_for(stub).model_copy(update={"hourlyRate": printed}), "p1", "x.pdf")
         assert rate == 1800
-    with pytest.raises(ValueError):
-        transcript_to_paystub(transcript_for(stub).model_copy(update={"hourlyRate": "about $18"}), "p1", "x.pdf")
+    # an unreadable rate skips only the hours x rate cross-check; the paystub itself is kept
+    row, rate, _ = transcript_to_paystub(transcript_for(stub).model_copy(update={"hourlyRate": "about $18"}), "p1", "x.pdf")
+    assert rate is None and row["grossCents"] == stub["grossCents"]
 
 
 def test_process_paystubs_links_deposits_and_skips_known(tmp_path: Path):
