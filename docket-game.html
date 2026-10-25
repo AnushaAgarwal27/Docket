@@ -1769,7 +1769,7 @@ function end(kind) {
 /* Title + controls */
 function setCase(key) {
   current = CASES[key];
-  $("proto-note").textContent = current.live ? "Live · from Docket's agents and the Convex student file · real approval, real call" : "Prototype · scripted from the case file · no real call placed";
+  $("proto-note").textContent = current.live ? "Live · from Docket's agents and the Convex student file" : "Prototype · scripted from the case file · no real call placed";
   for (const k of ["priya", "nadia", "live"]) {
     if (!$("case-" + k) || $("case-" + k).hidden) continue;
     $("case-" + k).setAttribute("aria-pressed", key === k);
