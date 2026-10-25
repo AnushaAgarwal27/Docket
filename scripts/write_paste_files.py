@@ -48,12 +48,24 @@ def main() -> None:
                 "",
                 f"TOOL NAME        {tool_name}",
                 f"URL              {base}{path}",
+                f"METHOD           POST",
                 f"DESCRIPTION      {desc}",
-                f"BODY FIELDS      {params}",
                 f"PRE-TOOL SPEECH  {pre}",
                 "",
-                "-" * 78,
+                f"  PARAMETERS ({len(params)}) — the dashboard asks for these one at a time:",
             ]
+            for pname, filled, required, pdesc in params:
+                where = ("bind to dynamic variable: " + filled.split(":", 1)[1]
+                         if filled.startswith("variable:") else "let the model fill it")
+                lines += [
+                    "",
+                    f"    name         {pname}",
+                    f"    type         string",
+                    f"    required     {'yes' if required else 'no'}",
+                    f"    filled by    {where}",
+                    f"    description  {pdesc}",
+                ]
+            lines += ["", "-" * 78]
         tools_file = OUT / f"{name}--3-tools.txt"
         tools_file.write_text("\n".join(lines) + "\n")
         written += [opening, system, tools_file]

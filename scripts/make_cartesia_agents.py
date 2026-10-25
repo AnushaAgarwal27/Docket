@@ -192,42 +192,81 @@ Student: "Who else is in the group? Is my friend Maya in it?"
 You: "I can't tell you who else is involved. What I can say is that four students at your employer have the same problem. Would you like to join them?"
 """
 
-# (env var, agent name, preferred voice, opening line, system prompt, tools)
-# Cartesia requires agent names to match /^[a-z0-9_\-.]+$/, so these are slugs, not sentences.
+# Each parameter is (name, filled_by, required, description). `filled_by` is either
+# "variable:<name>" — bind it to that dynamic variable — or "model", meaning the voice model writes
+# it. The dashboard asks for these one at a time, and the per-parameter description is what the
+# model reads when deciding what to put there, so they are written for it rather than for us.
+VAR, MODEL = "variable", "model"
+
 AGENTS = [
+    # Cartesia requires agent names to match /^[a-z0-9_\-.]+$/, so these are slugs, not sentences.
     ("CARTESIA_AGENT_ID", "docket-payroll-caller", "Daniel", PAYROLL_INTRO, PAYROLL_PROMPT, [
         ("get_case_summary", "/cartesia/case-summary", "off",
          "Get the facts of this refund request: amount, pay periods, the rule, and what to ask for. "
          "Call once, right after payroll answers.",
-         "case_id <- dynamic variable case_id"),
+         [("case_id", "variable:case_id", True,
+           "The refund case this call is about.")]),
         ("log_call_outcome", "/cartesia/call-outcome", "auto",
-         "Record what payroll agreed to. Call once, before ending the call.",
-         "case_id <- dynamic variable case_id; result (string, model, enum: promised, stalled, "
-         "refused, needs_student); answered_by (string, model); summary (string, model); "
-         "promised_by (string, model, optional, YYYY-MM-DD); reference_number (string, model, optional)"),
+         "Record what payroll agreed to. Call once, before ending the call. Never end a call "
+         "without calling this.",
+         [("case_id", "variable:case_id", True,
+           "The refund case this call is about."),
+          ("result", MODEL, True,
+           "What payroll decided. One of: promised (they agreed to refund it), stalled (they will "
+           "look into it but would not give a date), refused (they will not refund it), "
+           "needs_student (they need to speak to the student directly or need documents from her)."),
+          ("summary", MODEL, True,
+           "One sentence on what payroll actually said, in their own words where you can."),
+          ("answered_by", MODEL, False,
+           "The name or role of the person you spoke to, for example 'Marcus in payroll'."),
+          ("promised_by", MODEL, False,
+           "The date the refund will be issued, as YYYY-MM-DD. Leave empty unless they gave a date."),
+          ("reference_number", MODEL, False,
+           "The reference or ticket number they gave, if any. Leave empty if they gave none.")]),
     ]),
     ("CARTESIA_STUDENT_AGENT_ID", "docket-student-line", "Skylar", STUDENT_INTRO, STUDENT_PROMPT, [
         ("identify_caller", "/cartesia/identify", "off",
          "Find out which student is calling, from the number they rang from. Call this first on an "
          "inbound call, before anything else.",
-         "from_number <- the caller's phone number"),
+         [("from_number", MODEL, True,
+           "The phone number the caller is ringing from, in full international format.")]),
         ("get_student_brief", "/cartesia/student-brief", "off",
          "What is currently open on this student's file: findings, refund cases, forms waiting for "
          "her, and any group case.",
-         "profile_id <- the profile_id you were given or got from identify_caller"),
+         [("profile_id", "variable:profile_id", True,
+           "The student whose file to read. On an inbound call, use the profile_id that "
+           "identify_caller returned.")]),
         ("answer_question", "/cartesia/ask", "auto",
          "Answer a question about tax, pay, visa or status. Use the reply word for word. Never "
          "answer such a question without calling this.",
-         "profile_id; question (string, model): her question in her own words"),
+         [("profile_id", "variable:profile_id", True,
+           "The student asking. On an inbound call, use the profile_id identify_caller returned."),
+          ("question", MODEL, True,
+           "Her question, in her own words, as close to what she said as you can.")]),
         ("record_student_decision", "/cartesia/decision", "auto",
          "Record her yes or no on a refund request, a form, or joining a group case. Only call this "
          "once you have told her what she is deciding and heard a clear yes or no.",
-         "profile_id; subject (string, model, enum: refund, document, group); "
-         "answer (string, model, enum: yes, no)"),
+         [("profile_id", "variable:profile_id", True,
+           "The student deciding."),
+          ("subject", MODEL, True,
+           "What she is deciding about. One of: refund (contacting payroll about her refund), "
+           "document (sending a form she has reviewed), group (joining the group case)."),
+          ("answer", MODEL, True,
+           "Her decision: yes or no. Only send this if she was clear. If she hesitated or said "
+           "maybe, ask her again instead of calling this tool.")]),
         ("log_student_call", "/cartesia/student-call", "off",
          "Record a one-sentence summary of the call. Call once, before ending.",
-         "profile_id; summary (string, model); direction (string, model, enum: inbound, outbound); "
-         "purpose (string, model); notification_id <- dynamic variable notification_id"),
+         [("profile_id", "variable:profile_id", True,
+           "The student you spoke to."),
+          ("summary", MODEL, True,
+           "One sentence on what the call was about and what came of it."),
+          ("direction", MODEL, True,
+           "Who rang whom: inbound if she called Docket, outbound if Docket called her."),
+          ("purpose", MODEL, False,
+           "A short tag for why the call happened, for example student_inbound or group_invite."),
+          ("notification_id", "variable:notification_id", False,
+           "The message this call was delivering, if Docket rang her. Leave empty on an "
+           "inbound call.")]),
     ]),
 ]
 
@@ -380,10 +419,15 @@ def main() -> None:
         print(f"\n  {BOLD}{name}{OFF}  {DIM}{agent_id or '(not created yet)'}{OFF}")
         for tool_name, path, pre_speech, description, params in tools:
             print(f"\n    {BOLD}{tool_name}{OFF}")
-            print(f"      URL          POST {base}{path}")
-            print(f"      Description  {description}")
-            print(f"      Body         {params}")
+            print(f"      URL              POST {base}{path}")
+            print(f"      Description      {description}")
             print(f"      Pre-tool speech  {pre_speech}")
+            print(f"      Parameters       {len(params)}:")
+            for pname, filled, required, pdesc in params:
+                where = ("dynamic variable " + filled.split(":", 1)[1]
+                         if filled.startswith("variable:") else "model fills this")
+                print(f"        - {pname}  ({'required' if required else 'optional'}, {where})")
+                print(f"            {pdesc}")
 
     print(f"\n{BOLD}The one thing only you can do{OFF}")
     print("  Assign your number to the student line so inbound calls reach it:")
