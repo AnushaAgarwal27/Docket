@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Docket · The Hearing</title>
-<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -70,21 +69,21 @@
   .fighter.right .who { flex-direction: row-reverse; }
   .fighter .name { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -0.01em; }
   .fighter .role { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
-  .bar { width: min(420px, 38vw, 100%); height: 16px; border-radius: 4px; background: rgba(244,236,224,0.08); border: 1px solid var(--line-strong); overflow: hidden; position: relative; }
+  .bar { width: min(420px, 38vw); height: 16px; border-radius: 4px; background: rgba(244,236,224,0.08); border: 1px solid var(--line-strong); overflow: hidden; position: relative; }
   .bar i { position: absolute; inset: 0; transform-origin: left; transition: transform .6s cubic-bezier(.2,.8,.2,1), background .3s; }
   .fighter.right .bar i { transform-origin: right; }
   .bar .ghost { background: rgba(244,236,224,0.35); transition-delay: .35s; }
   .bar .fill.adv { background: var(--adv); }
   .bar .fill.counsel { background: var(--counsel); }
   .bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(18,14,11,0.9) calc(10% - 2px) 10%); }
-  .meter-label { font-family: var(--mono); font-size: 12px; color: var(--muted); }
-  .center-hud { text-align: center; padding-top: 2px; max-width: 34vw; }
+  .meter-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .center-hud { text-align: center; padding-top: 2px; }
   .center-hud .round { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
-  .center-hud .claim { font-family: var(--display); font-weight: 900; font-size: clamp(24px, 2.4vw, 34px); letter-spacing: -0.02em; line-height: 1.1; }
+  .center-hud .claim { font-family: var(--display); font-weight: 900; font-size: 34px; letter-spacing: -0.02em; line-height: 1.1; }
   .center-hud .claim.win { color: var(--win); }
   .center-hud .claim.lose { color: var(--counsel); text-decoration: line-through; }
   .conditions { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
-  .conditions span { font-family: var(--mono); font-size: 12px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(242,181,68,0.6); color: var(--warn); background: rgba(18,14,11,0.7); }
+  .conditions span { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(242,181,68,0.6); color: var(--warn); background: rgba(18,14,11,0.7); }
 
   /* Call + money HUDs */
   .side-hud {
@@ -104,8 +103,8 @@
 
   /* ---------- Dialogue box ---------- */
   .dialog {
-    position: fixed; left: 50%; bottom: 30px; transform: translate(-50%, 20px); z-index: 20;
-    width: min(940px, calc(100vw - 32px)); max-height: calc(100vh - 140px); overflow-y: auto; background: rgba(24,19,15,0.96); border: 1px solid var(--line-strong);
+    position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); z-index: 20;
+    width: min(940px, calc(100vw - 32px)); background: rgba(24,19,15,0.96); border: 1px solid var(--line-strong);
     border-radius: 14px; padding: 18px 22px 16px; opacity: 0; pointer-events: none;
     transition: opacity .3s ease, transform .3s ease;
   }
@@ -114,7 +113,7 @@
   .speaker::before { content: ""; width: 10px; height: 10px; border-radius: 2px; background: var(--dot, var(--ink)); }
   .line { font-size: 21px; line-height: 1.5; min-height: 64px; }
   .line q { quotes: "“" "”"; font-style: italic; }
-  .sub { font-family: var(--mono); font-size: 14px; color: var(--ink-2); margin-top: 6px; min-height: 18px; }
+  .sub { font-family: var(--mono); font-size: 13px; color: var(--ink-2); margin-top: 6px; min-height: 18px; }
   .dialog-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
   .hint { font-family: var(--mono); font-size: 12px; color: var(--muted); }
   .next-btn { min-height: 42px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--ink); background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 800; font-size: 15px; }
@@ -126,9 +125,9 @@
     transition: transform .15s ease, border-color .15s ease, background .15s ease;
   }
   .choice:hover:not([disabled]) { transform: translateY(-2px); border-color: var(--ink-2); }
-  .choice b { font-family: var(--display); font-weight: 700; font-size: 17px; overflow-wrap: anywhere; }
-  .choice span { font-family: var(--mono); font-size: 14px; color: var(--ink-2); }
-  .choice kbd { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .choice b { font-family: var(--display); font-weight: 700; font-size: 17px; }
+  .choice span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
+  .choice kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .choice.right { border-color: var(--win); background: rgba(67,209,138,0.12); }
   .choice.wrong { border-color: var(--counsel); background: rgba(240,122,58,0.12); opacity: .7; }
   .choice[disabled] { cursor: default; }
@@ -140,11 +139,11 @@
 
   /* ---------- Banners ---------- */
   .banner {
-    position: fixed; left: 0; right: 0; top: 34%; z-index: 25; text-align: center; pointer-events: none; padding: 0 16px; overflow-wrap: break-word;
+    position: fixed; left: 0; right: 0; top: 40%; z-index: 25; text-align: center; pointer-events: none;
     font-family: var(--display); font-weight: 900; font-size: clamp(44px, 8vw, 104px); letter-spacing: -0.03em; line-height: 1;
     opacity: 0; transform: scale(1.25);
   }
-  .banner small { display: block; font-family: var(--sans); font-weight: 500; font-size: 18px; letter-spacing: 0; margin: 16px auto 0; max-width: 640px; width: fit-content; padding: 8px 14px; border-radius: 10px; background: rgba(18,14,11,0.82); line-height: 1.45; color: var(--ink); }
+  .banner small { display: block; font-family: var(--sans); font-weight: 500; font-size: 18px; letter-spacing: 0; margin: 16px auto 0; max-width: 640px; padding: 0 16px; line-height: 1.45; color: var(--ink); text-shadow: 0 1px 12px rgba(0,0,0,0.8); }
   .banner.go { animation: bannerIn 1.9s cubic-bezier(.2,.8,.2,1) forwards; }
   @keyframes bannerIn {
     0% { opacity: 0; transform: scale(1.35); }
@@ -190,30 +189,24 @@
   .case-card:hover { transform: translateY(-2px); border-color: var(--ink-2); }
   .case-card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
   .case-card b { font-family: var(--display); font-weight: 800; font-size: 19px; }
-  .case-card span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+  .case-card span { font-family: var(--mono); font-size: 12px; color: var(--ink-2); line-height: 1.5; }
   .case-card em { font-style: normal; font-family: var(--display); font-weight: 900; font-size: 24px; margin-top: auto; }
   .case-card em.dim { font-size: 15px; font-weight: 700; color: var(--ink-2); }
   .modes { display: flex; gap: 8px; flex-wrap: wrap; }
   .mode-btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--panel); font-family: var(--display); font-weight: 700; font-size: 15px; }
   .mode-btn[aria-pressed="true"] { background: var(--ink); color: var(--night); border-color: var(--ink); }
   .start-btn { align-self: flex-start; min-height: 54px; padding: 0 28px; border-radius: 12px; border: 0; background: var(--ink); color: var(--night); font-family: var(--display); font-weight: 900; font-size: 18px; }
-  .screen .fine { font-family: var(--mono); font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .screen .fine { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.6; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-  .stat b { display: block; font-family: var(--display); font-weight: 900; font-size: 24px; line-height: 1.15; letter-spacing: -0.02em; }
+  .stat b { display: block; font-family: var(--display); font-weight: 900; font-size: 28px; letter-spacing: -0.02em; }
   .stat span { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .link { color: var(--ink); font-family: var(--mono); font-size: 13px; }
-  .proto { position: fixed; left: 22px; right: 22px; bottom: 8px; z-index: 45; font-family: var(--mono); font-size: 12px; color: var(--muted); pointer-events: none; }
+  .proto { position: fixed; left: 22px; bottom: 8px; z-index: 18; font-family: var(--mono); font-size: 11px; color: var(--muted); pointer-events: none; }
 
   @media (max-width: 760px) {
     .rounds { display: none; }
-    .topbar { padding: 0 16px; }
-    .brand { line-height: 1.1; }
-    .brand small { display: block; margin-left: 0; }
-    .fighters { left: 16px; right: 16px; }
-    .dialog { bottom: 44px; padding: 14px 16px 12px; max-height: calc(100vh - 170px); }
-    .proto { left: 16px; right: 16px; }
     .fighters { grid-template-columns: 1fr 1fr; }
     .center-hud { display: none; }
     .fighter .name { font-size: 16px; }
@@ -253,7 +246,7 @@
     <div class="conditions" id="hud-conditions"></div>
   </div>
   <div class="fighter right">
-    <div class="who"><span class="name" id="f-right-name">Auditor</span><span class="role" id="f-right-role">argues for the employer</span></div>
+    <div class="who"><span class="name" id="f-right-name">Payroll's Counsel</span><span class="role" id="f-right-role">argues for the employer</span></div>
     <div class="bar"><i class="ghost" id="g-right"></i><i class="fill counsel" id="b-right"></i></div>
     <span class="meter-label">Credibility</span>
   </div>
@@ -285,7 +278,7 @@
   <div class="screen-inner">
     <span class="kicker">Docket · a caseworker for international students</span>
     <h1>Payroll took $440.64 from Priya by mistake.</h1>
-    <p>Watch Docket's paper agents argue it out. The crane, the Advocate, argues for Priya. The fox, the Auditor, argues for the employer. The owl judges in code, using only her file and the IRS's own words. Win the hearing, and Docket makes the call.</p>
+    <p>Watch Docket's paper agents fight for it. The crane argues for Priya, the fox argues for payroll, and the owl judges in code, using only her file and the IRS's own words. Win the hearing, and Docket makes the call.</p>
     <div class="cases" role="group" aria-label="Choose a case">
       <button class="case-card" id="case-priya" aria-pressed="true">
         <b>Priya Sharma</b>
@@ -393,21 +386,6 @@ function wrap(ctx, text, maxW) {
   if (cur) lines.push(cur);
   return lines;
 }
-// Largest font size at which `text` wraps inside maxW × maxH: text shrinks, never gets cut off.
-function fit(ctx, text, maxW, maxH, size, font, lh = 1.2, min = 8) {
-  for (;; size--) {
-    ctx.font = font(size);
-    const lines = wrap(ctx, text, maxW);
-    const wide = Math.max(...lines.map((l) => ctx.measureText(l).width));
-    if (size <= min) console.warn("FITDEBUG", text);
-    if ((wide <= maxW && lines.length * size * lh <= maxH) || size <= min) return { size, lines, lh };
-  }
-}
-// Draw fitted lines centred on (x, cy); the caller sets textAlign and textBaseline = "middle".
-function drawLines(ctx, { size, lines, lh }, x, cy) {
-  const y0 = cy - ((lines.length - 1) * size * lh) / 2;
-  lines.forEach((l, i) => ctx.fillText(l, x, y0 + i * size * lh));
-}
 const mat = (color, rough = 0.6, metal = 0) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
 function box(w, h, d, m, x = 0, y = 0, z = 0, parent = scene) {
   const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
@@ -474,7 +452,7 @@ function makeAgent({ kind, color, scale = 1, label }) {
     paper([[[-0.035, 0, 0], [0.035, 0, 0], [0, 0.72, 0.2]], [[0.035, 0, 0], [0, 0.05, -0.06], [0, 0.72, 0.2]], [[0, 0.05, -0.06], [-0.035, 0, 0], [0, 0.72, 0.2]]], color, headPivot);
     paper([[[0, 0.75, 0.2], [-0.04, 0.63, 0.2], [0, 0.67, 0.5]], [[0, 0.75, 0.2], [0, 0.67, 0.5], [0.04, 0.63, 0.2]]], color, headPivot);
     eye(0.03, -0.038, 0.69, 0.27); eye(0.03, 0.038, 0.69, 0.27);
-  } else if (kind === "fox") {       // the Auditor, who argues for the employer: a paper fox
+  } else if (kind === "fox") {       // Payroll's Counsel: a paper fox
     const BL = [-0.42, 0, -0.3], BR = [0.42, 0, -0.3], F = [0, 0, 0.42], T = [0, 1.05, -0.05], C = [0, 0.8, 0.22];
     paper([[BL, BR, T], [BL, F, C], [BL, C, T], [BR, C, F], [BR, T, C], [F, BR, BL]], color, body);
     paper([[[-0.15, 0.22, 0.37], [0.15, 0.22, 0.37], [0, 0.74, 0.26]]], 0xFFF1E4, body);
@@ -546,8 +524,9 @@ function plate(text, sub, w = 1.5, h = 0.42) {
     ctx.fillStyle = "#EFE6D6"; ctx.fillRect(0, 0, cw, ch);
     ctx.strokeStyle = "#B9A98E"; ctx.lineWidth = 6; ctx.strokeRect(8, 8, cw - 16, ch - 16);
     ctx.fillStyle = "#17120E"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    drawLines(ctx, fit(ctx, text, cw - 60, sub ? 92 : 140, 60, (s) => F(800, s), 1.05), cw / 2, sub ? 70 : ch / 2);
-    if (sub) { ctx.fillStyle = "#5C4F40"; drawLines(ctx, fit(ctx, sub, cw - 60, 44, 34, (s) => M(500, s), 1.1), cw / 2, 130); }
+    let s = 60; do { ctx.font = F(800, s); s -= 2; } while (ctx.measureText(text).width > cw - 60 && s > 20);
+    ctx.fillText(text, cw / 2, sub ? 70 : ch / 2);
+    if (sub) { let s2 = 34; do { ctx.font = M(500, s2); s2 -= 1; } while (ctx.measureText(sub).width > cw - 60 && s2 > 14); ctx.fillStyle = "#5C4F40"; ctx.fillText(sub, cw / 2, 128); }
   });
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }));
   return m;
@@ -563,7 +542,7 @@ wallTex.wrapS = THREE.RepeatWrapping; wallTex.repeat.set(5, 1);
 box(30, 9, 0.4, new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.85 }), 0, 4.5, -7);
 const bench = box(5.2, 1.9, 1.4, wood, 0, 0.95, -3.6);
 box(5.5, 0.14, 1.7, woodDark, 0, 1.97, -3.6);
-const benchPlate = plate("The Judge", "rules in code · no model decides", 2.4, 0.66);
+const benchPlate = plate("The Judge", "rules in code · Docket's Rules agent", 2.4, 0.66);
 benchPlate.position.set(0, 1.05, -2.88); scene.add(benchPlate);
 for (const s of [-1, 1]) box(0.5, 6.5, 0.5, woodDark, 7.2 * s, 3.25, -6.4);
 const railMat = mat(0x5A4030, 0.6);
@@ -577,7 +556,7 @@ sealFace.position.set(0, 5.2, -6.68); scene.add(sealFace);
 
 const adv = makeAgent({ kind: "crane", color: 0x4F7CF0, scale: 1.45, label: "Advocate" });
 adv.group.position.set(-3.2, 0.9, 0.8); adv.group.rotation.y = 0.5; adv.home = adv.group.position.clone();
-const counsel = makeAgent({ kind: "fox", color: 0xE8743B, scale: 1.15, label: "Auditor" });
+const counsel = makeAgent({ kind: "fox", color: 0xE8743B, scale: 1.15, label: "Payroll's Counsel" });
 counsel.group.position.set(3.2, 0.5, 0.8); counsel.group.rotation.y = -0.5; counsel.home = counsel.group.position.clone();
 const judge = makeAgent({ kind: "owl", color: 0xE6D8BC, scale: 1.3, label: "Judge" });
 judge.group.position.set(0, 0.5, -4.5); judge.home = judge.group.position.clone();
@@ -591,7 +570,7 @@ function pedestal(x, z, rotY, name, sub, accent) {
   return g;
 }
 pedestal(-3.2, 0.8, 0.5, "Advocate", "argues for the student", 0x4F7CF0);
-pedestal(3.2, 0.8, -0.5, "Auditor", "argues for the employer", 0xE8743B);
+pedestal(3.2, 0.8, -0.5, "Payroll's Counsel", "argues for the employer", 0xE8743B);
 
 // Gavel in the judge's hand + sound block on the bench
 const gavelPivot = new THREE.Group(); gavelPivot.position.set(1.15, 2.05, -3.2); scene.add(gavelPivot);
@@ -696,7 +675,7 @@ bankCard.position.set(MX, 2.2, 0.4); bankCard.rotation.x = -0.18; bankCard.castS
 const slipTex = tex(512, 220, (ctx, w, h) => {
   ctx.fillStyle = "#F6F0E4"; ctx.fillRect(0, 0, w, h);
   ctx.setLineDash([10, 8]); ctx.strokeStyle = "#B9A98E"; ctx.lineWidth = 4; ctx.strokeRect(10, 10, w - 20, h - 20); ctx.setLineDash([]);
-  ctx.fillStyle = "#5C4F40"; ctx.textBaseline = "middle"; drawLines(ctx, fit(ctx, "Refund · University Dining Payroll", w - 68, 40, 24, (s) => M(500, s)), 34, 56); ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#5C4F40"; ctx.font = M(500, 24); ctx.fillText("Refund · University Dining Payroll", 34, 62);
   ctx.fillStyle = "#16794F"; ctx.font = F(900, 78); ctx.fillText("$440.64", 34, 160);
 });
 const slip = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.69), new THREE.MeshStandardMaterial({ map: slipTex, roughness: 0.8, side: THREE.DoubleSide }));
@@ -713,10 +692,12 @@ function argCard(title, body, color) {
   const t = tex(768, 400, (ctx, w, h) => {
     ctx.fillStyle = "#F7F1E6"; ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = color; ctx.fillRect(0, 0, 18, h);
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#5C4F40"; drawLines(ctx, fit(ctx, title, w - 96, 56, 30, (s) => M(600, s), 1.1), 48, 58);
+    ctx.fillStyle = "#5C4F40"; let ts = 30; do { ctx.font = M(600, ts); ts -= 1; } while (ctx.measureText(title).width > w - 96 && ts > 16); ctx.fillText(title, 48, 64);
     // shrink the text until every line fits on the card
-    ctx.fillStyle = "#17120E"; drawLines(ctx, fit(ctx, body, w - 96, h - 132, 54, (s) => F(800, s)), 48, 100 + (h - 120) / 2);
+    let size = 54, lines;
+    for (;;) { ctx.font = F(800, size); lines = wrap(ctx, body, w - 96); if (lines.length * size * 1.2 <= h - 120 || size <= 22) break; size -= 2; }
+    ctx.fillStyle = "#17120E";
+    lines.forEach((l, i) => ctx.fillText(l, 48, 100 + size + i * size * 1.2));
   });
   const m = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.15, 0.02), [mat(0xEDE4D3), mat(0xEDE4D3), mat(0xEDE4D3), mat(0xEDE4D3), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }), mat(0xEDE4D3)]);
   m.castShadow = true; m.userData.isArg = true; scene.add(m); return m;
@@ -729,8 +710,8 @@ function fly(mesh, from, to, dur = 900, arc = 1.4, spin = 0) {
 function stampMesh(text, color) {
   const t = tex(900, 260, (ctx, w, h) => {
     ctx.strokeStyle = color; ctx.lineWidth = 14; ctx.strokeRect(14, 14, w - 28, h - 28);
-    ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    drawLines(ctx, fit(ctx, text, w - 90, h - 70, 150, (s) => F(900, s), 1), w / 2, h / 2 + 6);
+    ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = F(900, 150);
+    ctx.fillText(text, w / 2, h / 2 + 6);
   });
   const m = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.98), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0, depthWrite: false }));
   scene.add(m); return m;
@@ -821,7 +802,7 @@ const stats = { picks: 0, right: 0, wrong: 0, overruled: 0, sustained: 0, struck
 const SPEAKERS = {
   Judge: { color: "#E9DCC4", agent: () => judge },
   Advocate: { color: "#5B8CFF", agent: () => adv },
-  Auditor: { color: "#F07A3A", agent: () => counsel },
+  "Payroll's Counsel": { color: "#F07A3A", agent: () => counsel },
   Docket: { color: "#5B8CFF", agent: () => caller },
   Payroll: { color: "#B8C0CA", agent: () => clerk },
   Guardian: { color: "#43D18A", agent: () => guardian },
@@ -957,7 +938,7 @@ async function rule(result, reason, card) {
   gavelPivot.userData.strike = 1;
   shake(0.28);
   judge.arms[1].rotation.x = 0;
-  const colors = { Overruled: "#E9DCC4", Sustained: "#F2B544", Struck: "#F07A3A", Admitted: "#43D18A", Upheld: "#43D18A", Defeated: "#F07A3A" };
+  const colors = { Overruled: "#E9DCC4", Sustained: "#F2B544", Struck: "#F07A3A", Admitted: "#43D18A", Dismissed: "#F07A3A" };
   const st = stampMesh(result, colors[result] || "#E9DCC4");
   st.position.set(0, 3.7, -1.6); st.scale.setScalar(1.8); st.rotation.z = -0.06;
   // only one verdict stamp on screen at a time
@@ -971,7 +952,7 @@ async function rule(result, reason, card) {
     recordCount++;
     fly(c, c.position.clone(), V(-5.2 + (recordCount % 3) * 0.3, 1.0 + recordCount * 0.03, -4.6), 700, 0.6, 0).then(() => { c.userData.rest = true; });
   });
-  await say("Judge", `${result}. ${reason}`, { sub: result === "Struck" ? "Quote checker: not word for word in the stored IRS text · logged as quote_rejected, not shown to the student" : "" });
+  await say("Judge", `${result}. ${reason}`, { sub: result === "Struck" ? "Quote not found word for word in the stored source" : "" });
 }
 const stamps = [];
 let recordCount = 0;
@@ -981,31 +962,6 @@ let recordCount = 0;
    ============================================================ */
 let current = CASES.priya;
 let aborted = false;
-// The Auditor's objections, worded as agents/auditor/objections.py argument() words them.
-const OBJ = {
-  employer_is_contractor: (c) => `If ${c.employer} treats this as contractor work, the payroll rules for employees wouldn't apply at all.`,
-  year_count_boundary: (c) => `The exemption only lasts 5 calendar years. These paychecks are from calendar year ${c.year}, counting from arrival on ${c.arrival}.`,
-  student_exception_applies: (c) => `${c.employer} is the student's own school. A different exemption, the student exception, may be the right basis instead of the F-1 rule.`,
-  medicare_recovery_uncertain: () => "Medicare is treated differently from Social Security, and some employers won't refund it."
-};
-const MADE_UP = "“F-1 students never owe Social Security or Medicare tax.”";
-async function objection(c, oid, short) {
-  shot("counsel"); counsel.lean = 1;
-  await banner("Objection!", null, "#F07A3A");
-  const card = await throwCard(counsel, adv, "Auditor · " + oid, short, "#F07A3A");
-  adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 6); shake(0.1);
-  await say("Auditor", "Objection. " + OBJ[oid](c), { shot: "counsel" });
-  counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
-  return card;
-}
-const wrongPick = (line) => async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", line, { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); };
-async function rebutted(c, short, reason, card) {
-  await throwCard(adv, counsel, "Advocate · rebutted", short, "#5B8CFF");
-  counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 25); stats.overruled++;
-  await rule("Overruled", reason, card);
-  counsel.hurt = 0; drawFace(counsel, "idle");
-}
-
 async function roundHearing() {
   const c = current;
   setRounds(1); showHud(null);
@@ -1020,97 +976,107 @@ async function roundHearing() {
   folderCoverPivot.userData.open = 1;
 
   await say("Judge", `Case ${c.id}. ${c.name}, F-1, working for ${c.employer}. The claim: Social Security and Medicare withheld that she likely didn't owe${c.amount ? ", $440.64 in total" : ""}. Advocate, open.`, { shot: "judge" });
-  await say("Advocate", c.amount
-    ? `$357.12 of Social Security and $83.52 of Medicare ($440.64 in total) were withheld from 8 paychecks from ${c.employer}. ${c.name} is on an F-1 visa, in calendar year ${c.year} in the US, so these taxes are likely not owed.`
-    : `Social Security and Medicare were withheld from her paychecks from ${c.employer}. ${c.name} is on an F-1 visa, in calendar year ${c.year} in the US, so these taxes are likely not owed.`, { shot: "adv", lean: true });
-
-  // The Advocate's own first draft cites a sentence that isn't in the IRS text. Code throws it out.
-  const draft = await throwCard(adv, judge, "Advocate's draft quote · IRS Publication 519", MADE_UP, "#5B8CFF");
-  adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 12); stats.struck++;
-  await rule("Struck", "That sentence isn't in IRS Publication 519. It never reaches the student.", draft);
-  await banner("Made-up quote caught", "Docket's own AI drafted a quote that isn't in the IRS text. Code checked it and threw it out before anyone saw it.", "#F07A3A");
-  adv.hurt = 0; drawFace(adv, "idle");
-  await present("The draft quote was struck. What does the Advocate cite instead?", [
-    { label: "The exact sentence", detail: "Copied word for word from IRS Publication 519", correct: true },
-    { label: "A shorter summary", detail: "Same idea, the Advocate's own words" },
-    { label: "No source at all", detail: "The claim speaks for itself" }
-  ], wrongPick("Only text that matches the stored IRS source word for word gets in."));
+  await say("Advocate", `${c.first} is on an F-1 visa and works on campus. IRS Publication 519 says these taxes aren't withheld from F-1 students unless they're resident aliens.`, { shot: "adv", lean: true });
   const exhibitA = await throwCard(adv, judge, "Exhibit A · IRS Publication 519", QUOTE, "#5B8CFF");
   await rule("Admitted", "The quote matches the stored IRS text word for word.", exhibitA);
   if (aborted) return;
 
-  // Objection 1: employer_is_contractor
-  const o1 = await objection(c, "employer_is_contractor", "Is this contractor work?");
-  await present("The Auditor asks if this is contractor work. Present the evidence.", [
-    { label: "Employment type · employee", detail: `On ${c.employer}'s payroll; paystubs show taxes withheld`, correct: true },
-    { label: `Arrival date · ${c.arrival}`, detail: `Calendar year ${c.year}` },
-    { label: "Visa · F-1", detail: "Her immigration status" }
-  ], wrongPick("That doesn't show whether she's an employee. Answer the objection."));
-  await say("Advocate", `${c.name} is on ${c.employer}'s payroll as an employee, not a contractor, and the paystubs show taxes withheld by the employer.`, { shot: "adv", lean: true });
-  await rebutted(c, "On payroll as an employee, not a contractor.", "The student file says employee, and the paystubs show payroll withholding.", o1);
-  if (aborted) return;
+  // Objection 1: residency
+  shot("counsel");
+  counsel.lean = 1;
+  await banner("Objection!", null, "#F07A3A");
+  const o1 = await throwCard(counsel, adv, "Payroll's Counsel", "After five calendar years, students can be taxed as residents.", "#F07A3A");
+  adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 8); shake(0.12);
+  await say("Payroll's Counsel", "Objection. After five calendar years, F-1 students can be taxed as residents. She may owe these taxes.", { shot: "counsel" });
+  counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
 
-  // Objection 2: year_count_boundary (fatal if conceded)
-  const o2 = await objection(c, "year_count_boundary", `Calendar year ${c.year}: past the 5 exempt years?`);
   if (c.key === "nadia") {
-    await present("The Auditor says she may be past the 5-year exemption. Present the evidence.", [
+    await present("Payroll's Counsel says she may be a resident. Present the evidence.", [
       { label: "Arrival date · Jan 7, 2019", detail: "Her first calendar year in the US was 2019", correct: true },
-      { label: `Employer · ${c.employer}`, detail: "On-campus job" },
+      { label: "Employer · University Dining Services", detail: "On-campus job" },
       { label: "Medicare withheld", detail: "From her paystubs" }
-    ], wrongPick("Not relevant to the year count. Answer the objection."));
-    await say("Advocate", "Conceded: these paychecks are from calendar year 8, past the 5-year exemption, so withholding them is likely correct.", { shot: "adv", mood: "sad" });
-    await fly(o2, o2.position.clone(), V(0, 2.4, -2.2), 500, 0.3);
-    stats.sustained++;
-    await rule("Sustained", "She arrived Jan 7, 2019, so 2026 is calendar year 8, past the 5 exempt years. That objection is fatal.", o2);
+    ], async () => { damage("left", 10); await say("Judge", "Not relevant to residency. Answer the objection.", { shot: "judge" }); });
+    await say("Advocate", "She arrived January 7, 2019.", { shot: "adv", mood: "sad" });
+    await fly(o1, o1.position.clone(), V(0, 2.4, -2.2), 500, 0.3);
+    await rule("Sustained", "2019 was her first calendar year, so 2026 is year 8, past the five exempt years. She's likely taxed as a resident.", o1);
     damage("left", 100); drawFace(adv, "sad"); adv.slump = 1; counsel.joy = 1; drawFace(counsel, "joy");
     $("hud-claim").className = "claim lose";
-    await rule("Defeated", "The Auditor wins: Is the student past the 5-year exemption? Conceded.", null);
     shot("court", 1.8);
-    await banner("Claim defeated", "No claim: the Auditor won · Docket won't call payroll", "#F07A3A");
-    await say("Judge", "Nadia is likely taxed like a resident in 2026, so these taxes likely apply. Docket tells her honestly and doesn't call anyone.", { shot: "judge" });
+    await banner("Claim dismissed", "Docket won't call payroll", "#F07A3A");
+    await say("Judge", "Claim dismissed. Nadia is likely a resident for tax purposes in 2026, so these taxes likely apply. Docket tells her honestly and doesn't call anyone.", { shot: "judge" });
     return "dismissed";
   }
-  await present("The Auditor says she may be past the 5-year exemption. Present the evidence.", [
+
+  await present("Payroll's Counsel says she may be a resident. Present the evidence.", [
     { label: "Arrival date · Aug 15, 2024", detail: "2026 is her calendar year 3 of 5", correct: true },
-    { label: `Employer · ${c.employer}`, detail: "On-campus job" },
-    { label: "Medicare · $83.52", detail: "Withheld across 8 paychecks" }
-  ], wrongPick("Not relevant to the year count. Answer the objection."));
-  await say("Advocate", "Every claimed paycheck is from calendar year 3 of 5; the exemption runs through 2028.", { shot: "adv", lean: true });
-  await rebutted(c, "Calendar year 3 of 5. Exempt through 2028.", "She arrived Aug 15, 2024, so 2026 is calendar year 3 of 5.", o2);
+    { label: "Gross pay · $720.00", detail: "Per two-week paycheck" },
+    { label: "Medicare · $10.44", detail: "Per paycheck" }
+  ], async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "Not relevant to residency. Answer the objection.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
+  await say("Advocate", "She arrived August 15, 2024. That makes 2026 her calendar year 3 of 5. She's still in her exempt years.", { shot: "adv", lean: true });
+  await throwCard(adv, counsel, "Advocate", "Arrived Aug 15, 2024: year 3 of 5.", "#5B8CFF");
+  counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 25); stats.overruled++;
+  await rule("Overruled", "She arrived Aug 15, 2024, so 2026 is calendar year 3 of 5.", o1);
+  counsel.hurt = 0; drawFace(counsel, "idle");
   if (aborted) return;
 
-  // Objection 3: student_exception_applies (a downgrade if conceded)
-  const o3 = await objection(c, "student_exception_applies", "Student exception instead of the F-1 rule?");
-  await present("The Auditor says a different exemption may be the right basis. How does the Advocate answer?", [
-    { label: "The F-1 rule covers it", detail: "Calendar year 3 of 5; no second rule needed", correct: true },
-    { label: "Switch to the student exception", detail: "Rest the claim on that instead" },
-    { label: "Drop the claim", detail: "Two rules sounds risky" }
-  ], wrongPick("The F-1 rule already covers year 3 of 5. Don't give that up."));
-  await say("Advocate", "The F-1 nonresident rule covers this on its own, so the claim doesn't depend on the student exception; that would only be a second reason.", { shot: "adv", lean: true });
-  await rebutted(c, "The F-1 rule covers it on its own.", "The F-1 rule applies by itself in calendar year 3 of 5. The student exception is only a second reason.", o3);
+  // Objection 2: is the job allowed?
+  shot("counsel"); counsel.lean = 1;
+  await banner("Objection!", null, "#F07A3A");
+  const o2 = await throwCard(counsel, adv, "Payroll's Counsel", "This job may not be allowed under her visa.", "#F07A3A");
+  adv.hurt = 1; drawFace(adv, "hurt"); damage("left", 6); shake(0.1);
+  await say("Payroll's Counsel", "Objection. The exemption only covers work her visa allows. This job may not qualify.", { shot: "counsel" });
+  counsel.lean = 0; adv.hurt = 0; drawFace(adv, "idle");
+  await present("Is the job allowed under her F-1 visa? Present the evidence.", [
+    { label: "Employer · University Dining Services", detail: "An on-campus job", correct: true },
+    { label: "Arrival date · Aug 15, 2024", detail: "Calendar year 3 of 5" },
+    { label: "Net pay · $664.92", detail: "Per paycheck" }
+  ], async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "That doesn't show the job is allowed. Try again.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
+  await say("Advocate", "Her employer is University Dining Services. It's an on-campus job, the kind F-1 students are allowed to do.", { shot: "adv", lean: true });
+  await throwCard(adv, counsel, "Advocate", "University Dining Services: on campus.", "#5B8CFF");
+  counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 25); stats.overruled++;
+  await rule("Overruled", "The employer is University Dining Services, an on-campus job.", o2);
+  counsel.hurt = 0; drawFace(counsel, "idle");
   if (aborted) return;
 
-  // Objection 4: medicare_recovery_uncertain (conceded: Medicare is downgraded, the student decides)
-  const o4 = await objection(c, "medicare_recovery_uncertain", "Can Medicare actually be recovered?");
-  await present("The Auditor says Medicare is less certain. How does the Advocate answer?", [
-    { label: "Agree: split Medicare out", detail: "$83.52 becomes a separate, less certain part", correct: true },
-    { label: "Insist Medicare is certain", detail: "Claim all of it with full confidence" },
-    { label: "Drop the whole claim", detail: "Social Security too" }
-  ], wrongPick("Nothing in the file shows Medicare is certain, and Social Security stands on its own. Answer what's true."));
-  await say("Advocate", "Agreed: Medicare refunds are handled differently from employer to employer, so Medicare is a separate, less certain part of the claim.", { shot: "adv" });
+  // Objection 3: a made-up quote gets struck
+  shot("counsel"); counsel.lean = 1;
+  const o3 = await throwCard(counsel, judge, "Payroll's Counsel cites", "“All student wages are subject to FICA.”", "#F07A3A");
+  await say("Payroll's Counsel", "The rule is clear: “All student wages are subject to FICA.”", { shot: "counsel" });
+  counsel.lean = 0;
+  await present("Counsel quoted a rule. What does the Advocate do?", [
+    { label: "Ask the Judge to check it", detail: "Against the stored IRS text", correct: true },
+    { label: "Accept the quote", detail: "Counsel sounds sure" },
+    { label: "Argue it's unfair", detail: "Without checking" }
+  ], async () => { damage("left", 12); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "Docket never takes a quote on trust. Every quote gets checked.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
+  await say("Advocate", "Your Honor, please check that quote against IRS Publication 519.", { shot: "adv", lean: true });
+  counsel.hurt = 1; drawFace(counsel, "hurt"); damage("right", 30); stats.struck++;
+  await rule("Struck", "That sentence doesn't appear in IRS Publication 519. It's struck from the record.", o3);
+  await banner("Made-up rule caught", "An AI agent invented a quote. Docket's code checked it against the IRS text and threw it out.", "#F07A3A");
+  counsel.hurt = 0; drawFace(counsel, "idle");
+  if (aborted) return;
+
+  // Objection 4: employer first (sustained — becomes a condition)
+  shot("counsel"); counsel.lean = 1;
+  const o4 = await throwCard(counsel, adv, "Payroll's Counsel", "The refund has to be requested from the employer first.", "#F07A3A");
+  await say("Payroll's Counsel", "Objection. A refund like this has to be requested from the employer first, not the IRS.", { shot: "counsel" });
+  counsel.lean = 0;
+  await present("Counsel says: ask the employer first. How does the Advocate answer?", [
+    { label: "Agree: ask payroll first", detail: "IRS forms only if payroll refuses", correct: true },
+    { label: "Skip payroll, go to the IRS", detail: "Faster, maybe" }
+  ], async () => { damage("left", 10); adv.hurt = 1; drawFace(adv, "hurt"); await say("Judge", "The IRS route starts with the employer. That's the rule.", { shot: "judge" }); adv.hurt = 0; drawFace(adv, "idle"); });
+  await say("Advocate", "Agreed. Docket will ask payroll first, and turn to the IRS only if payroll refuses.", { shot: "adv" });
   damage("right", 5); stats.sustained++;
-  await rule("Sustained", "Medicare is downgraded. Social Security is not affected.", o4);
-  const chip = document.createElement("span"); chip.textContent = "Medicare downgraded · Priya decides"; $("hud-conditions").append(chip);
+  await rule("Sustained", "Ask payroll first. IRS forms only if payroll refuses. Added as a condition.", o4);
+  const chip = document.createElement("span"); chip.textContent = "Condition: ask payroll first"; $("hud-conditions").append(chip);
   if (aborted) return;
 
-  // Verdict, as verdict.py decides it: every fatal objection rebutted, Medicare downgraded
+  // Ruling
   drawFace(counsel, "sad"); counsel.slump = 1; adv.joy = 1; drawFace(adv, "joy");
   $("hud-claim").className = "claim win";
-  await rule("Upheld", "Social Security upheld; Medicare downgraded. An exception may apply to Medicare, so the student decides whether to go ahead.", null);
   shot("duel", 1.8);
   burst(V(0, 3.4, 0.6), 0x43D18A, 40, 0.8);
-  await banner("Claim upheld", "Social Security upheld · Medicare downgraded, Priya decides", "#43D18A");
-  await say("Judge", "Priya chose to ask for both: $440.64. Docket asks University Dining Services payroll first; IRS forms only if payroll refuses.", { shot: "judge" });
+  await banner("Claim stands", "$440.64 · ask payroll first", "#43D18A");
+  await say("Judge", "The claim stands: $440.64. Docket may ask University Dining Services payroll for the refund.", { shot: "judge" });
   return "stands";
 }
 
@@ -1132,7 +1098,7 @@ async function roundCall() {
   await roundCard("Round 2", "The call", "With the ruling in hand, Docket calls payroll. It says it's an AI. It never mentions her hours.");
   showHud("call");
   ["cs1", "cs2", "cs3", "cs4"].forEach((id) => stepState(id, ""));
-  await say("Docket", "The hearing upheld the claim. May I call University Dining Services payroll for you?", { shot: "caller", lean: true });
+  await say("Docket", "The court said: ask payroll first. May I call University Dining Services payroll for you?", { shot: "caller", lean: true });
   // Approval: a signature
   await new Promise((resolve) => {
     $("speaker").textContent = mode === "watch" ? "Priya approves" : "Your approval";
@@ -1165,7 +1131,7 @@ async function roundCall() {
   await say("Docket", "Social Security and Medicare were withheld from her 8 paychecks, $440.64 in total. As an F-1 student in calendar year 3 of 5, she's likely exempt. Could you refund it and stop withholding going forward?", { shot: "caller", lean: true });
   await say("Payroll", "Isn't she a resident by now? We withhold for residents. And how many hours does she work?", { shot: "clerk" });
   await present("Payroll pushed back. What does Docket use?", [
-    { label: "Ruling · Year 3 of 5", detail: "Rebutted in the hearing", correct: true },
+    { label: "Ruling 1 · Year 3 of 5", detail: "Overruled in the hearing", correct: true },
     { label: "Mention her 24-hour week", detail: "Answer the hours question" },
     { label: "Hang up", detail: "Try another day" }
   ], async (o) => {
@@ -1297,17 +1263,17 @@ function end(kind) {
   const es = $("end-screen");
   const statHtml = (b, s) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`;
   if (kind === "dismissed") {
-    $("end-kicker").textContent = "Claim defeated";
+    $("end-kicker").textContent = "Claim dismissed";
     $("end-title").textContent = "The hearing can lose. That's the point.";
     $("end-text").textContent = "Nadia is in calendar year 8, past the five exempt years, so these taxes likely apply to her. Docket tells her plainly and doesn't call payroll or send a letter. A claim only moves forward if it survives the other side.";
-    $("end-stats").innerHTML = statHtml("Conceded", "Auditor: past the 5-year exemption") + statHtml("0 calls", "Nothing sent on a losing claim") + statHtml(`${stats.struck} made-up quote`, "caught by code before anyone saw it");
+    $("end-stats").innerHTML = statHtml("Sustained", "Payroll's Counsel: likely a resident") + statHtml("0 calls", "Nothing sent on a losing claim");
     $("btn-other").textContent = "Play Priya's case";
   } else {
     $("end-kicker").textContent = "Case closed";
     $("end-title").textContent = "$440.64 is back with Priya.";
     $("end-text").textContent = `Argued, checked, called, and confirmed in her bank. Next on her docket: Form 8843 for 2026, due Apr 15, 2027.`;
-    const picks = stats.picks ? statHtml(`${stats.right}/${stats.picks}`, "your evidence picks were right") : statHtml("3 rebutted · 1 conceded", "the Auditor's 4 objections");
-    $("end-stats").innerHTML = statHtml("$440.64", "recovered, matched to the cent") + statHtml(`${stats.struck} made-up quote`, "caught by code before anyone saw it") + statHtml(stats.letters ? "1 call · 1 letter" : "1 call", payrollWill === "agree" ? "payroll agreed on the call" : "payroll stalled, so Docket wrote") + picks;
+    const picks = stats.picks ? statHtml(`${stats.right}/${stats.picks}`, "your evidence picks were right") : statHtml("4 / 4", "objections answered by the Advocate");
+    $("end-stats").innerHTML = statHtml("$440.64", "recovered, matched to the cent") + statHtml(`${stats.struck} made-up rule`, "caught by code before anyone acted on it") + statHtml(stats.letters ? "1 call · 1 letter" : "1 call", payrollWill === "agree" ? "payroll agreed on the call" : "payroll stalled, so Docket wrote") + picks;
     $("btn-other").textContent = "Try Nadia's case";
   }
   es.classList.remove("hide");
