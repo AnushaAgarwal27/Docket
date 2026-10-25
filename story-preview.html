@@ -1,0 +1,3799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docket — Case PS-2026-001 · Priya Sharma</title>
+
+  <!-- Fonts: Newsreader (Editorial Legal Serif), Public Sans (Body), IBM Plex Mono (Figures/Citations) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* --- UNIFIED WARM WALNUT & ARCHIVAL PARCHMENT PALETTE --- */
+    :root {
+      --bg-walnut: #1E1916;
+      --bg-walnut-panel: #251F1B;
+      --bg-walnut-elevated: #2C2520;
+      --parchment: #F4EFE6;
+      --parchment-ink: #161412;
+      --ink: #F4EFE6;
+      --secondary: #C4B9A8;
+      --muted: #8E8273;
+      --rules: rgba(244, 239, 230, 0.14);
+      --rules-strong: rgba(244, 239, 230, 0.28);
+      --attention: #E06D32;
+      --attention-ink: #C84B11;
+      --success: #4CC38A;
+      --success-ink: #16794F;
+      --sig-ink: #1F3A93;
+      --font-serif: 'Newsreader', Georgia, serif;
+      --font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-walnut);
+      /* Subtle continuous architectural wood-grain & ledger verticals across the whole project */
+      background-image: repeating-linear-gradient(
+        to right,
+        var(--bg-walnut) 0px,
+        var(--bg-walnut) 28px,
+        #221C18 28px,
+        #221C18 29px,
+        var(--bg-walnut) 29px,
+        var(--bg-walnut) 84px,
+        #1A1512 84px,
+        #1A1512 85px
+      );
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 16.5px;
+      line-height: 1.62;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Accessible Focus */
+    button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible {
+      outline: 2px solid var(--parchment);
+      outline-offset: 2px;
+    }
+
+    /* --- 1. REDESIGNED SINGLE-TIER ARCHITECTURAL HEADER --- */
+    .top-bar-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 100;
+      background-color: rgba(30, 25, 22, 0.94);
+      border-bottom: 1px solid var(--rules-strong);
+    }
+
+    .command-bar {
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      gap: 16px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-wordmark {
+      font-family: var(--font-serif);
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+
+    /* Center Chapter Index inside main bar */
+    .chapter-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border-left: 1px solid var(--rules);
+      border-right: 1px solid var(--rules);
+      padding: 0 14px;
+    }
+
+    .chapter-btn {
+      background: none;
+      border: 1px solid transparent;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--secondary);
+      cursor: pointer;
+      padding: 5px 9px;
+      border-radius: 2px;
+      transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .chapter-btn:hover {
+      color: var(--ink);
+    }
+
+    .chapter-btn.active {
+      color: var(--ink);
+      border-color: var(--rules-strong);
+      background: rgba(244, 239, 230, 0.06);
+    }
+
+    .command-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cmd-btn {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink);
+      background: var(--bg-walnut-panel);
+      border: 1px solid var(--rules-strong);
+      border-radius: 2px;
+      padding: 7px 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+      position: relative;
+    }
+
+    .cmd-btn:hover:not(:disabled) {
+      background: var(--bg-walnut-elevated);
+      border-color: var(--ink);
+    }
+
+    .cmd-btn.primary {
+      background: var(--parchment);
+      color: var(--parchment-ink);
+      border-color: var(--parchment);
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .cmd-btn.primary:hover:not(:disabled) {
+      background: #EAE2D3;
+    }
+
+    .evidence-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--attention);
+      display: none;
+    }
+
+    .evidence-dot.visible {
+      display: inline-block;
+    }
+
+    .cmd-link {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--secondary);
+      text-decoration: none;
+      padding: 6px 8px;
+    }
+
+    .cmd-link:hover {
+      color: var(--ink);
+      text-decoration: underline;
+    }
+
+    /* Slim One-Line Status Ticker under the bar */
+    .status-ticker {
+      height: 26px;
+      border-top: 1px solid var(--rules);
+      background: #171311;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--secondary);
+    }
+
+    /* --- 2. RIGHT-SIDE SLIDE-OUT PANELS (Warm Parchment Dossier Drawers) --- */
+    .side-panel {
+      position: fixed;
+      top: 96px;
+      right: 16px;
+      width: 440px;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 114px);
+      background: var(--parchment);
+      color: var(--parchment-ink);
+      border: 1px solid #C8BFA8;
+      border-radius: 2px;
+      z-index: 120;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .side-panel.open {
+      display: flex;
+    }
+
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid #D8D0C0;
+      background: #EDE6D8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-family: var(--font-serif);
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--parchment-ink);
+    }
+
+    .panel-close {
+      background: none;
+      border: 1px solid #C8BFA8;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #4A443C;
+      cursor: pointer;
+      padding: 3px 9px;
+      border-radius: 2px;
+    }
+
+    .panel-close:hover {
+      color: var(--parchment-ink);
+      border-color: var(--parchment-ink);
+    }
+
+    .panel-tabs {
+      display: flex;
+      border-bottom: 1px solid #D8D0C0;
+      background: #EAE2D3;
+      padding: 0 12px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: #5A534A;
+      padding: 10px 12px;
+      cursor: pointer;
+    }
+
+    .tab-btn:hover:not(:disabled) {
+      color: var(--parchment-ink);
+    }
+
+    .tab-btn.active {
+      color: var(--parchment-ink);
+      border-bottom-color: var(--parchment-ink);
+    }
+
+    .tab-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .tab-pane {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .tab-pane.active {
+      display: flex;
+    }
+
+    .panel-body {
+      padding: 18px 20px;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--parchment-ink);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-footer {
+      padding: 12px 20px;
+      border-top: 1px solid #D8D0C0;
+      background: #EDE6D8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #4A443C;
+    }
+
+    .panel-section-label {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: #5A534A;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .panel-box {
+      border: 1px solid #D5CCB8;
+      border-radius: 2px;
+      padding: 12px 14px;
+      background: #FAF6EE;
+    }
+
+    .signature-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border: 1px solid #D5CCB8;
+      border-radius: 2px;
+      background: #FAF6EE;
+    }
+
+    .signature-svg {
+      width: 130px;
+      height: 32px;
+      overflow: visible;
+    }
+
+    .sig-path {
+      fill: none;
+      stroke: var(--sig-ink);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 240;
+      stroke-dashoffset: 240;
+      transition: stroke-dashoffset 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .sig-path.signed {
+      stroke-dashoffset: 0;
+    }
+
+    .call-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      border-top: 1px solid #D8D0C0;
+      padding-top: 12px;
+    }
+
+    .call-step-item {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #6E665C;
+    }
+
+    .call-step-item.done {
+      color: var(--parchment-ink);
+      font-weight: 500;
+    }
+
+    .transcript-box {
+      border: 1px solid #D5CCB8;
+      border-radius: 2px;
+      padding: 12px;
+      background: #FAF6EE;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 170px;
+      overflow-y: auto;
+    }
+
+    .transcript-line {
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--parchment-ink);
+    }
+
+    .letter-pre {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      background: #FAF6EE;
+      border: 1px solid #D5CCB8;
+      border-radius: 2px;
+      padding: 14px;
+      color: var(--parchment-ink);
+    }
+
+    .ledger-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 8px 0;
+      border-bottom: 1px solid #DFD7C8;
+      font-size: 13px;
+    }
+
+    .ledger-row:last-child {
+      border-bottom: none;
+    }
+
+    /* --- 3. PAGE LAYOUT & ARCHITECTURAL DOSSIER SECTIONS --- */
+    .page-layout {
+      position: relative;
+      width: 100%;
+      z-index: 10;
+    }
+
+    .canvas-container {
+      position: fixed;
+      top: 84px;
+      right: 0;
+      width: 55%;
+      height: calc(100vh - 84px);
+      z-index: 10;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .canvas-container:active {
+      cursor: grabbing;
+    }
+
+    #webgl-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .content-column {
+      width: 45%;
+      position: relative;
+      z-index: 20;
+      padding: 0 48px 0 56px;
+      margin-top: 84px;
+      border-right: 1px solid var(--rules-strong);
+    }
+
+    /* Vertical Archival Margin Rule down the left of the text column */
+    .content-column::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 28px;
+      width: 1px;
+      background-color: rgba(224, 109, 50, 0.28);
+      pointer-events: none;
+    }
+
+    .step-section {
+      min-height: calc(100vh - 84px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 76px 0;
+      max-width: 520px;
+    }
+
+    /* Physical Manila File Tab replacing the old top-left Case ID header clutter */
+    .dossier-file-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #2C241E;
+      border: 1px solid var(--rules-strong);
+      border-bottom: 2px solid var(--attention);
+      padding: 5px 12px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--secondary);
+      width: fit-content;
+      margin-bottom: 22px;
+    }
+
+    /* Form Line Section Labels */
+    .form-section-label {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--attention);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .form-section-label::after {
+      content: "";
+      height: 1px;
+      width: 54px;
+      background-color: var(--rules-strong);
+      display: inline-block;
+    }
+
+    .headline {
+      font-family: var(--font-serif);
+      font-size: 50px;
+      line-height: 1.06;
+      font-weight: 500;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      margin-bottom: 20px;
+    }
+
+    .body-copy {
+      font-size: 16.5px;
+      line-height: 1.64;
+      color: var(--secondary);
+      margin-bottom: 22px;
+    }
+
+    .inline-link {
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      width: fit-content;
+    }
+
+    .inline-link:hover {
+      color: var(--attention);
+    }
+
+    /* Interactive Paystub Upload Dropzone on Home */
+    .upload-dropzone {
+      margin: 6px 0 22px 0;
+      border: 1px dashed var(--rules-strong);
+      background: rgba(37, 31, 27, 0.72);
+      border-left: 3px solid var(--attention);
+      padding: 16px 18px;
+      border-radius: 2px;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .upload-dropzone.dragover {
+      background: rgba(224, 109, 50, 0.12);
+      border-color: var(--attention);
+    }
+
+    .dropzone-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .dropzone-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .dropzone-status {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--success);
+    }
+
+    .dropzone-desc {
+      font-size: 13.5px;
+      color: var(--secondary);
+      margin-bottom: 12px;
+    }
+
+    .dropzone-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-archival {
+      background: var(--bg-walnut-elevated);
+      color: var(--ink);
+      border: 1px solid var(--rules-strong);
+      border-radius: 2px;
+      padding: 6px 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .btn-archival:hover {
+      border-color: var(--ink);
+      background: #362D27;
+    }
+
+    /* Editorial Index Slips (Replaces generic "AI boxes") */
+    .hearing-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--rules-strong);
+    }
+
+    .proto-note {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--secondary);
+    }
+
+    .student-switch-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--secondary);
+    }
+
+    .hearing-transcript {
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--rules-strong);
+      margin: 8px 0 18px 0;
+    }
+
+    .hearing-step {
+      padding: 13px 14px 13px 16px;
+      border-bottom: 1px solid var(--rules);
+      border-left: 2px solid transparent;
+      background: rgba(24, 20, 17, 0.45);
+      opacity: 0.38;
+      transition: opacity 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .hearing-step.active {
+      opacity: 1;
+      border-left-color: var(--secondary);
+    }
+
+    .hearing-step.current-focus {
+      border-left-color: var(--attention);
+      background: rgba(44, 37, 32, 0.75);
+    }
+
+    .hearing-step-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--secondary);
+    }
+
+    .hearing-ruling-tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .ruling-Overruled { color: var(--secondary); }
+    .ruling-Sustained { color: var(--attention); }
+    .ruling-Struck { color: #E57368; text-decoration: line-through; }
+    .ruling-Ruling { color: var(--success); }
+
+    .hearing-step-text {
+      font-family: var(--font-serif);
+      font-size: 17px;
+      line-height: 1.42;
+      color: var(--ink);
+    }
+
+    .hearing-step-text.struck-line {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .hearing-step-reason {
+      margin-top: 6px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--secondary);
+    }
+
+    /* Inspected Paystub Ledger Slip in Section 01 */
+    .inspect-card {
+      background: var(--bg-walnut-panel);
+      border: 1px solid var(--rules-strong);
+      border-left: 3px solid var(--attention);
+      border-radius: 2px;
+      padding: 14px 16px;
+      margin-top: 16px;
+      display: none;
+      color: var(--ink);
+    }
+
+    .inspect-card.visible {
+      display: block;
+    }
+
+    /* Call Section 03 Ledger Box */
+    .sec3-transcript-wrap {
+      margin: 16px 0 20px 0;
+      border: 1px solid var(--rules-strong);
+      border-left: 3px solid var(--secondary);
+      border-radius: 2px;
+      background: rgba(37, 31, 27, 0.75);
+      padding: 14px 16px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--parchment);
+      color: var(--parchment-ink);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 22px;
+      border-radius: 2px;
+      border: 1px solid var(--parchment);
+      cursor: pointer;
+      width: fit-content;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #E5DEC9;
+    }
+
+    .btn-primary:disabled {
+      background: var(--bg-walnut-elevated);
+      color: var(--muted);
+      border-color: var(--rules);
+      cursor: default;
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #FAF6EE;
+      color: var(--parchment-ink);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 2px;
+      border: 1px solid #C8BFA8;
+      cursor: pointer;
+    }
+
+    .btn-outline:hover:not(:disabled) {
+      border-color: var(--parchment-ink);
+    }
+
+    .small-print {
+      font-size: 13px;
+      color: var(--secondary);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    .timeline-notice {
+      margin-top: 18px;
+      margin-bottom: 18px;
+      padding: 13px 16px;
+      background: var(--bg-walnut-panel);
+      border: 1px solid var(--rules-strong);
+      border-left: 3px solid var(--success);
+      border-radius: 2px;
+      font-size: 13.5px;
+      color: var(--ink);
+    }
+
+    /* Corner Dev Preview Switch */
+    .preview-control {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 110;
+      background: var(--bg-walnut-panel);
+      border: 1px solid var(--rules-strong);
+      padding: 8px 14px;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .preview-control input {
+      accent-color: var(--attention);
+      cursor: pointer;
+    }
+
+    /* --- 4. PRINTABLE CASE PACKET VIEW (@media print) --- */
+    #printable-case-packet {
+      display: none;
+    }
+
+    @media print {
+      body {
+        background: #FFFFFF !important;
+        color: #000000 !important;
+        font-size: 12pt;
+      }
+      .top-bar-wrapper,
+      .page-layout,
+      .side-panel,
+      .preview-control {
+        display: none !important;
+      }
+      #printable-case-packet {
+        display: block !important;
+        padding: 24px 36px;
+        font-family: 'Public Sans', sans-serif;
+        color: #111111;
+      }
+      .print-header {
+        border-bottom: 2px solid #111111;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+      .print-title {
+        font-family: 'Newsreader', Georgia, serif;
+        font-size: 24pt;
+        font-weight: 600;
+      }
+      .print-section {
+        margin-bottom: 22px;
+        page-break-inside: avoid;
+      }
+      .print-sec-title {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10pt;
+        border-bottom: 1px solid #999999;
+        padding-bottom: 4px;
+        margin-bottom: 10px;
+        font-weight: 600;
+      }
+      .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 9.5pt;
+        margin-bottom: 12px;
+      }
+      .print-table th, .print-table td {
+        border: 1px solid #CCCCCC;
+        padding: 6px 8px;
+        text-align: left;
+      }
+      .print-quote {
+        border-left: 3px solid #111111;
+        padding-left: 12px;
+        font-family: 'Newsreader', Georgia, serif;
+        font-size: 12pt;
+        margin: 8px 0;
+      }
+      .print-letter {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 9.5pt;
+        white-space: pre-wrap;
+        border: 1px solid #CCCCCC;
+        padding: 14px;
+      }
+    }
+
+    /* --- 5. MOBILE RESPONSIVE (<880px) --- */
+    @media (max-width: 880px) {
+      .command-bar {
+        padding: 0 14px;
+        height: 50px;
+      }
+
+      .chapter-links {
+        display: none;
+      }
+
+      .status-ticker {
+        padding: 0 14px;
+      }
+
+      .command-actions {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 58px;
+        background: #171311;
+        border-top: 1px solid var(--rules-strong);
+        padding: 0 8px;
+        justify-content: space-around;
+        z-index: 130;
+      }
+
+      .cmd-btn {
+        min-height: 42px;
+        padding: 6px 10px;
+        font-size: 11.5px;
+      }
+
+      .cmd-link {
+        display: none;
+      }
+
+      .canvas-container {
+        position: sticky;
+        top: 76px;
+        width: 100%;
+        height: 42vh;
+        z-index: 10;
+        background: var(--bg-walnut);
+        touch-action: pan-y;
+        border-bottom: 1px solid var(--rules-strong);
+      }
+
+      .content-column {
+        width: 100%;
+        padding: 0 20px 84px 38px;
+        margin-top: 0;
+        border-right: none;
+      }
+
+      .content-column::before {
+        left: 16px;
+      }
+
+      .step-section {
+        min-height: auto;
+        padding: 52px 0 76px 0;
+        max-width: 100%;
+      }
+
+      .headline {
+        font-size: 36px;
+      }
+
+      .side-panel {
+        top: 80px;
+        right: 8px;
+        left: 8px;
+        width: auto;
+        max-height: calc(100vh - 148px);
+      }
+
+      .preview-control {
+        bottom: 68px;
+        right: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. SINGLE-TIER ARCHITECTURAL TOP COMMAND BAR -->
+  <div class="top-bar-wrapper">
+    <header class="command-bar">
+      <div class="brand-group">
+        <span class="brand-wordmark">Docket</span>
+      </div>
+
+      <!-- Integrated Chapter Index -->
+      <nav class="chapter-links" aria-label="Chapter navigation">
+        <button class="chapter-btn active" data-scroll-to="section-0">Home</button>
+        <button class="chapter-btn" data-scroll-to="section-1">01 Paper trail</button>
+        <button class="chapter-btn" data-scroll-to="section-2">02 Hearing</button>
+        <button class="chapter-btn" data-scroll-to="section-3">03 Call</button>
+        <button class="chapter-btn" data-scroll-to="section-4">04 Money</button>
+      </nav>
+
+      <!-- Case Actions & Web Audio Synthesizer Toggle -->
+      <nav class="command-actions" aria-label="Case controls">
+        <button class="cmd-btn" id="btn-audio-toggle" title="Toggle procedural paper, gavel, and stamp audio">
+          <span id="audio-label">Sound: Off</span>
+        </button>
+        <button class="cmd-btn" id="btn-open-evidence">
+          <span>Evidence</span>
+          <span class="evidence-dot" id="evidence-dot" aria-label="Written letter ready"></span>
+        </button>
+        <button class="cmd-btn" id="btn-open-bank">Bank</button>
+        <button class="cmd-btn" id="btn-open-activity">Activity</button>
+        <button class="cmd-btn" id="btn-export-packet" title="Print or save complete case file as PDF" style="display:none">Export Packet</button>
+        <button class="cmd-btn primary" id="btn-open-call">Call payroll</button>
+        <a class="cmd-link" id="link-asione" href="https://asi1.ai/" target="_blank" rel="noopener noreferrer">ASI:One ↗</a>
+      </nav>
+    </header>
+
+    <!-- Slim One-Line Status Ticker -->
+    <div class="status-ticker" role="status" aria-live="polite">
+      <span id="status-ticker-text"></span>
+      <span class="mono" id="ticker-right-meta">FICA exemption review · Source: IRS Publication 519</span>
+    </div>
+  </div>
+
+  <!-- 2. RIGHT-SIDE DOSSIER PANELS -->
+  <!-- Call Payroll Panel -->
+  <aside class="side-panel" id="panel-call" aria-labelledby="panel-call-title">
+    <div class="panel-header">
+      <h2 class="panel-title" id="panel-call-title">Call payroll</h2>
+      <button class="panel-close" data-close="panel-call">Close</button>
+    </div>
+    <div class="panel-body">
+      <div>
+        <span class="panel-section-label">What Docket will say</span>
+        <div class="panel-box" id="call-will-say"></div>
+      </div>
+      <div>
+        <span class="panel-section-label">What it won't say</span>
+        <div class="panel-box">Nothing about your weekly hours; no extra personal details.</div>
+      </div>
+
+      <div class="signature-row">
+        <div>
+          <span class="panel-section-label" style="margin-bottom:0;">Student authorization</span>
+          <div style="font-weight: 600;" id="sig-student-name"></div>
+        </div>
+        <svg class="signature-svg" viewBox="0 0 140 36" aria-hidden="true">
+          <path id="sig-svg-path" class="sig-path" d="M8,26 C18,10 26,28 36,16 C44,8 48,26 58,20 C70,12 78,25 92,14 C104,6 114,22 132,17" />
+        </svg>
+      </div>
+
+      <button class="btn-primary" id="btn-place-call" style="width: 100%; background:#161412; color:#F4EFE6; border-color:#161412;">Place call</button>
+
+      <div class="call-steps" id="call-live-steps">
+        <div class="call-step-item" id="step-dialing"><span>1. Dialing</span><span class="mono" id="time-dialing">—</span></div>
+        <div class="call-step-item" id="step-connected"><span>2. Connected</span><span class="mono" id="time-connected">—</span></div>
+        <div class="call-step-item" id="step-answer"><span>3. Payroll's answer</span><span class="mono" id="time-answer">—</span></div>
+        <div class="call-step-item" id="step-outcome"><span>4. Outcome</span><span class="mono" id="time-outcome">—</span></div>
+      </div>
+
+      <div>
+        <span class="panel-section-label">Live transcript (Rehearsal — no real call placed)</span>
+        <div class="transcript-box" id="call-transcript-box">
+          <div style="color: #6E665C; font-size: 12px;" class="mono">Waiting for approval to place rehearsal call...</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel-footer">
+      <label for="sim-outcome-select" class="mono">Rehearsal outcome:</label>
+      <select id="sim-outcome-select" class="mono" style="padding: 4px 8px; border: 1px solid #C8BFA8; border-radius: 2px; background: #FAF6EE;">
+        <option value="stalled" selected>stalled</option>
+        <option value="promised">promised</option>
+        <option value="refused">refused</option>
+      </select>
+    </div>
+  </aside>
+
+  <!-- Evidence Panel (Three Tabs + Printable Packet Export) -->
+  <aside class="side-panel" id="panel-evidence" aria-labelledby="panel-evidence-title">
+    <div class="panel-header">
+      <h2 class="panel-title" id="panel-evidence-title">Evidence dossier</h2>
+      <div style="display:flex; gap:6px;">
+        <button class="panel-close" id="btn-panel-print-packet" title="Print or save PDF packet">Print Packet</button>
+        <button class="panel-close" data-close="panel-evidence">Close</button>
+      </div>
+    </div>
+    <div class="panel-tabs" role="tablist">
+      <button class="tab-btn active" role="tab" aria-selected="true" data-tab="tab-paystubs" id="tab-btn-paystubs">Paystubs &amp; rule</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-hearing" id="tab-btn-hearing">Hearing record</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-letter" id="tab-btn-letter" disabled title="Ready after payroll stalls or refuses">Letter</button>
+    </div>
+    <div class="panel-body">
+      <div class="tab-pane active" id="tab-paystubs" role="tabpanel">
+        <div class="panel-box">
+          <span class="panel-section-label" id="ev-rule-source"></span>
+          <div style="font-family:var(--font-serif); font-size: 16px; margin-bottom: 6px;" id="ev-rule-quote"></div>
+          <div class="mono" style="font-size: 11.5px; color: #5A534A;">Matched word for word · Rechecked in code</div>
+        </div>
+        <div>
+          <span class="panel-section-label">Box 4 &amp; Box 6 withheld by pay period</span>
+          <div id="ev-paystubs-table"></div>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="tab-hearing" role="tabpanel">
+        <span class="panel-section-label">Prototype hearing record</span>
+        <div id="ev-hearing-list"></div>
+      </div>
+
+      <div class="tab-pane" id="tab-letter" role="tabpanel">
+        <pre class="letter-pre" id="letter-content"></pre>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-outline" id="btn-copy-letter">Copy text</button>
+          <button class="btn-outline" id="btn-download-letter">Download (.txt)</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bank Deposits Panel -->
+  <aside class="side-panel" id="panel-bank" aria-labelledby="panel-bank-title">
+    <div class="panel-header">
+      <h2 class="panel-title" id="panel-bank-title">Bank deposits · <span class="mono" style="font-size:14px;" id="bank-match-summary"></span></h2>
+      <button class="panel-close" data-close="panel-bank">Close</button>
+    </div>
+    <div class="panel-body">
+      <div class="panel-box" id="bank-watch-row" style="display: flex; justify-content: space-between; align-items: center;"></div>
+      <div id="bank-deposits-list"></div>
+    </div>
+  </aside>
+
+  <!-- Activity Panel -->
+  <aside class="side-panel" id="panel-activity" aria-labelledby="panel-activity-title">
+    <div class="panel-header">
+      <h2 class="panel-title" id="panel-activity-title">Case activity log</h2>
+      <button class="panel-close" data-close="panel-activity">Close</button>
+    </div>
+    <div class="panel-body" id="activity-list"></div>
+  </aside>
+
+  <!-- Corner Dev Preview Switch -->
+  <label class="preview-control" title="Toggle refund outcome">
+    <input type="checkbox" id="refund-toggle">
+    <span>Preview: refund landed</span>
+  </label>
+
+  <!-- 3. MAIN INTERACTIVE SCROLL LAYOUT -->
+  <div class="page-layout">
+    <!-- Sticky 3D Stage -->
+    <div class="canvas-container" id="canvas-wrapper">
+      <canvas id="webgl-canvas" role="img" aria-label="3D case file and paystubs"></canvas>
+    </div>
+
+    <!-- Left Content Column: Home + 4 Chapters -->
+    <main class="content-column" id="narrative-content">
+      <!-- HOME — "Docket" -->
+      <section class="step-section" id="section-0">
+        <!-- Physical Manila File Tab replacing the old top-bar text -->
+        <div class="dossier-file-tab">
+          <span style="color:var(--attention);">FILE</span>
+          <span id="sec0-tag"></span>
+        </div>
+
+        <h1 class="headline" id="sec0-headline"></h1>
+        <p class="body-copy" id="sec0-body"></p>
+
+        <!-- NEW FEATURE: Interactive Paystub Dropzone Simulation -->
+        <div class="upload-dropzone" id="paystub-dropzone">
+          <div class="dropzone-top">
+            <span class="dropzone-title">Paystubs · Box 4 &amp; Box 6</span>
+            <span class="dropzone-status" id="dropzone-status-badge">8 of 8 verified</span>
+          </div>
+          <p class="dropzone-desc" id="dropzone-desc-text">
+            Priya's 8 paystubs, read by the Ledger. This preview replays them; to read new paystubs, send them to Docket in ASI:One.
+          </p>
+          <div class="dropzone-actions">
+            <input type="file" id="paystub-file-input" multiple accept=".pdf,image/*" style="display:none;" disabled>
+            <button class="btn-archival" id="btn-trigger-upload" style="display:none">Select paystub files</button>
+            <button class="btn-archival" id="btn-replay-ingest">Replay the 8 paystubs</button>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+          <a class="inline-link" id="sec0-asi-link" href="https://asi1.ai/" target="_blank" rel="noopener noreferrer">Talk to Docket in ASI:One ↗</a>
+          <span class="mono" style="font-size:12px; color:var(--muted);">Scroll to open the dossier ↓</span>
+        </div>
+      </section>
+
+      <!-- 01 THE PAPER TRAIL -->
+      <section class="step-section" id="section-1">
+        <div class="form-section-label">01&nbsp;&nbsp;Paper trail</div>
+        <h2 class="headline" id="sec1-headline"></h2>
+        <p class="body-copy" id="sec1-body"></p>
+        <p class="small-print" id="sec1-subcopy" style="margin-top:0;"></p>
+        <div class="inspect-card" id="paystub-inspect-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <strong class="mono" id="inspect-period"></strong>
+            <button class="btn-archival" id="inspect-close-btn">Put back</button>
+          </div>
+          <div class="mono" style="font-size:12.5px; color:var(--secondary);" id="inspect-details"></div>
+        </div>
+      </section>
+
+      <!-- 02 THE HEARING -->
+      <section class="step-section" id="section-2">
+        <div class="form-section-label">02&nbsp;&nbsp;Hearing</div>
+        <div class="hearing-header-bar">
+          <span class="proto-note">Prototype hearing · Judge rules in code</span>
+          <div class="student-switch-wrap">
+            <span>Example student:</span>
+            <button class="btn-archival" id="btn-toggle-student">Try another student: Nadia (year 8)</button>
+          </div>
+        </div>
+        <h2 class="headline" id="sec2-headline" style="font-size: 40px; margin-bottom: 14px;">Testing the claim before acting on it.</h2>
+        <div class="hearing-transcript" id="sec2-transcript-list"></div>
+      </section>
+
+      <!-- 03 THE CALL -->
+      <section class="step-section" id="section-3">
+        <div class="form-section-label">03&nbsp;&nbsp;Call</div>
+        <h2 class="headline" id="sec3-headline">Approve the call to payroll.</h2>
+        <p class="body-copy" id="sec3-body"></p>
+        <div class="sec3-transcript-wrap" id="sec3-live-box">
+          <span class="panel-section-label" style="color:var(--secondary);" id="sec3-live-label">What Docket will and won't say</span>
+          <div id="sec3-live-lines" style="font-size: 14px; color: var(--ink);"></div>
+        </div>
+        <div>
+          <button class="btn-primary" id="sec3-call-btn">Approve the call to payroll</button>
+          <p class="small-print" id="sec3-smallprint"></p>
+        </div>
+      </section>
+
+      <!-- 04 THE MONEY -->
+      <section class="step-section" id="section-4">
+        <div class="form-section-label">04&nbsp;&nbsp;Money</div>
+        <h2 class="headline" id="sec4-headline"></h2>
+        <p class="body-copy" id="sec4-body"></p>
+        <div class="timeline-notice mono" id="sec4-timeline"></div>
+        <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+          <a class="inline-link" id="sec4-asi-link" href="https://asi1.ai/" target="_blank" rel="noopener noreferrer">Talk to Docket in ASI:One ↗</a>
+          <button class="btn-archival" id="sec4-print-btn">Download / Print Case Packet (.PDF)</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 4. PRINTABLE CASE PACKET VIEW (Populated from DATA for @media print) -->
+  <section id="printable-case-packet" aria-hidden="true"></section>
+
+  <!-- Main ES Module Script -->
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
+
+    // --- 1. CENTRAL DATA OBJECT (All numbers, names, and records read strictly from here) ---
+    const DATA = {
+      student: { name: "Priya Sharma", visa: "F-1", yearOnF1: 3, yearsExempt: 5 },
+      employer: "University Dining Services",
+      hourlyRate: 18.00,
+      paystubs: [
+        { period: "Jan 12 – Jan 25", gross: 720.00, ss: 44.64, medicare: 10.44, net: 664.92, hours: [20, 20] },
+        { period: "Jan 26 – Feb 8",  gross: 720.00, ss: 44.64, medicare: 10.44, net: 664.92, hours: [20, 20] },
+        { period: "Feb 9 – Feb 22",  gross: 720.00, ss: 44.64, medicare: 10.44, net: 664.92, hours: [20, 20] },
+        { period: "Feb 23 – Mar 8",  gross: 720.00, ss: 44.64, medicare: 10.44, net: 664.92, hours: [20, 20] },
+        { period: "Mar 9 – Mar 22",  gross: 720.00, ss: 44.64, medicare: 10.44, net: 664.92, hours: [16, 24] },
+        { period: "Mar 23 – Apr 5",  gross: 720.00, ss: 44.64, medicare: 10.44, net: 664.92, hours: [20, 20] },
+        { period: "Apr 6 – Apr 19",  gross: 720.00, ss: 44.64, medicare: 10.44, net: 664.92, hours: [20, 20] },
+        { period: "Apr 20 – May 3",  gross: 720.00, ss: 44.64, medicare: 10.44, net: 664.92, hours: [20, 20] }
+      ],
+      totals: { ss: 357.12, medicare: 83.52, withheld: 440.64, gross: 5760.00 },
+      quote: {
+        text: "Social security and Medicare taxes are not withheld from pay for the work unless the student is considered a resident alien.",
+        source: "IRS Publication 519"
+      },
+      hearing: [
+        { speaker: "Advocate", text: "Priya is an F-1 student in calendar year 3 of 5. Social Security and Medicare don't apply to her campus job.", cite: "IRS Publication 519", quote: "Social security and Medicare taxes are not withheld from pay for the work unless the student is considered a resident alien.", ruling: null },
+        { speaker: "Payroll's Counsel", text: "Objection: after five calendar years, F-1 students can be taxed as residents.", ruling: "Overruled", reason: "She arrived Aug 15, 2024, so 2026 is calendar year 3 of 5." },
+        { speaker: "Payroll's Counsel", text: "Objection: the job may not be allowed under her visa.", ruling: "Overruled", reason: "The employer is University Dining Services — on-campus work." },
+        { speaker: "Payroll's Counsel", text: "“All student wages are subject to FICA.”", ruling: "Struck", reason: "That quote doesn't appear in IRS Publication 519." },
+        { speaker: "Payroll's Counsel", text: "Objection: the refund has to be requested from the employer first.", ruling: "Sustained", reason: "Docket asks payroll first; IRS forms only if payroll refuses." },
+        { speaker: "Judge", text: "The claim stands — $440.64. Ask payroll first.", ruling: "Ruling" }
+      ],
+      hearingAlt: {
+        student: "Nadia Petrova",
+        arrival: "Jan 7, 2019",
+        year: 8,
+        steps: [
+          { speaker: "Advocate", text: "Nadia is an F-1 student working on campus.", ruling: null },
+          { speaker: "Payroll's Counsel", text: "Objection: after five calendar years, F-1 students can be taxed as residents.", ruling: "Sustained", reason: "She arrived Jan 7, 2019, so 2026 is calendar year 8." },
+          { speaker: "Judge", text: "Claim dismissed — Nadia is likely taxed as a resident in 2026, so these taxes likely apply. Docket won't call payroll.", ruling: "Ruling" }
+        ]
+      },
+      case: { id: "PS-2026-001", state: "awaiting_approval", refunded: false, outcome: null, followUp: "Tue, Oct 27" },
+      links: { asiOne: "https://asi1.ai/" },
+      callScript: {
+        promised: [
+          "Docket: Hi, I'm an AI assistant calling on behalf of Priya Sharma, with her permission.",
+          "Payroll: Okay, what's this about?",
+          "Docket: Social Security and Medicare were withheld from her 8 paychecks, $440.64 in total. As an F-1 student in calendar year 3 of 5 she's likely exempt. Could you refund it and stop withholding going forward?",
+          "Payroll: We can process that with the next pay run."
+        ],
+        stalled: [
+          "Docket: Hi, I'm an AI assistant calling on behalf of Priya Sharma, with her permission.",
+          "Payroll: We'd need to check with our tax team first.",
+          "Docket: Understood. Could you give me a date you'll respond by?",
+          "Payroll: I can't commit to a date."
+        ],
+        refused: [
+          "Docket: Hi, I'm an AI assistant calling on behalf of Priya Sharma, with her permission.",
+          "Payroll: We withhold for everyone. We can't refund it."
+        ]
+      },
+      letter: "To: University Dining Services Payroll\nRe: Refund of Social Security and Medicare withheld in error, Priya Sharma\n\nDocket, an AI assistant acting for Priya Sharma with her permission, called payroll about this refund. Payroll did not agree to refund it on that call, so this letter puts the request in writing.\n\nPriya Sharma is a nonresident alien student in F-1 status, in calendar year 3 of 5 in the United States. Social Security ($357.12) and Medicare ($83.52) were withheld from 8 paychecks for pay periods 2026-01-12 to 2026-05-03, a total of $440.64.\n\nDocket will follow up by phone on Tue, Oct 27.\n\nSent by Priya Sharma, prepared with Docket.",
+      deposits: [
+        { date: "Jan 27", amount: 664.92, from: "University Dining Payroll", matchedTo: "Jan 12 – Jan 25" },
+        { date: "Feb 10", amount: 664.92, from: "University Dining Payroll", matchedTo: "Jan 26 – Feb 8" },
+        { date: "Feb 24", amount: 664.92, from: "University Dining Payroll", matchedTo: "Feb 9 – Feb 22" },
+        { date: "Mar 10", amount: 664.92, from: "University Dining Payroll", matchedTo: "Feb 23 – Mar 8" },
+        { date: "Mar 24", amount: 664.92, from: "University Dining Payroll", matchedTo: "Mar 9 – Mar 22" },
+        { date: "Apr 7",  amount: 664.92, from: "University Dining Payroll", matchedTo: "Mar 23 – Apr 5" },
+        { date: "Apr 21", amount: 664.92, from: "University Dining Payroll", matchedTo: "Apr 6 – Apr 19" },
+        { date: "May 5",  amount: 664.92, from: "University Dining Payroll", matchedTo: "Apr 20 – May 3" }
+      ],
+      activity: [
+        { agent: "Ledger", text: "Read 8 paystubs; every amount rechecked in code", time: "10:02 AM" },
+        { agent: "Ledger", text: "Matched 8 of 8 paychecks to bank deposits", time: "10:02 AM" },
+        { agent: "Rules", text: "Rejected a quote that didn't match IRS Publication 519 word for word", time: "10:03 AM" },
+        { agent: "Rules", text: "Flagged $440.64 withheld in error; quote verified", time: "10:03 AM" },
+        { agent: "Caseworker", text: "Opened the case; waiting for Priya's approval", time: "10:04 AM" }
+      ],
+      next: { label: "Form 8843 for 2026", due: "Apr 15, 2027" }
+    };
+
+    // --- 2. PROCEDURAL WEB AUDIO API SOUND ENGINE (No external audio files) ---
+    class ArchivalSoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = false;
+      }
+
+      ensureContext() {
+        if (!this.enabled) return false;
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+        return !!this.ctx;
+      }
+
+      // Crisp paper tear / slide rustle (bandpass-filtered white noise)
+      playPaperRustle(pitch = 1100, duration = 0.085) {
+        if (!this.ensureContext()) return;
+        const now = this.ctx.currentTime;
+        const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          const env = Math.sin((i / bufferSize) * Math.PI);
+          data[i] = (Math.random() * 2 - 1) * env * 0.35;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(pitch, now);
+        filter.Q.setValueAtTime(2.2, now);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+
+      // Wooden courtroom gavel strike (low-mid wood resonance + transient knock)
+      playGavelStrike() {
+        if (!this.ensureContext()) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(165, now);
+        osc.frequency.exponentialRampToValueAtTime(52, now + 0.11);
+
+        gain.gain.setValueAtTime(0.24, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      }
+
+      // Heavy rubber stamp thud + spring lift
+      playRubberStamp() {
+        if (!this.ensureContext()) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(98, now);
+        osc.frequency.exponentialRampToValueAtTime(36, now + 0.16);
+
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.19);
+      }
+
+      // Brass switchboard jack plug click
+      playSwitchboardClick() {
+        if (!this.ensureContext()) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(190, now + 0.045);
+
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.055);
+      }
+    }
+
+    const soundFX = new ArchivalSoundEngine();
+
+    // Unlock Web Audio on first user gesture
+    window.addEventListener('pointerdown', () => soundFX.ensureContext(), { once: true });
+
+    document.getElementById('btn-audio-toggle').addEventListener('click', () => {
+      soundFX.enabled = !soundFX.enabled;
+      document.getElementById('audio-label').textContent = soundFX.enabled ? "Sound: On" : "Sound: Off";
+      if (soundFX.enabled) soundFX.playSwitchboardClick();
+    });
+
+    // Helper for sRGB CanvasTexture
+    function SRGBCanvasTexture(canvas) {
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    let usingAltHearing = false;
+    function getActiveHearingSteps() {
+      return usingAltHearing ? DATA.hearingAlt.steps : DATA.hearing;
+    }
+
+    // --- 3. INITIALIZE DOM & PRINTABLE PACKET FROM DATA ---
+    function initDOMFromData() {
+      document.getElementById('link-asione').href = DATA.links.asiOne;
+      document.getElementById('sec0-asi-link').href = DATA.links.asiOne;
+      document.getElementById('sec4-asi-link').href = DATA.links.asiOne;
+
+      // Home — Manila File Tab & Headline
+      document.getElementById('sec0-tag').textContent = `${DATA.case.id} · ${DATA.student.name.toUpperCase()} · ${DATA.employer.toUpperCase()}`;
+      document.getElementById('sec0-headline').innerHTML = `You likely overpaid <span class="mono" style="color:var(--attention);">$${DATA.totals.withheld.toFixed(2)}</span>.`;
+      document.getElementById('sec0-body').textContent =
+        `Docket read your ${DATA.paystubs.length} paystubs from ${DATA.employer} and found Social Security and Medicare taxes withheld in error.`;
+
+      // 01 The Paper Trail
+      document.getElementById('sec1-headline').innerHTML = `<span class="mono">$${DATA.totals.withheld.toFixed(2)}</span> withheld across ${DATA.paystubs.length} paystubs.`;
+      document.getElementById('sec1-body').innerHTML =
+        `<span class="mono">$${DATA.paystubs[0].ss.toFixed(2)}</span> for Social Security and <span class="mono">$${DATA.paystubs[0].medicare.toFixed(2)}</span> for Medicare came out of every paycheck — <span class="mono">$${DATA.totals.withheld.toFixed(2)}</span> in total. As an ${DATA.student.visa} student in calendar year <span class="mono">${DATA.student.yearOnF1}</span> of <span class="mono">${DATA.student.yearsExempt}</span>, you're likely exempt from both.`;
+      document.getElementById('sec1-subcopy').textContent =
+        "Read by Claude, every number rechecked in code. Click any paystub to inspect that period's numbers.";
+
+      // 02 The Hearing
+      renderHearingDOM();
+
+      // 03 The Call
+      updateSection3DOM();
+
+      // 04 The Money
+      updateSection4DOM();
+
+      // Call Panel Details
+      document.getElementById('call-will-say').innerHTML =
+        `Request a <span class="mono">$${DATA.totals.withheld.toFixed(2)}</span> refund for Box 4 Social Security (<span class="mono">$${DATA.totals.ss.toFixed(2)}</span>) and Box 6 Medicare (<span class="mono">$${DATA.totals.medicare.toFixed(2)}</span>) withheld in error, and ask to stop withholding going forward. Introduces itself as an AI assistant acting for ${DATA.student.name}.`;
+      document.getElementById('sig-student-name').textContent = DATA.student.name;
+
+      // Evidence Panel Tabs & Printable Packet
+      renderEvidencePanel();
+      document.getElementById('letter-content').textContent = DATA.letter;
+      renderBankPanel();
+      renderActivityPanel();
+      updateStatusTicker();
+      renderPrintablePacket();
+    }
+
+    function renderPrintablePacket() {
+      const container = document.getElementById('printable-case-packet');
+      const rowsHtml = DATA.paystubs.map((p, i) => `
+        <tr>
+          <td>#${i + 1} · ${p.period}</td>
+          <td>${p.hours[0]} + ${p.hours[1]} (${(p.hours[0] + p.hours[1]).toFixed(2)} h)</td>
+          <td>$${p.gross.toFixed(2)}</td>
+          <td>-$${p.ss.toFixed(2)}</td>
+          <td>-$${p.medicare.toFixed(2)}</td>
+          <td>$${p.net.toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      const hearingHtml = DATA.hearing.map(h => `
+        <div style="margin-bottom:6px; font-size:10pt;">
+          <strong>${h.speaker}</strong> ${h.ruling ? `[${h.ruling}]` : ''}: ${h.text}
+          ${h.reason ? `<div style="color:#555; font-size:9pt;">Reason: ${h.reason}</div>` : ''}
+        </div>
+      `).join('');
+
+      container.innerHTML = `
+        <div class="print-header">
+          <div>
+            <div class="print-title">Docket — F-1 Payroll Tax Recovery Packet</div>
+            <div class="mono" style="font-size:10pt;">Case ${DATA.case.id} · Student: ${DATA.student.name} (${DATA.student.visa}, Calendar Year ${DATA.student.yearOnF1} of ${DATA.student.yearsExempt})</div>
+          </div>
+          <div class="mono" style="font-size:11pt; font-weight:600;">Total Claim: $${DATA.totals.withheld.toFixed(2)}</div>
+        </div>
+
+        <div class="print-section">
+          <div class="print-sec-title">01 · Source (${DATA.quote.source})</div>
+          <div class="print-quote">“${DATA.quote.text}”</div>
+          <div class="mono" style="font-size:9pt;">Matched word for word · Every paystub figure rechecked in code.</div>
+        </div>
+
+        <div class="print-section">
+          <div class="print-sec-title">02 · Paystubs (${DATA.employer})</div>
+          <table class="print-table">
+            <thead>
+              <tr>
+                <th>Pay Period</th>
+                <th>Hours</th>
+                <th>Gross Pay</th>
+                <th>Box 4 (SS)</th>
+                <th>Box 6 (Medicare)</th>
+                <th>Net Pay</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+              <tr style="font-weight:600; background:#F5F5F5;">
+                <td>TOTAL (${DATA.paystubs.length} Paystubs)</td>
+                <td>${DATA.paystubs.reduce((t, p) => t + p.hours[0] + p.hours[1], 0).toFixed(2)} h</td>
+                <td>$${DATA.totals.gross.toFixed(2)}</td>
+                <td>-$${DATA.totals.ss.toFixed(2)}</td>
+                <td>-$${DATA.totals.medicare.toFixed(2)}</td>
+                <td>Withheld in error: $${DATA.totals.withheld.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="print-section">
+          <div class="print-sec-title">03 · Hearing record (prototype)</div>
+          ${hearingHtml}
+        </div>
+
+        <div class="print-section">
+          <div class="print-sec-title">04 · Written refund request</div>
+          <pre class="print-letter">${DATA.letter}</pre>
+        </div>
+      `;
+    }
+
+    function triggerExportPacket() {
+      renderPrintablePacket();
+      soundFX.playPaperRustle(950, 0.12);
+      window.print();
+    }
+
+    document.getElementById('btn-export-packet').addEventListener('click', triggerExportPacket);
+    document.getElementById('btn-panel-print-packet').addEventListener('click', triggerExportPacket);
+    document.getElementById('sec4-print-btn').addEventListener('click', triggerExportPacket);
+
+    function renderHearingDOM() {
+      const steps = getActiveHearingSteps();
+      const container = document.getElementById('sec2-transcript-list');
+      container.innerHTML = '';
+
+      steps.forEach((step, idx) => {
+        const div = document.createElement('div');
+        div.className = 'hearing-step';
+        div.id = `hearing-dom-step-${idx}`;
+
+        let rulingBadge = '';
+        if (step.ruling) {
+          rulingBadge = `<span class="hearing-ruling-tag ruling-${step.ruling}">${step.ruling}</span>`;
+        } else if (step.cite) {
+          rulingBadge = `<span class="mono" style="font-size:11.5px; color:var(--secondary);">${step.cite}</span>`;
+        }
+
+        const isStruck = step.ruling === 'Struck';
+        div.innerHTML = `
+          <div class="hearing-step-top">
+            <span>${step.speaker}</span>
+            ${rulingBadge}
+          </div>
+          <div class="hearing-step-text ${isStruck ? 'struck-line' : ''}">${step.text}</div>
+          ${step.quote ? `<div class="hearing-step-reason">“${step.quote}” (${step.cite})</div>` : ''}
+          ${step.reason ? `<div class="hearing-step-reason">${step.reason}</div>` : ''}
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderEvidencePanel() {
+      document.getElementById('ev-rule-source').textContent = DATA.quote.source;
+      document.getElementById('ev-rule-quote').textContent = `“${DATA.quote.text}”`;
+
+      const tableEl = document.getElementById('ev-paystubs-table');
+      tableEl.innerHTML = '';
+      DATA.paystubs.forEach((p, idx) => {
+        const row = document.createElement('div');
+        row.className = 'ledger-row';
+        row.innerHTML = `
+          <div>
+            <span class="mono" style="font-weight:500;">#${idx + 1} · ${p.period}</span>
+            <div class="mono" style="font-size:11.5px; color:#5A534A;">Gross $${p.gross.toFixed(2)} · Net $${p.net.toFixed(2)}</div>
+          </div>
+          <div class="mono" style="color:var(--attention-ink); font-weight:500;">
+            Box 4: -$${p.ss.toFixed(2)} · Box 6: -$${p.medicare.toFixed(2)}
+          </div>
+        `;
+        tableEl.appendChild(row);
+      });
+
+      const totalRow = document.createElement('div');
+      totalRow.className = 'ledger-row';
+      totalRow.style.fontWeight = '600';
+      totalRow.innerHTML = `
+        <span>Total withheld (${DATA.paystubs.length} paystubs)</span>
+        <span class="mono" style="color:var(--attention-ink);">$${DATA.totals.withheld.toFixed(2)} (SS $${DATA.totals.ss.toFixed(2)} + Med $${DATA.totals.medicare.toFixed(2)})</span>
+      `;
+      tableEl.appendChild(totalRow);
+
+      renderEvidenceHearingTab();
+    }
+
+    function renderEvidenceHearingTab() {
+      const listEl = document.getElementById('ev-hearing-list');
+      listEl.innerHTML = '';
+      const steps = getActiveHearingSteps();
+      steps.forEach((s) => {
+        const row = document.createElement('div');
+        row.className = 'ledger-row';
+        row.style.flexDirection = 'column';
+        row.style.gap = '4px';
+        row.innerHTML = `
+          <div style="display:flex; justify-content:space-between; width:100%;">
+            <span class="mono" style="font-weight:500; font-size:12px;">${s.speaker}</span>
+            <span class="mono" style="font-size:12px; color:${s.ruling === 'Sustained' ? 'var(--attention-ink)' : s.ruling === 'Ruling' ? 'var(--success-ink)' : '#5A534A'};">${s.ruling || (s.cite || '')}</span>
+          </div>
+          <div style="font-size:13px; ${s.ruling === 'Struck' ? 'text-decoration:line-through; color:#6E665C;' : ''}">${s.text}</div>
+          ${s.reason ? `<div class="mono" style="font-size:11.5px; color:#5A534A;">${s.reason}</div>` : ''}
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    function updateSection3DOM(liveTranscriptLines = null) {
+      const headline = document.getElementById('sec3-headline');
+      const body = document.getElementById('sec3-body');
+      const btn = document.getElementById('sec3-call-btn');
+      const small = document.getElementById('sec3-smallprint');
+      const liveLabel = document.getElementById('sec3-live-label');
+      const liveLinesEl = document.getElementById('sec3-live-lines');
+
+      small.textContent = "Docket calls payroll, says it's an AI assistant acting for you, and won't mention your hours. (Rehearsal — no real call placed)";
+
+      if (DATA.case.state === "awaiting_approval") {
+        headline.textContent = "Approve the call to payroll.";
+        body.textContent = `Docket will call ${DATA.employer} payroll to request your $${DATA.totals.withheld.toFixed(2)} refund and stop withholding going forward.`;
+        liveLabel.textContent = "What Docket will and won't say";
+        liveLinesEl.innerHTML = `
+          <div style="margin-bottom:6px;"><strong>Will say:</strong> Introduces itself as an AI assistant for ${DATA.student.name}, requests the <span class="mono">$${DATA.totals.withheld.toFixed(2)}</span> refund, and asks to stop Box 4 &amp; Box 6 withholding.</div>
+          <div><strong>Won't say:</strong> Nothing about your hours; no extra personal details.</div>
+        `;
+        btn.textContent = "Approve the call to payroll";
+        btn.disabled = false;
+      } else if (DATA.case.state === "calling") {
+        headline.textContent = "Calling payroll now...";
+        body.textContent = `Patch cord connected between Docket and ${DATA.employer} payroll (Rehearsal — no real call placed).`;
+        liveLabel.textContent = "Live switchboard transcript (Rehearsal)";
+        if (liveTranscriptLines) {
+          liveLinesEl.innerHTML = liveTranscriptLines.map(l => `<div style="margin-bottom:6px;">${l}</div>`).join('');
+        }
+        btn.textContent = "Call in progress...";
+        btn.disabled = true;
+      } else {
+        liveLabel.textContent = "Switchboard call transcript (Rehearsal)";
+        const scriptLines = DATA.callScript[DATA.case.outcome] || [];
+        liveLinesEl.innerHTML = scriptLines.map(l => `<div style="margin-bottom:6px;">${l}</div>`).join('');
+
+        if (DATA.case.outcome === "promised") {
+          headline.textContent = "Payroll agreed to refund.";
+          body.textContent = `On the call, ${DATA.employer} payroll agreed to process the $${DATA.totals.withheld.toFixed(2)} refund with the next pay run. Next step: watch your bank statement.`;
+          btn.textContent = "Call placed · Refund promised";
+        } else if (DATA.case.outcome === "stalled") {
+          headline.textContent = "Payroll stalled — letter ready.";
+          body.textContent = `Payroll asked to check with their tax team and wouldn't commit to a date. Next step: Docket prepared the written request and scheduled a follow-up for ${DATA.case.followUp}.`;
+          btn.textContent = `Payroll stalled · follow-up ${DATA.case.followUp}`;
+        } else if (DATA.case.outcome === "refused") {
+          headline.textContent = "Payroll refused — letter ready.";
+          body.textContent = `Payroll declined on the phone. Next step: Docket prepared the formal written request citing ${DATA.quote.source} and scheduled a follow-up for ${DATA.case.followUp}.`;
+          btn.textContent = `Payroll refused · follow-up ${DATA.case.followUp}`;
+        }
+        btn.disabled = true;
+      }
+    }
+
+    function updateSection4DOM() {
+      const sec4Headline = document.getElementById('sec4-headline');
+      const sec4Body = document.getElementById('sec4-body');
+      const sec4Timeline = document.getElementById('sec4-timeline');
+
+      if (DATA.case.refunded) {
+        sec4Headline.innerHTML = `<span class="mono" style="color:var(--success);">+$${DATA.totals.withheld.toFixed(2)}</span> is back in your account. Case closed.`;
+        sec4Body.textContent = `Nessie confirmed the deposit from ${DATA.employer} Payroll (${DATA.deposits.length} of ${DATA.paystubs.length} paychecks matched). The refund slip is stamped Received and your case folder is closed.`;
+      } else {
+        sec4Headline.innerHTML = `Watching your bank for exactly <span class="mono">$${DATA.totals.withheld.toFixed(2)}</span>.`;
+        sec4Body.textContent = `Nessie matched ${DATA.deposits.length} of ${DATA.paystubs.length} paycheck deposits and is watching your statement for the $${DATA.totals.withheld.toFixed(2)} refund.`;
+      }
+
+      sec4Timeline.textContent = `Next: ${DATA.next.label} · due ${DATA.next.due}`;
+    }
+
+    function updateStatusTicker() {
+      const tickerEl = document.getElementById('status-ticker-text');
+      const callBarBtn = document.getElementById('btn-open-call');
+      const letterTabBtn = document.getElementById('tab-btn-letter');
+      const evidenceDot = document.getElementById('evidence-dot');
+
+      if (DATA.case.refunded) {
+        tickerEl.textContent = `Case ${DATA.case.id} · +$${DATA.totals.withheld.toFixed(2)} is back in your account · Case closed`;
+      } else if (DATA.case.state === "awaiting_approval") {
+        tickerEl.textContent = `Case ${DATA.case.id} · $${DATA.totals.withheld.toFixed(2)} potential refund · Ready for review`;
+        callBarBtn.textContent = "Review payroll call";
+      } else if (DATA.case.state === "calling") {
+        tickerEl.textContent = `Case ${DATA.case.id} · Calling ${DATA.employer} payroll (Rehearsal)...`;
+        callBarBtn.textContent = "Calling payroll...";
+      } else if (DATA.case.outcome === "promised") {
+        tickerEl.textContent = `Payroll promised refund at 4:12 PM · Watching bank for $${DATA.totals.withheld.toFixed(2)}`;
+        callBarBtn.textContent = "Payroll promised · watching bank";
+        letterTabBtn.disabled = true;
+        letterTabBtn.title = "Ready after payroll stalls or refuses";
+        evidenceDot.classList.remove('visible');
+      } else if (DATA.case.outcome === "stalled") {
+        tickerEl.textContent = `Payroll stalled at 4:12 PM · Letter ready · Follow-up ${DATA.case.followUp}`;
+        callBarBtn.textContent = "Payroll stalled · follow-up Tue";
+        letterTabBtn.disabled = false;
+        letterTabBtn.removeAttribute('title');
+        evidenceDot.classList.add('visible');
+      } else if (DATA.case.outcome === "refused") {
+        tickerEl.textContent = `Payroll refused at 4:12 PM · Letter ready · Follow-up ${DATA.case.followUp}`;
+        callBarBtn.textContent = "Payroll refused · follow-up Tue";
+        letterTabBtn.disabled = false;
+        letterTabBtn.removeAttribute('title');
+        evidenceDot.classList.add('visible');
+      }
+    }
+
+    function renderBankPanel() {
+      document.getElementById('bank-match-summary').textContent = `${DATA.deposits.length} of ${DATA.paystubs.length} matched`;
+      const watchRow = document.getElementById('bank-watch-row');
+      if (DATA.case.refunded) {
+        watchRow.style.borderColor = 'var(--success-ink)';
+        watchRow.innerHTML = `<span class="mono" style="color:var(--success-ink); font-weight:600;">+$${DATA.totals.withheld.toFixed(2)} · ${DATA.employer} Payroll</span><span class="mono" style="color:var(--success-ink); font-weight:600;">Received</span>`;
+      } else {
+        watchRow.style.borderColor = '#D5CCB8';
+        watchRow.innerHTML = `<span class="mono">Watching for exactly $${DATA.totals.withheld.toFixed(2)}</span><span class="mono" style="color:var(--attention-ink);">Pending</span>`;
+      }
+
+      const listEl = document.getElementById('bank-deposits-list');
+      listEl.innerHTML = '';
+      DATA.deposits.slice().reverse().forEach(dep => {
+        const row = document.createElement('div');
+        row.className = 'ledger-row';
+        row.innerHTML = `
+          <div>
+            <div style="font-weight:500;">${dep.from}</div>
+            <div class="mono" style="font-size:12px; color:#5A534A;">${dep.date} · Matched to ${dep.matchedTo}</div>
+          </div>
+          <div class="mono" style="font-weight:500;">+$${dep.amount.toFixed(2)}</div>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    function renderActivityPanel() {
+      const listEl = document.getElementById('activity-list');
+      listEl.innerHTML = '';
+      DATA.activity.slice().reverse().forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'ledger-row';
+        row.innerHTML = `
+          <div style="padding-right:12px;">
+            <span class="mono" style="font-size:12px; font-weight:600; color:var(--parchment-ink);">${item.agent}</span>
+            <div style="font-size:13.5px; color:var(--parchment-ink); margin-top:2px;">${item.text}</div>
+          </div>
+          <div class="mono" style="font-size:12px; color:#5A534A; white-space:nowrap;">${item.time}</div>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    // --- 4. INTERACTIVE PAYSTUB UPLOAD DROPZONE SIMULATION (Home Section) ---
+    let ingestCascadeTimer = 0;
+    const dropzoneEl = document.getElementById('paystub-dropzone');
+    const fileInputEl = document.getElementById('paystub-file-input');
+    const statusBadgeEl = document.getElementById('dropzone-status-badge');
+    const descTextEl = document.getElementById('dropzone-desc-text');
+
+    function triggerPaystubIngestSimulation(labelText = "8 sample paystubs") {
+      ingestCascadeTimer = 1.65; // triggers 3D paystubs sliding out & cascading into the case folder
+      soundFX.playPaperRustle(900, 0.11);
+      statusBadgeEl.style.color = 'var(--attention)';
+      statusBadgeEl.textContent = 'Parsing Box 4 & Box 6...';
+      descTextEl.textContent = `Ledger is reading ${labelText} from ${DATA.employer} and checking FICA math...`;
+
+      setTimeout(() => soundFX.playPaperRustle(1250, 0.09), 260);
+      setTimeout(() => soundFX.playPaperRustle(1400, 0.09), 520);
+
+      setTimeout(() => {
+        statusBadgeEl.style.color = 'var(--success)';
+        statusBadgeEl.textContent = `${DATA.paystubs.length} of ${DATA.paystubs.length} verified · $${DATA.totals.withheld.toFixed(2)} flagged`;
+        descTextEl.textContent = `Verified ${DATA.paystubs.length} pay periods (Jan 12 – May 3). Social Security ($${DATA.totals.ss.toFixed(2)}) + Medicare ($${DATA.totals.medicare.toFixed(2)}) = $${DATA.totals.withheld.toFixed(2)}.`;
+        soundFX.playRubberStamp();
+      }, 1150);
+    }
+
+    document.getElementById('btn-trigger-upload').addEventListener('click', () => fileInputEl.click());
+    document.getElementById('btn-replay-ingest').addEventListener('click', () => triggerPaystubIngestSimulation("8 sample paystubs"));
+
+    fileInputEl.addEventListener('change', (e) => {
+      const count = e.target.files ? e.target.files.length : 0;
+      if (count > 0) {
+        triggerPaystubIngestSimulation(`${count} uploaded file${count > 1 ? 's' : ''}`);
+      }
+    });
+
+    dropzoneEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzoneEl.classList.add('dragover');
+    });
+    dropzoneEl.addEventListener('dragleave', () => dropzoneEl.classList.remove('dragover'));
+    // This preview never reads files, so dropped files are ignored rather than shown as "verified".
+    dropzoneEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzoneEl.classList.remove('dragover');
+    });
+
+    // --- 5. TOP BAR PANELS, EVIDENCE TABS & CHAPTER NAVIGATION ---
+    const panels = ['panel-call', 'panel-evidence', 'panel-bank', 'panel-activity'];
+    function openPanel(id) {
+      soundFX.playPaperRustle(1300, 0.06);
+      panels.forEach(p => {
+        const el = document.getElementById(p);
+        if (p === id) el.classList.add('open');
+        else el.classList.remove('open');
+      });
+    }
+
+    document.getElementById('btn-open-call').addEventListener('click', () => openPanel('panel-call'));
+    document.getElementById('btn-open-evidence').addEventListener('click', () => openPanel('panel-evidence'));
+    document.getElementById('btn-open-bank').addEventListener('click', () => openPanel('panel-bank'));
+    document.getElementById('btn-open-activity').addEventListener('click', () => openPanel('panel-activity'));
+    document.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.getElementById(e.currentTarget.getAttribute('data-close')).classList.remove('open');
+      });
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const targetTab = e.currentTarget.getAttribute('data-tab');
+        if (!targetTab || e.currentTarget.disabled) return;
+        soundFX.playPaperRustle(1400, 0.05);
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.toggle('active', b === e.currentTarget);
+          b.setAttribute('aria-selected', b === e.currentTarget ? 'true' : 'false');
+        });
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+          pane.classList.toggle('active', pane.id === targetTab);
+        });
+      });
+    });
+
+    document.querySelectorAll('[data-scroll-to]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const targetId = e.currentTarget.getAttribute('data-scroll-to');
+        const el = document.getElementById(targetId);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    const toggleStudentBtn = document.getElementById('btn-toggle-student');
+    toggleStudentBtn.addEventListener('click', () => {
+      usingAltHearing = !usingAltHearing;
+      soundFX.playPaperRustle(1000, 0.08);
+      if (usingAltHearing) {
+        toggleStudentBtn.textContent = `Back to ${DATA.student.name} (year ${DATA.student.yearOnF1})`;
+      } else {
+        toggleStudentBtn.textContent = `Try another student: Nadia (year ${DATA.hearingAlt.year})`;
+      }
+      renderHearingDOM();
+      renderEvidenceHearingTab();
+      rebuildHearingCards3D();
+    });
+
+    document.getElementById('btn-copy-letter').addEventListener('click', (e) => {
+      navigator.clipboard.writeText(DATA.letter);
+      const btn = e.currentTarget;
+      btn.textContent = "Copied";
+      setTimeout(() => { btn.textContent = "Copy text"; }, 1800);
+    });
+
+    document.getElementById('btn-download-letter').addEventListener('click', () => {
+      const blob = new Blob([DATA.letter], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Docket-${DATA.case.id}-Refund-Request.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Call Execution
+    const call3DState = {
+      signed: false,
+      queuedForStage3: false,
+      cordPlugged: 0,
+      lampsGreen: false,
+      letterFeed: 0,
+      fold1: 0,
+      fold2: 0,
+      intoEnvelope: 0,
+      flapClose: 0
+    };
+
+    function startCallApprovalFlow() {
+      if (DATA.case.state !== "awaiting_approval") return;
+
+      DATA.case.state = "calling";
+      const placeCallBtn = document.getElementById('btn-place-call');
+      placeCallBtn.disabled = true;
+      placeCallBtn.textContent = "Signing & dialing...";
+      updateSection3DOM([]);
+      updateStatusTicker();
+
+      document.getElementById('sig-svg-path').classList.add('signed');
+      soundFX.playPaperRustle(1500, 0.14);
+
+      setTimeout(() => {
+        call3DState.signed = true;
+        call3DState.queuedForStage3 = true;
+        call3DState.lampsGreen = true;
+        soundFX.playSwitchboardClick();
+        redrawRefundSlipTexture(DATA.totals.withheld, true, DATA.case.refunded);
+        updateSwitchboardLamps(true);
+        runSimulatedCallTranscript();
+      }, 620);
+    }
+
+    document.getElementById('btn-place-call').addEventListener('click', startCallApprovalFlow);
+    document.getElementById('sec3-call-btn').addEventListener('click', () => {
+      openPanel('panel-call');
+      startCallApprovalFlow();
+    });
+
+    function runSimulatedCallTranscript() {
+      const outcomeChoice = document.getElementById('sim-outcome-select').value;
+      const lines = DATA.callScript[outcomeChoice];
+      const transcriptBox = document.getElementById('call-transcript-box');
+      transcriptBox.innerHTML = '';
+      const collectedLines = [];
+
+      const setStep = (id, timeId, timeStr) => {
+        document.getElementById(id).classList.add('done');
+        document.getElementById(timeId).textContent = timeStr;
+      };
+
+      setStep('step-dialing', 'time-dialing', '4:11 PM');
+      document.getElementById('btn-place-call').textContent = "Call in progress...";
+
+      setTimeout(() => {
+        setStep('step-connected', 'time-connected', '4:11 PM');
+        soundFX.playSwitchboardClick();
+      }, 450);
+
+      lines.forEach((line, idx) => {
+        setTimeout(() => {
+          const div = document.createElement('div');
+          div.className = 'transcript-line';
+          div.textContent = line;
+          transcriptBox.appendChild(div);
+          transcriptBox.scrollTop = transcriptBox.scrollHeight;
+
+          collectedLines.push(line);
+          updateSection3DOM(collectedLines);
+          soundFX.playPaperRustle(1200 + idx * 100, 0.05);
+
+          if (idx === 1) {
+            setStep('step-answer', 'time-answer', '4:12 PM');
+          }
+        }, 800 + idx * 920);
+      });
+
+      const finishDelay = 800 + lines.length * 920 + 300;
+      setTimeout(() => {
+        setStep('step-outcome', 'time-outcome', '4:12 PM');
+        DATA.case.state = "called";
+        DATA.case.outcome = outcomeChoice;
+        document.getElementById('btn-place-call').textContent = `Call completed (${outcomeChoice})`;
+
+        DATA.activity.push({
+          agent: "Caseworker",
+          text: `Called payroll — ${outcomeChoice}`,
+          time: "4:12 PM"
+        });
+        if (outcomeChoice === "stalled" || outcomeChoice === "refused") {
+          DATA.activity.push({
+            agent: "Caseworker",
+            text: "Prepared the written request",
+            time: "4:12 PM"
+          });
+          soundFX.playPaperRustle(850, 0.14);
+        }
+
+        renderActivityPanel();
+        updateSection3DOM();
+        updateStatusTicker();
+      }, finishDelay);
+    }
+
+    // Corner Dev Toggle: "Preview: refund landed"
+    const refundToggle = document.getElementById('refund-toggle');
+    refundToggle.checked = DATA.case.refunded;
+    refundToggle.addEventListener('change', (e) => {
+      DATA.case.refunded = e.target.checked;
+      if (DATA.case.refunded) soundFX.playRubberStamp();
+      updateSection4DOM();
+      renderBankPanel();
+      updateStatusTicker();
+      redrawRefundSlipTexture(DATA.totals.withheld, call3DState.signed, DATA.case.refunded);
+      redrawBankCardBackTexture();
+      if (!DATA.case.refunded) {
+        redrawFolderLabelTexture(false);
+      }
+    });
+
+    // --- 6. ACCESSIBILITY & REDUCED MOTION ---
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const canvasEl = document.getElementById('webgl-canvas');
+    const ariaLabels = [
+      `Home: Closed case folder ${DATA.case.id} on the desk for ${DATA.student.name}`,
+      `01 Paper trail: Reading ${DATA.paystubs.length} paystubs from ${DATA.employer}; Box 4 and Box 6 rows tear off into a $${DATA.totals.withheld.toFixed(2)} refund slip`,
+      `02 Hearing: Courtroom with Judge's bench, Advocate and Payroll's Counsel lecterns, gavel, and ruling cards`,
+      `03 Call: Telephone switchboard connecting Docket and ${DATA.employer} payroll with patch cord and lamps`,
+      `04 Money: Bank card statement showing ${DATA.deposits.length} of ${DATA.paystubs.length} matched deposits and case folder status`
+    ];
+
+    // --- 7. CANVAS TEXTURES (Warm Archival Parchment & Walnut Tones) ---
+    let topStubDynamicCanvas, topStubDynamicTexture;
+    let refundSlipCanvas, refundSlipCtx, refundSlipTexture;
+    let folderLabelCanvas, folderLabelCtx, folderLabelTexture;
+    let bankBackCanvas, bankBackCtx, bankBackTexture;
+
+    function drawPaystubToCanvas(canvas, item, index, readProgress = 0) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.fillStyle = '#F7F3EB';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#CFC7B6';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(28, 28, w - 56, h - 56);
+
+      ctx.fillStyle = '#161412';
+      ctx.font = '600 32px "Newsreader", Georgia, serif';
+      ctx.fillText(DATA.employer, 60, 92);
+
+      ctx.fillStyle = '#5A534A';
+      ctx.font = '500 21px "IBM Plex Mono", monospace';
+      ctx.fillText(`Pay period: ${item.period}`, 60, 134);
+
+      ctx.strokeStyle = '#DFD8C8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(60, 160);
+      ctx.lineTo(w - 60, 160);
+      ctx.stroke();
+
+      if (readProgress > 0.15) {
+        ctx.fillStyle = 'rgba(22, 20, 18, 0.04)';
+        ctx.fillRect(54, 174, w - 108, 64);
+      }
+      ctx.fillStyle = '#161412';
+      ctx.font = '500 23px "Public Sans", sans-serif';
+      ctx.fillText(`Employee: ${DATA.student.name}`, 60, 214);
+
+      ctx.fillStyle = '#EAE3D5';
+      ctx.fillRect(60, 264, w - 120, 44);
+      ctx.fillStyle = '#161412';
+      ctx.font = '500 18px "IBM Plex Mono", monospace';
+      ctx.fillText("Earnings", 76, 292);
+      ctx.fillText("Hours", 460, 292);
+      ctx.fillText("Amount", 740, 292);
+
+      if (readProgress > 0.38) {
+        ctx.fillStyle = 'rgba(22, 20, 18, 0.045)';
+        ctx.fillRect(60, 314, w - 120, 62);
+      }
+      ctx.fillStyle = '#161412';
+      ctx.font = '400 22px "Public Sans", sans-serif';
+      ctx.fillText(`Regular ($${DATA.hourlyRate.toFixed(2)}/hr)`, 76, 354);
+
+      const totalHours = item.hours[0] + item.hours[1];
+      const hoursStr = (item.hours[0] !== item.hours[1])
+        ? `${item.hours[0]} + ${item.hours[1]} (${totalHours.toFixed(2)} h)`
+        : `${totalHours.toFixed(2)} h`;
+      ctx.font = '400 21px "IBM Plex Mono", monospace';
+      ctx.fillText(hoursStr, 460, 354);
+      ctx.fillText(`$${item.gross.toFixed(2)}`, 740, 354);
+
+      ctx.strokeStyle = '#B5AD9E';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(44, 424);
+      ctx.lineTo(w - 44, 424);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const isHighlighted = readProgress > 0.62;
+      if (isHighlighted) {
+        ctx.fillStyle = 'rgba(200, 75, 17, 0.09)';
+        ctx.fillRect(56, 432, w - 112, 168);
+      }
+
+      ctx.fillStyle = isHighlighted ? '#C84B11' : '#161412';
+      ctx.font = '500 21px "IBM Plex Mono", monospace';
+      ctx.fillText("Box 4 · Social Security tax withheld", 76, 484);
+      ctx.fillText(`-$${item.ss.toFixed(2)}`, 735, 484);
+
+      ctx.fillStyle = '#C84B11';
+      ctx.fillRect(76, 500, w - 152, isHighlighted ? 5 : 3);
+
+      ctx.fillStyle = isHighlighted ? '#C84B11' : '#161412';
+      ctx.font = '500 21px "IBM Plex Mono", monospace';
+      ctx.fillText("Box 6 · Medicare tax withheld", 76, 564);
+      ctx.fillText(`-$${item.medicare.toFixed(2)}`, 735, 564);
+
+      ctx.fillStyle = '#C84B11';
+      ctx.fillRect(76, 580, w - 152, isHighlighted ? 5 : 3);
+
+      ctx.strokeStyle = '#B5AD9E';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(44, 612);
+      ctx.lineTo(w - 44, 612);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#161412';
+      ctx.font = '600 26px "Public Sans", sans-serif';
+      ctx.fillText("Net pay", 76, 686);
+      ctx.font = '500 26px "IBM Plex Mono", monospace';
+      ctx.fillText(`$${item.net.toFixed(2)}`, 735, 686);
+    }
+
+    function createTearStripTexture(item) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 768;
+      canvas.height = 170;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#F7F3EB';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#C84B11';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(0, 4);
+      ctx.lineTo(canvas.width, 4);
+      ctx.moveTo(0, canvas.height - 4);
+      ctx.lineTo(canvas.width, canvas.height - 4);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#C84B11';
+      ctx.font = '500 20px "IBM Plex Mono", monospace';
+      ctx.fillText("Box 4 · Social Security tax withheld", 28, 62);
+      ctx.fillText(`-$${item.ss.toFixed(2)}`, 610, 62);
+
+      ctx.fillText("Box 6 · Medicare tax withheld", 28, 124);
+      ctx.fillText(`-$${item.medicare.toFixed(2)}`, 610, 124);
+
+      return SRGBCanvasTexture(canvas);
+    }
+
+    function redrawRefundSlipTexture(amountValue, isSigned, isRefunded) {
+      if (!refundSlipCtx) return;
+      const ctx = refundSlipCtx;
+      const w = refundSlipCanvas.width;
+      const h = refundSlipCanvas.height;
+
+      ctx.fillStyle = '#F7F3EB';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#9E9686';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([10, 7]);
+      ctx.beginPath();
+      ctx.moveTo(16, 16);
+      ctx.lineTo(w - 16, 16);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = '#CFC7B6';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(16, 16, w - 32, h - 32);
+
+      ctx.fillStyle = '#5A534A';
+      ctx.font = '500 20px "IBM Plex Mono", monospace';
+      ctx.fillText(`Refund slip · Case ${DATA.case.id}`, 42, 66);
+
+      ctx.fillStyle = '#161412';
+      ctx.font = '500 18px "Public Sans", sans-serif';
+      ctx.fillText(`${DATA.student.name} · ${DATA.paystubs.length} paystubs`, 42, 100);
+
+      ctx.fillStyle = isRefunded ? '#16794F' : '#C84B11';
+      ctx.font = '500 64px "IBM Plex Mono", monospace';
+      ctx.fillText(`$${amountValue.toFixed(2)}`, 42, 185);
+
+      ctx.fillStyle = '#5A534A';
+      ctx.font = '400 17px "IBM Plex Mono", monospace';
+      ctx.fillText(`Box 4: $${DATA.totals.ss.toFixed(2)}  +  Box 6: $${DATA.totals.medicare.toFixed(2)}`, 42, 226);
+
+      ctx.strokeStyle = '#DFD8C8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(42, 290);
+      ctx.lineTo(w - 42, 290);
+      ctx.stroke();
+
+      ctx.fillStyle = '#5A534A';
+      ctx.font = '400 15px "IBM Plex Mono", monospace';
+      ctx.fillText(`Student signature · ${DATA.student.name}`, 42, 314);
+
+      if (isSigned) {
+        ctx.strokeStyle = '#1F3A93';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(55, 280);
+        ctx.bezierCurveTo(95, 245, 130, 286, 175, 260);
+        ctx.bezierCurveTo(215, 240, 255, 282, 330, 264);
+        ctx.stroke();
+      }
+
+      if (isRefunded) {
+        ctx.save();
+        ctx.translate(460, 155);
+        ctx.rotate(-0.14);
+        ctx.strokeStyle = '#16794F';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(-95, -34, 190, 68);
+        ctx.fillStyle = '#16794F';
+        ctx.font = '500 28px "IBM Plex Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Received", 0, 10);
+        ctx.restore();
+      }
+
+      refundSlipTexture.needsUpdate = true;
+    }
+
+    function redrawFolderLabelTexture(isClosedStamped = false) {
+      if (!folderLabelCtx) return;
+      const ctx = folderLabelCtx;
+      const w = folderLabelCanvas.width;
+      const h = folderLabelCanvas.height;
+
+      ctx.fillStyle = '#F4EFE6';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#C8BFA8';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(10, 10, w - 20, h - 20);
+
+      ctx.fillStyle = '#161412';
+      ctx.font = '500 28px "IBM Plex Mono", monospace';
+      ctx.fillText(`Case ${DATA.case.id}`, 32, 62);
+
+      ctx.fillStyle = '#5A534A';
+      ctx.font = '500 22px "Newsreader", Georgia, serif';
+      ctx.fillText(`${DATA.student.name} · ${DATA.employer}`, 32, 104);
+
+      ctx.font = '500 22px "IBM Plex Mono", monospace';
+      ctx.fillStyle = '#C84B11';
+      ctx.fillText(`$${DATA.totals.withheld.toFixed(2)} (${DATA.paystubs.length} paystubs)`, 32, 148);
+
+      if (isClosedStamped) {
+        ctx.save();
+        ctx.translate(380, 95);
+        ctx.rotate(-0.12);
+        ctx.strokeStyle = '#16794F';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(-85, -32, 170, 64);
+        ctx.fillStyle = '#16794F';
+        ctx.font = '500 30px "IBM Plex Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Closed", 0, 10);
+        ctx.restore();
+      }
+
+      folderLabelTexture.needsUpdate = true;
+    }
+
+    function createLabelPlateTexture(text) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 96;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#F4EFE6';
+      ctx.fillRect(0, 0, 512, 96);
+      ctx.strokeStyle = '#C8BFA8';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(6, 6, 500, 84);
+
+      ctx.fillStyle = '#161412';
+      ctx.font = '500 24px "IBM Plex Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 48);
+
+      return SRGBCanvasTexture(canvas);
+    }
+
+    function drawHearingCardCanvas(canvas, stepData, showRulingStamp) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.fillStyle = '#F7F3EB';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#CFC7B6';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(14, 14, w - 28, h - 28);
+
+      ctx.fillStyle = '#5A534A';
+      ctx.font = '500 20px "IBM Plex Mono", monospace';
+      ctx.fillText(stepData.speaker, 36, 54);
+
+      if (stepData.cite) {
+        ctx.fillStyle = '#C84B11';
+        ctx.fillText(stepData.cite, w - 260, 54);
+      }
+
+      ctx.fillStyle = '#161412';
+      ctx.font = '500 23px "Newsreader", Georgia, serif';
+      const words = stepData.text.split(' ');
+      let line = '';
+      let y = 100;
+      const lineYPositions = [];
+      words.forEach(word => {
+        if ((line + word).length > 42) {
+          ctx.fillText(line, 36, y);
+          lineYPositions.push(y);
+          line = word + ' ';
+          y += 32;
+        } else {
+          line += word + ' ';
+        }
+      });
+      if (line) {
+        ctx.fillText(line, 36, y);
+        lineYPositions.push(y);
+      }
+
+      if (stepData.reason) {
+        ctx.fillStyle = '#5A534A';
+        ctx.font = '400 17px "IBM Plex Mono", monospace';
+        ctx.fillText(stepData.reason.slice(0, 56), 36, h - 36);
+      }
+
+      if (showRulingStamp && stepData.ruling) {
+        if (stepData.ruling === "Struck") {
+          ctx.strokeStyle = '#C84B11';
+          ctx.lineWidth = 5;
+          lineYPositions.forEach(ly => {
+            ctx.beginPath();
+            ctx.moveTo(32, ly - 8);
+            ctx.lineTo(w - 48, ly - 8);
+            ctx.stroke();
+          });
+        }
+
+        ctx.save();
+        ctx.translate(w - 135, 115);
+        ctx.rotate(-0.12);
+        const stampColor = stepData.ruling === "Sustained"
+          ? '#C84B11'
+          : stepData.ruling === "Ruling"
+          ? '#16794F'
+          : '#5A534A';
+        ctx.strokeStyle = stampColor;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(-86, -28, 172, 56);
+        ctx.fillStyle = stampColor;
+        ctx.font = '500 23px "IBM Plex Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(stepData.ruling, 0, 8);
+        ctx.restore();
+      }
+    }
+
+    function createSwitchboardTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 640;
+      const ctx = canvas.getContext('2d');
+
+      // Warm walnut-framed brass & slate switchboard faceplate (No polka-dot wallpaper)
+      ctx.fillStyle = '#2B231E';
+      ctx.fillRect(0, 0, 1024, 640);
+
+      ctx.strokeStyle = '#52443A';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(16, 16, 992, 608);
+
+      // Clean architectural horizontal bus bars
+      ctx.strokeStyle = '#3D322B';
+      ctx.lineWidth = 2;
+      for (let r = 0; r < 4; r++) {
+        const y = 130 + r * 110;
+        ctx.beginPath();
+        ctx.moveTo(70, y);
+        ctx.lineTo(954, y);
+        ctx.stroke();
+      }
+
+      // Two active brass terminal sockets for Docket and Payroll
+      const drawSocket = (cx, cy) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+        ctx.fillStyle = '#12100E';
+        ctx.fill();
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#9E8C72';
+        ctx.stroke();
+      };
+      drawSocket(340, 325);
+      drawSocket(730, 325);
+
+      ctx.fillStyle = '#F4EFE6';
+      ctx.strokeStyle = '#161412';
+      ctx.lineWidth = 2;
+
+      ctx.fillRect(250, 370, 180, 44);
+      ctx.strokeRect(250, 370, 180, 44);
+      ctx.fillStyle = '#161412';
+      ctx.font = '500 20px "IBM Plex Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText("Docket", 340, 399);
+
+      ctx.fillStyle = '#F4EFE6';
+      ctx.fillRect(510, 370, 440, 44);
+      ctx.strokeRect(510, 370, 440, 44);
+      ctx.fillStyle = '#161412';
+      ctx.fillText(`Payroll · ${DATA.employer}`, 730, 399);
+
+      return SRGBCanvasTexture(canvas);
+    }
+
+    function redrawBankCardBackTexture() {
+      if (!bankBackCtx) return;
+      const ctx = bankBackCtx;
+      const w = bankBackCanvas.width;
+      const h = bankBackCanvas.height;
+
+      ctx.fillStyle = '#23201D';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.fillStyle = '#12100E';
+      ctx.fillRect(0, 36, w, 68);
+
+      ctx.fillStyle = '#F7F3EB';
+      ctx.fillRect(36, 130, w - 72, h - 166);
+
+      ctx.fillStyle = '#161412';
+      ctx.font = '500 22px "IBM Plex Mono", monospace';
+      ctx.fillText(`Statement · ${DATA.deposits.length} of ${DATA.paystubs.length} matched`, 58, 172);
+
+      let startY = 216;
+      if (DATA.case.refunded) {
+        ctx.fillStyle = 'rgba(22, 121, 79, 0.14)';
+        ctx.fillRect(48, startY - 26, w - 96, 38);
+        ctx.fillStyle = '#16794F';
+        ctx.font = '500 21px "IBM Plex Mono", monospace';
+        ctx.fillText(`+$${DATA.totals.withheld.toFixed(2)} · ${DATA.employer} Payroll`, 58, startY);
+        startY += 42;
+      }
+
+      ctx.fillStyle = '#5A534A';
+      ctx.font = '400 19px "IBM Plex Mono", monospace';
+      const recent = DATA.deposits.slice(-4).reverse();
+      recent.forEach((d, idx) => {
+        const y = startY + idx * 38;
+        if (y < h - 48) {
+          ctx.fillText(`${d.date} · +$${d.amount.toFixed(2)} · ${d.from}`, 58, y);
+        }
+      });
+
+      bankBackTexture.needsUpdate = true;
+    }
+
+    function createBankCardFrontTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 768;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#211E1B';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#4A423A';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
+
+      ctx.fillStyle = '#F4EFE6';
+      ctx.font = '600 32px "Newsreader", Georgia, serif';
+      ctx.fillText("Your bank", 54, 88);
+
+      ctx.fillStyle = '#B5AA99';
+      ctx.font = '400 22px "IBM Plex Mono", monospace';
+      ctx.fillText(`${DATA.student.name}`, 54, 380);
+      ctx.fillText(`${DATA.deposits.length} of ${DATA.paystubs.length} matched`, 54, 420);
+
+      return SRGBCanvasTexture(canvas);
+    }
+
+    function createEnvelopeTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 768;
+      canvas.height = 420;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#F4EFE6';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#CFC7B6';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
+
+      ctx.fillStyle = '#161412';
+      ctx.font = '500 24px "IBM Plex Mono", monospace';
+      ctx.fillText(`Written request · follow-up ${DATA.case.followUp}`, 48, 195);
+
+      ctx.fillStyle = '#5A534A';
+      ctx.font = '400 20px "Public Sans", sans-serif';
+      ctx.fillText(`To: ${DATA.employer} Payroll · Case ${DATA.case.id}`, 48, 240);
+
+      return SRGBCanvasTexture(canvas);
+    }
+
+    function createLetterSectionTexture(sectionIndex) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 280;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#F7F3EB';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#DFD8C8';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
+
+      const paragraphs = DATA.letter.split('\n\n');
+      ctx.fillStyle = '#161412';
+      ctx.font = '400 18px "IBM Plex Mono", monospace';
+
+      const textBlock = paragraphs[sectionIndex] || paragraphs[0];
+      const words = textBlock.split(' ');
+      let line = '';
+      let y = 50;
+      words.forEach(w => {
+        if ((line + w).length > 48) {
+          ctx.fillText(line, 28, y);
+          line = w + ' ';
+          y += 28;
+        } else {
+          line += w + ' ';
+        }
+      });
+      if (line) ctx.fillText(line, 28, y);
+
+      return SRGBCanvasTexture(canvas);
+    }
+
+    // --- 8. THREE.JS SCENE, SHADOWMATERIAL DESK & WARM COURTROOM LIGHTING ---
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.set(0, 0, 14);
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvasEl,
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance"
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setClearColor(0x000000, 0);
+
+    // Warm archival lighting across all chapters
+    const hemiLight = new THREE.HemisphereLight(0xFFF6E6, 0x3A2E25, 2.0);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight(0xFFE9CC, 1.8);
+    keyLight.position.set(-7, 11, 11);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 1024;
+    keyLight.shadow.mapSize.height = 1024;
+    keyLight.shadow.camera.near = 2;
+    keyLight.shadow.camera.far = 32;
+    keyLight.shadow.camera.left = -9;
+    keyLight.shadow.camera.right = 9;
+    keyLight.shadow.camera.top = 9;
+    keyLight.shadow.camera.bottom = -9;
+    keyLight.shadow.radius = 4;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xC9B29B, 0.55);
+    fillLight.position.set(9, 4, 7);
+    scene.add(fillLight);
+
+    const deskShadowMat = new THREE.ShadowMaterial({ opacity: 0.34 });
+    const deskMesh = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), deskShadowMat);
+    deskMesh.position.set(0, 0, -1.35);
+    deskMesh.receiveShadow = true;
+    scene.add(deskMesh);
+
+    const rootGroup = new THREE.Group();
+    scene.add(rootGroup);
+
+    // --- 9. BUILD ALL CHAPTER 3D PROPS ONCE AT START ---
+    const sheetCount = DATA.paystubs.length;
+    const sheets = [];
+    const tearStrips = [];
+    let folderGroup, folderFrontHinge, rubberStampGroup;
+    let straightedgeMesh, refundSlipMesh;
+
+    let courtroomGroup, gavelHinge, hearingCardsGroup;
+    let hearingCardMeshes = [];
+
+    let switchboardGroup, patchCordMesh, docketLampMesh, payrollLampMesh;
+    let triFoldGroup, foldTopHinge, foldBottomHinge, envelopeGroup, envelopeFlapHinge;
+
+    let bankCardGroup;
+
+    const paperSideMat = new THREE.MeshStandardMaterial({ color: 0xEAE3D5, roughness: 0.9 });
+    // Warm deep pressboard folder material matching the walnut & beige theme
+    const folderMat = new THREE.MeshStandardMaterial({ color: 0x362C25, roughness: 0.78, metalness: 0.05 });
+    const woodDarkMat = new THREE.MeshStandardMaterial({ color: 0x3A2E28, roughness: 0.78 });
+    const woodTrimMat = new THREE.MeshStandardMaterial({ color: 0x4E3E35, roughness: 0.72 });
+
+    const baseJitters = [
+      { rz: 0.010, rx: 0.003 },
+      { rz: -0.012, rx: -0.004 },
+      { rz: 0.016, rx: 0.002 },
+      { rz: -0.007, rx: 0.005 },
+      { rz: 0.013, rx: -0.003 },
+      { rz: -0.018, rx: 0.004 },
+      { rz: 0.008, rx: -0.005 },
+      { rz: -0.006, rx: 0.002 }
+    ];
+
+    function rebuildHearingCards3D() {
+      if (!hearingCardsGroup) return;
+      while (hearingCardsGroup.children.length > 0) {
+        hearingCardsGroup.remove(hearingCardsGroup.children[0]);
+      }
+      hearingCardMeshes = [];
+
+      const steps = getActiveHearingSteps();
+      const cardGeo = new THREE.BoxGeometry(2.85, 1.45, 0.02);
+
+      steps.forEach((step) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 320;
+        drawHearingCardCanvas(canvas, step, false);
+        const tex = SRGBCanvasTexture(canvas);
+        const faceMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.84 });
+        const mesh = new THREE.Mesh(
+          cardGeo,
+          [paperSideMat, paperSideMat, paperSideMat, paperSideMat, faceMat, paperSideMat]
+        );
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = {
+          canvas,
+          tex,
+          step,
+          stampedState: false
+        };
+        hearingCardsGroup.add(mesh);
+        hearingCardMeshes.push(mesh);
+      });
+    }
+
+    function updateSwitchboardLamps(isGreen) {
+      if (!docketLampMesh || !payrollLampMesh) return;
+      const hex = isGreen ? 0x4CC38A : 0x7A7267;
+      docketLampMesh.material.color.setHex(hex);
+      payrollLampMesh.material.color.setHex(hex);
+    }
+
+    async function buildSceneObjects() {
+      await document.fonts.ready;
+
+      // A) THE CASE FOLDER ("docket")
+      folderGroup = new THREE.Group();
+      rootGroup.add(folderGroup);
+
+      const coverW = 4.25;
+      const coverH = 5.55;
+      const coverThick = 0.035;
+
+      const backCoverGeo = new THREE.BoxGeometry(coverW, coverH, coverThick);
+      const backCoverMesh = new THREE.Mesh(backCoverGeo, folderMat);
+      backCoverMesh.position.set(0, 0, -0.22);
+      backCoverMesh.castShadow = true;
+      backCoverMesh.receiveShadow = true;
+      folderGroup.add(backCoverMesh);
+
+      const spineGeo = new THREE.BoxGeometry(0.06, coverH, 0.36);
+      const spineMesh = new THREE.Mesh(spineGeo, folderMat);
+      spineMesh.position.set(-coverW / 2, 0, -0.04);
+      folderGroup.add(spineMesh);
+
+      folderFrontHinge = new THREE.Group();
+      folderFrontHinge.position.set(-coverW / 2, 0, 0.14);
+      folderGroup.add(folderFrontHinge);
+
+      const frontCoverMesh = new THREE.Mesh(backCoverGeo, folderMat);
+      frontCoverMesh.position.set(coverW / 2, 0, 0);
+      frontCoverMesh.castShadow = true;
+      frontCoverMesh.receiveShadow = true;
+      folderFrontHinge.add(frontCoverMesh);
+
+      folderLabelCanvas = document.createElement('canvas');
+      folderLabelCanvas.width = 512;
+      folderLabelCanvas.height = 192;
+      folderLabelCtx = folderLabelCanvas.getContext('2d');
+      folderLabelTexture = SRGBCanvasTexture(folderLabelCanvas);
+      redrawFolderLabelTexture(false);
+
+      const labelMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.5, 0.95),
+        new THREE.MeshStandardMaterial({ map: folderLabelTexture, roughness: 0.85 })
+      );
+      labelMesh.position.set(coverW / 2 + 0.2, 1.15, coverThick / 2 + 0.004);
+      folderFrontHinge.add(labelMesh);
+
+      rubberStampGroup = new THREE.Group();
+      const stampBase = new THREE.Mesh(
+        new THREE.BoxGeometry(1.15, 0.55, 0.18),
+        new THREE.MeshStandardMaterial({ color: 0x362C25, roughness: 0.7 })
+      );
+      const stampStem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.22, 0.65, 20),
+        new THREE.MeshStandardMaterial({ color: 0x161412, roughness: 0.5 })
+      );
+      stampStem.rotation.x = Math.PI / 2;
+      stampStem.position.z = 0.35;
+      rubberStampGroup.add(stampBase, stampStem);
+      rubberStampGroup.visible = false;
+      rootGroup.add(rubberStampGroup);
+
+      // B) 8 PAYSTUB SHEETS & PERFORATED TEAR STRIPS
+      const sheetW = 3.8;
+      const sheetH = 5.1;
+
+      for (let i = 0; i < sheetCount; i++) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 860;
+        canvas.height = 1150;
+        drawPaystubToCanvas(canvas, DATA.paystubs[i], i, 0);
+
+        const tex = SRGBCanvasTexture(canvas);
+        tex.minFilter = THREE.LinearFilter;
+
+        if (i === sheetCount - 1) {
+          topStubDynamicCanvas = canvas;
+          topStubDynamicTexture = tex;
+        }
+
+        const geo = new THREE.PlaneGeometry(sheetW, sheetH, 16, 16);
+        const origPos = Float32Array.from(geo.attributes.position.array);
+
+        const mat = new THREE.MeshStandardMaterial({
+          map: tex,
+          roughness: 0.86,
+          metalness: 0.02,
+          side: THREE.DoubleSide
+        });
+
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = {
+          index: i,
+          origPos,
+          peelAmount: 0,
+          hoverLift: 0
+        };
+
+        rootGroup.add(mesh);
+        sheets.push(mesh);
+
+        const stripTex = createTearStripTexture(DATA.paystubs[i]);
+        const stripGeo = new THREE.PlaneGeometry(3.35, 0.72, 24, 1);
+        const stripOrig = Float32Array.from(stripGeo.attributes.position.array);
+        const stripMat = new THREE.MeshStandardMaterial({
+          map: stripTex,
+          roughness: 0.82,
+          side: THREE.DoubleSide
+        });
+        const stripMesh = new THREE.Mesh(stripGeo, stripMat);
+        stripMesh.castShadow = true;
+        stripMesh.visible = false;
+        stripMesh.userData = { origPos: stripOrig };
+        rootGroup.add(stripMesh);
+        tearStrips.push(stripMesh);
+      }
+
+      straightedgeMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(4.15, 0.22, 0.025),
+        new THREE.MeshStandardMaterial({ color: 0xC8BFA8, roughness: 0.55 })
+      );
+      straightedgeMesh.castShadow = true;
+      straightedgeMesh.visible = false;
+      rootGroup.add(straightedgeMesh);
+
+      // C) TEAR-OFF REFUND SLIP
+      refundSlipCanvas = document.createElement('canvas');
+      refundSlipCanvas.width = 640;
+      refundSlipCanvas.height = 360;
+      refundSlipCtx = refundSlipCanvas.getContext('2d');
+      refundSlipTexture = SRGBCanvasTexture(refundSlipCanvas);
+      redrawRefundSlipTexture(DATA.totals.withheld, false, DATA.case.refunded);
+
+      const slipGeo = new THREE.BoxGeometry(3.0, 1.7, 0.025);
+      const slipFaceMat = new THREE.MeshStandardMaterial({ map: refundSlipTexture, roughness: 0.82 });
+      refundSlipMesh = new THREE.Mesh(
+        slipGeo,
+        [paperSideMat, paperSideMat, paperSideMat, paperSideMat, slipFaceMat, paperSideMat]
+      );
+      refundSlipMesh.castShadow = true;
+      refundSlipMesh.receiveShadow = true;
+      refundSlipMesh.visible = false;
+      rootGroup.add(refundSlipMesh);
+
+      // D) CHAPTER 02: THE COURTROOM
+      courtroomGroup = new THREE.Group();
+      courtroomGroup.visible = false;
+      rootGroup.add(courtroomGroup);
+
+      const benchGroup = new THREE.Group();
+      benchGroup.position.set(0, 2.35, -0.55);
+      const benchBody = new THREE.Mesh(new THREE.BoxGeometry(5.6, 1.45, 0.9), woodDarkMat);
+      benchBody.castShadow = true;
+      benchBody.receiveShadow = true;
+      const benchCap = new THREE.Mesh(new THREE.BoxGeometry(5.85, 0.18, 1.05), woodTrimMat);
+      benchCap.position.set(0, 0.72, 0.04);
+      const judgePlateTex = createLabelPlateTexture("Judge · rules in code");
+      const judgePlate = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.3, 0.42),
+        new THREE.MeshStandardMaterial({ map: judgePlateTex, roughness: 0.8 })
+      );
+      judgePlate.position.set(0, 0.15, 0.46);
+      benchGroup.add(benchBody, benchCap, judgePlate);
+      courtroomGroup.add(benchGroup);
+
+      const leftLectern = new THREE.Group();
+      leftLectern.position.set(-2.35, -0.35, -0.35);
+      const lectStandL = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.35, 0.65), woodDarkMat);
+      lectStandL.castShadow = true;
+      lectStandL.receiveShadow = true;
+      const advPlateTex = createLabelPlateTexture("Advocate · for Priya");
+      const advPlate = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.95, 0.36),
+        new THREE.MeshStandardMaterial({ map: advPlateTex, roughness: 0.8 })
+      );
+      advPlate.position.set(0, 0.15, 0.34);
+      leftLectern.add(lectStandL, advPlate);
+      courtroomGroup.add(leftLectern);
+
+      const rightLectern = new THREE.Group();
+      rightLectern.position.set(2.35, -0.35, -0.35);
+      const lectStandR = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.35, 0.65), woodDarkMat);
+      lectStandR.castShadow = true;
+      lectStandR.receiveShadow = true;
+      const counselPlateTex = createLabelPlateTexture("Payroll's Counsel · for the employer");
+      const counselPlate = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.95, 0.36),
+        new THREE.MeshStandardMaterial({ map: counselPlateTex, roughness: 0.8 })
+      );
+      counselPlate.position.set(0, 0.15, 0.34);
+      rightLectern.add(lectStandR, counselPlate);
+      courtroomGroup.add(rightLectern);
+
+      const exhibitTable = new THREE.Mesh(new THREE.BoxGeometry(4.8, 1.65, 0.32), woodTrimMat);
+      exhibitTable.position.set(0, -2.35, -0.65);
+      exhibitTable.castShadow = true;
+      exhibitTable.receiveShadow = true;
+      courtroomGroup.add(exhibitTable);
+
+      gavelHinge = new THREE.Group();
+      gavelHinge.position.set(1.85, 2.85, 0.25);
+      const gavelHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.95, 0.09, 0.09),
+        woodTrimMat
+      );
+      gavelHandle.position.set(-0.45, 0, 0);
+      const gavelHead = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.16, 0.48, 20),
+        woodDarkMat
+      );
+      gavelHead.position.set(-0.9, 0, 0);
+      gavelHead.castShadow = true;
+      gavelHinge.add(gavelHandle, gavelHead);
+      courtroomGroup.add(gavelHinge);
+
+      hearingCardsGroup = new THREE.Group();
+      courtroomGroup.add(hearingCardsGroup);
+      rebuildHearingCards3D();
+
+      // E) CHAPTER 03: CLEAN WALNUT & BRASS SWITCHBOARD PANEL
+      switchboardGroup = new THREE.Group();
+      switchboardGroup.visible = false;
+      rootGroup.add(switchboardGroup);
+
+      const sbTex = createSwitchboardTexture();
+      const sbBody = new THREE.Mesh(
+        new THREE.BoxGeometry(6.2, 3.85, 0.22),
+        [woodTrimMat, woodTrimMat, woodTrimMat, woodTrimMat, new THREE.MeshStandardMaterial({ map: sbTex, roughness: 0.75 }), woodTrimMat]
+      );
+      sbBody.position.set(0.3, 1.05, -0.65);
+      sbBody.castShadow = true;
+      sbBody.receiveShadow = true;
+      switchboardGroup.add(sbBody);
+
+      const lampGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.08, 20);
+      lampGeo.rotateX(Math.PI / 2);
+      const docketLampMat = new THREE.MeshStandardMaterial({ color: 0x7A7267, roughness: 0.5 });
+      const payrollLampMat = new THREE.MeshStandardMaterial({ color: 0x7A7267, roughness: 0.5 });
+
+      docketLampMesh = new THREE.Mesh(lampGeo, docketLampMat);
+      docketLampMesh.position.set(-0.72, 1.02, -0.51);
+      payrollLampMesh = new THREE.Mesh(lampGeo, payrollLampMat);
+      payrollLampMesh.position.set(1.62, 1.02, -0.51);
+      switchboardGroup.add(docketLampMesh, payrollLampMesh);
+
+      const cordCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.72, 0.78, -0.48),
+        new THREE.Vector3(-0.15, 0.12, 0.18),
+        new THREE.Vector3(0.95, 0.08, 0.18),
+        new THREE.Vector3(1.62, 0.78, -0.48)
+      ]);
+      const cordGeo = new THREE.TubeGeometry(cordCurve, 28, 0.042, 10, false);
+      const cordMat = new THREE.MeshStandardMaterial({ color: 0xC84B11, roughness: 0.65 });
+      patchCordMesh = new THREE.Mesh(cordGeo, cordMat);
+      patchCordMesh.castShadow = true;
+      patchCordMesh.visible = false;
+      switchboardGroup.add(patchCordMesh);
+
+      triFoldGroup = new THREE.Group();
+      const panelW = 2.85;
+      const panelH = 1.2;
+      const midTex = createLetterSectionTexture(1);
+      const topTex = createLetterSectionTexture(0);
+      const botTex = createLetterSectionTexture(2);
+
+      const midPanel = new THREE.Mesh(
+        new THREE.PlaneGeometry(panelW, panelH),
+        new THREE.MeshStandardMaterial({ map: midTex, roughness: 0.85, side: THREE.DoubleSide })
+      );
+      triFoldGroup.add(midPanel);
+
+      foldTopHinge = new THREE.Group();
+      foldTopHinge.position.set(0, panelH / 2, 0.005);
+      const topPanel = new THREE.Mesh(
+        new THREE.PlaneGeometry(panelW, panelH),
+        new THREE.MeshStandardMaterial({ map: topTex, roughness: 0.85, side: THREE.DoubleSide })
+      );
+      topPanel.position.set(0, panelH / 2, 0);
+      foldTopHinge.add(topPanel);
+      triFoldGroup.add(foldTopHinge);
+
+      foldBottomHinge = new THREE.Group();
+      foldBottomHinge.position.set(0, -panelH / 2, 0.008);
+      const botPanel = new THREE.Mesh(
+        new THREE.PlaneGeometry(panelW, panelH),
+        new THREE.MeshStandardMaterial({ map: botTex, roughness: 0.85, side: THREE.DoubleSide })
+      );
+      botPanel.position.set(0, -panelH / 2, 0);
+      foldBottomHinge.add(botPanel);
+      triFoldGroup.add(foldBottomHinge);
+
+      triFoldGroup.visible = false;
+      rootGroup.add(triFoldGroup);
+
+      envelopeGroup = new THREE.Group();
+      const envTex = createEnvelopeTexture();
+      const envBody = new THREE.Mesh(
+        new THREE.BoxGeometry(3.2, 1.6, 0.035),
+        [paperSideMat, paperSideMat, paperSideMat, paperSideMat, new THREE.MeshStandardMaterial({ map: envTex, roughness: 0.85 }), paperSideMat]
+      );
+      envBody.castShadow = true;
+      envelopeGroup.add(envBody);
+
+      envelopeFlapHinge = new THREE.Group();
+      envelopeFlapHinge.position.set(0, 0.8, 0.018);
+      const flapShape = new THREE.Shape();
+      flapShape.moveTo(-1.6, 0);
+      flapShape.lineTo(1.6, 0);
+      flapShape.lineTo(0, 0.7);
+      flapShape.closePath();
+      const flapMesh = new THREE.Mesh(
+        new THREE.ShapeGeometry(flapShape),
+        new THREE.MeshStandardMaterial({ color: 0xEAE3D5, roughness: 0.85, side: THREE.DoubleSide })
+      );
+      envelopeFlapHinge.add(flapMesh);
+      envelopeGroup.add(envelopeFlapHinge);
+
+      envelopeGroup.visible = false;
+      rootGroup.add(envelopeGroup);
+
+      // F) CHAPTER 04: DARK BANK CARD
+      bankCardGroup = new THREE.Group();
+      const cardFrontTex = createBankCardFrontTexture();
+      bankBackCanvas = document.createElement('canvas');
+      bankBackCanvas.width = 768;
+      bankBackCanvas.height = 480;
+      bankBackCtx = bankBackCanvas.getContext('2d');
+      bankBackTexture = SRGBCanvasTexture(bankBackCanvas);
+      bankBackTexture.center.set(0.5, 0.5);
+      bankBackTexture.rotation = Math.PI;
+      redrawBankCardBackTexture();
+
+      const cardEdgeMat = new THREE.MeshStandardMaterial({ color: 0x211E1B, roughness: 0.5 });
+      const cardFrontMat = new THREE.MeshStandardMaterial({ map: cardFrontTex, roughness: 0.5 });
+      const cardBackMat = new THREE.MeshStandardMaterial({ map: bankBackTexture, roughness: 0.6 });
+      const cardMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(4.4, 2.75, 0.05),
+        [cardEdgeMat, cardEdgeMat, cardEdgeMat, cardEdgeMat, cardFrontMat, cardBackMat]
+      );
+      cardMesh.castShadow = true;
+      cardMesh.receiveShadow = true;
+      bankCardGroup.add(cardMesh);
+      bankCardGroup.visible = false;
+      rootGroup.add(bankCardGroup);
+    }
+
+    // --- 10. SECTION PROGRESS & SMOOTH POSE INTERPOLATION ---
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function smoothstep(min, max, value) {
+      const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+      return x * x * (3 - 2 * x);
+    }
+
+    const sectionEls = [
+      document.getElementById('section-0'),
+      document.getElementById('section-1'),
+      document.getElementById('section-2'),
+      document.getElementById('section-3'),
+      document.getElementById('section-4')
+    ];
+
+    function sectionProgress() {
+      const anchorOffset = window.innerWidth <= 880 ? window.innerHeight * 0.48 : 84;
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      const tops = sectionEls.map(el => el.getBoundingClientRect().top + scrollY - anchorOffset);
+
+      if (scrollY <= tops[0]) return 0;
+      for (let i = 0; i < tops.length - 1; i++) {
+        if (scrollY >= tops[i] && scrollY <= tops[i + 1]) {
+          const span = Math.max(1, tops[i + 1] - tops[i]);
+          return i + (scrollY - tops[i]) / span;
+        }
+      }
+      return 4;
+    }
+
+    function getPoseForStage(stageIdx, refunded) {
+      if (stageIdx === 0) {
+        return {
+          cam: { x: 0.0, y: -0.15, z: 12.6 },
+          folderPos: { x: 0.0, y: 0.0, z: 0.0, rz: -0.04, scale: 1.0 },
+          coverAngle: 0.0,
+          sheetMode: 'inside',
+          slipAlpha: 0,
+          slipPos: { x: 0, y: -1.8, z: 0.6, rz: 0 },
+          cardPos: { x: 1.55, y: -8.0, z: 0.2, rx: 0 }
+        };
+      }
+      if (stageIdx === 1) {
+        return {
+          cam: { x: 0.2, y: -0.1, z: 11.6 },
+          folderPos: { x: -0.65, y: 0.1, z: -0.45, rz: 0.0, scale: 1.0 },
+          coverAngle: -2.62,
+          sheetMode: 'stack_out',
+          slipAlpha: 1,
+          slipPos: { x: 1.6, y: -1.65, z: 1.15, rz: -0.02 },
+          cardPos: { x: 1.55, y: -8.0, z: 0.2, rx: 0 }
+        };
+      }
+      if (stageIdx === 2) {
+        return {
+          cam: { x: 0.0, y: 0.15, z: 13.8 },
+          folderPos: { x: -1.45, y: -2.35, z: -0.42, rz: 0.0, scale: 0.56 },
+          coverAngle: -2.5,
+          sheetMode: 'exhibit_table',
+          slipAlpha: 1,
+          slipPos: { x: 1.25, y: -2.35, z: -0.35, rz: 0.0 },
+          cardPos: { x: 1.55, y: -8.0, z: 0.2, rx: 0 }
+        };
+      }
+      if (stageIdx === 3) {
+        return {
+          cam: { x: 0.1, y: 0.0, z: 13.2 },
+          folderPos: { x: -1.9, y: -1.45, z: -0.4, rz: 0.02, scale: 0.78 },
+          coverAngle: -2.4,
+          sheetMode: 'call_desk',
+          slipAlpha: 1,
+          slipPos: { x: -0.05, y: -1.65, z: 0.55, rz: 0.0 },
+          cardPos: { x: 1.55, y: -8.0, z: 0.2, rx: 0 }
+        };
+      }
+      return {
+        cam: { x: 0.0, y: -0.15, z: 12.8 },
+        folderPos: { x: -1.85, y: 0.35, z: -0.2, rz: -0.03, scale: 1.0 },
+        coverAngle: refunded ? 0.0 : -2.2,
+        sheetMode: refunded ? 'inside' : 'money_open',
+        slipAlpha: 1,
+        slipPos: {
+          x: 1.55,
+          y: refunded ? -0.55 : 0.72,
+          z: refunded ? 0.48 : 0.95,
+          rz: 0.0
+        },
+        cardPos: { x: 1.55, y: -0.65, z: 0.45, rx: Math.PI }
+      };
+    }
+
+    function blendPoses(pA, pB, t) {
+      return {
+        cam: {
+          x: lerp(pA.cam.x, pB.cam.x, t),
+          y: lerp(pA.cam.y, pB.cam.y, t),
+          z: lerp(pA.cam.z, pB.cam.z, t)
+        },
+        folderPos: {
+          x: lerp(pA.folderPos.x, pB.folderPos.x, t),
+          y: lerp(pA.folderPos.y, pB.folderPos.y, t),
+          z: lerp(pA.folderPos.z, pB.folderPos.z, t),
+          rz: lerp(pA.folderPos.rz, pB.folderPos.rz, t),
+          scale: lerp(pA.folderPos.scale, pB.folderPos.scale, t)
+        },
+        coverAngle: lerp(pA.coverAngle, pB.coverAngle, t),
+        slipAlpha: lerp(pA.slipAlpha, pB.slipAlpha, t),
+        slipPos: {
+          x: lerp(pA.slipPos.x, pB.slipPos.x, t),
+          y: lerp(pA.slipPos.y, pB.slipPos.y, t),
+          z: lerp(pA.slipPos.z, pB.slipPos.z, t),
+          rz: lerp(pA.slipPos.rz, pB.slipPos.rz, t)
+        },
+        cardPos: {
+          x: lerp(pA.cardPos.x, pB.cardPos.x, t),
+          y: lerp(pA.cardPos.y, pB.cardPos.y, t),
+          z: lerp(pA.cardPos.z, pB.cardPos.z, t),
+          rx: lerp(pA.cardPos.rx, pB.cardPos.rx, t)
+        }
+      };
+    }
+
+    function computeSheetTransformForMode(mode, i, folderPos) {
+      const jitter = baseJitters[i];
+      if (mode === 'inside') {
+        return {
+          x: folderPos.x + 0.04,
+          y: folderPos.y,
+          z: folderPos.z - 0.12 + i * 0.016,
+          rx: 0,
+          ry: 0,
+          rz: folderPos.rz + jitter.rz * 0.3,
+          scale: folderPos.scale
+        };
+      }
+      if (mode === 'stack_out') {
+        return {
+          x: 0.28 + i * 0.02,
+          y: 0.2 + (i === sheetCount - 1 ? 0.14 : 0),
+          z: -0.1 + i * 0.04,
+          rx: jitter.rx,
+          ry: 0,
+          rz: jitter.rz * 0.6,
+          scale: 1.0
+        };
+      }
+      if (mode === 'exhibit_table') {
+        return {
+          x: -0.55 + i * 0.03,
+          y: -2.35,
+          z: -0.4 + i * 0.015,
+          rx: 0,
+          ry: 0,
+          rz: jitter.rz * 0.4,
+          scale: 0.46
+        };
+      }
+      if (mode === 'call_desk') {
+        return {
+          x: -1.85 + i * 0.02,
+          y: -1.45,
+          z: -0.3 + i * 0.018,
+          rx: 0,
+          ry: 0,
+          rz: jitter.rz * 0.4,
+          scale: 0.72
+        };
+      }
+      return {
+        x: -1.75 + i * 0.02,
+        y: 0.35,
+        z: -0.1 + i * 0.022,
+        rx: jitter.rx * 0.4,
+        ry: 0,
+        rz: jitter.rz * 0.4,
+        scale: 1.0
+      };
+    }
+
+    // --- 11. ORBIT DRAG (±15°), PAYSTUB HOVER PEEL & CLICK TO INSPECT ---
+    let smoothStage = 0;   // held stage: drives poses, backgrounds and chapter index
+    let smoothRaw = 0;     // raw section progress: drives the hearing steps
+    function holdStage(s) {
+      const k = Math.min(3, Math.max(0, Math.floor(s)));
+      const f = Math.min(1, Math.max(0, s - k));
+      const hold = k === 2 ? 0.78 : 0.45;
+      return k + Math.max(0, (f - hold) / (1 - hold));
+    }
+
+    function updateResize() {
+      const container = document.getElementById('canvas-wrapper');
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    window.addEventListener('resize', updateResize);
+
+    let isDragging = false;
+    let pointerDownPos = { x: 0, y: 0 };
+    let prevPointerPos = { x: 0, y: 0 };
+    let dragEuler = { x: 0, y: 0 };
+    const maxDragRad = THREE.MathUtils.degToRad(15);
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let hoveredSheetIndex = -1;
+    let inspectedSheetIndex = -1;
+
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+    canvasWrapper.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+      prevPointerPos = { x: e.clientX, y: e.clientY };
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (isDragging) {
+        const dx = e.clientX - prevPointerPos.x;
+        const dy = e.clientY - prevPointerPos.y;
+        prevPointerPos = { x: e.clientX, y: e.clientY };
+        dragEuler.y = THREE.MathUtils.clamp(dragEuler.y + dx * 0.0035, -maxDragRad, maxDragRad);
+        dragEuler.x = THREE.MathUtils.clamp(dragEuler.x + dy * 0.0035, -maxDragRad, maxDragRad);
+        return;
+      }
+
+      const rect = canvasEl.getBoundingClientRect();
+      if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+        hoveredSheetIndex = -1;
+        return;
+      }
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      // Closed-folder cover must not expose or select the paystubs behind it.
+      if (smoothStage <= 0.5 || DATA.case.refunded) {
+        hoveredSheetIndex = -1;
+        return;
+      }
+      const hits = raycaster.intersectObjects(sheets);
+      const newHover = hits.length > 0 ? hits[0].object.userData.index : -1;
+      if (newHover !== hoveredSheetIndex && newHover !== -1) {
+        soundFX.playPaperRustle(1500, 0.04);
+      }
+      hoveredSheetIndex = newHover;
+    });
+
+    window.addEventListener('pointerup', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      if (dist < 6 && smoothStage > 0.5 && !DATA.case.refunded && hoveredSheetIndex !== -1) {
+        toggleInspectPaystub(hoveredSheetIndex);
+      }
+    });
+
+    function toggleInspectPaystub(idx) {
+      soundFX.playPaperRustle(1150, 0.09);
+      const card = document.getElementById('paystub-inspect-card');
+      if (inspectedSheetIndex === idx) {
+        inspectedSheetIndex = -1;
+        card.classList.remove('visible');
+      } else {
+        inspectedSheetIndex = idx;
+        const stub = DATA.paystubs[idx];
+        const totalHrs = stub.hours[0] + stub.hours[1];
+        document.getElementById('inspect-period').textContent = `Paystub #${idx + 1} · ${stub.period}`;
+        document.getElementById('inspect-details').textContent =
+          `Hours: ${stub.hours[0]} + ${stub.hours[1]} (${totalHrs.toFixed(2)} h) · Gross: $${stub.gross.toFixed(2)} · Box 4 SS: -$${stub.ss.toFixed(2)} · Box 6 Med: -$${stub.medicare.toFixed(2)} · Net: $${stub.net.toFixed(2)}`;
+        card.classList.add('visible');
+      }
+    }
+
+    document.getElementById('inspect-close-btn').addEventListener('click', () => {
+      inspectedSheetIndex = -1;
+      document.getElementById('paystub-inspect-card').classList.remove('visible');
+    });
+
+    // --- 12. VERTEX DEFORMATION HELPERS ---
+    function deformSheetCornerPeel(sheet, peelAmount) {
+      const posAttr = sheet.geometry.attributes.position;
+      const orig = sheet.userData.origPos;
+      for (let k = 0; k < posAttr.count; k++) {
+        const ox = orig[k * 3];
+        const oy = orig[k * 3 + 1];
+        let oz = orig[k * 3 + 2];
+
+        if (peelAmount > 0.001 && ox > 0.5 && oy > 1.0) {
+          const dx = (ox - 0.5) / 1.4;
+          const dy = (oy - 1.0) / 1.55;
+          const weight = Math.max(0, dx * dy);
+          oz += weight * weight * 0.42 * peelAmount;
+        }
+        posAttr.setZ(k, oz);
+      }
+      posAttr.needsUpdate = true;
+    }
+
+    function deformTearStripCurl(stripMesh, tearProgress) {
+      const posAttr = stripMesh.geometry.attributes.position;
+      const orig = stripMesh.userData.origPos;
+      const curlArc = Math.sin(tearProgress * Math.PI);
+      for (let k = 0; k < posAttr.count; k++) {
+        const ox = orig[k * 3];
+        const oy = orig[k * 3 + 1];
+        const normX = (ox + 1.675) / 3.35;
+        const zLift = Math.pow(normX, 1.7) * curlArc * 0.65;
+        const xPull = -Math.pow(normX, 2.0) * curlArc * 0.28;
+        posAttr.setXYZ(k, ox + xPull, oy, zLift);
+      }
+      posAttr.needsUpdate = true;
+    }
+
+    // --- 13. MAIN ANIMATION LOOP & SOUND CUES ---
+    const chapterBtns = document.querySelectorAll('.chapter-btn');
+
+    let lastActiveChapter = -1;
+    let lastDrawReadProg = -1;
+    let lastDisplayedSlipCount = -1;
+    let stampAnimProgress = 0;
+    let stampSoundPlayed = false;
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (sheets.length === 0) return;
+
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const damp = prefersReducedMotion ? 1.0 : (1 - Math.exp(-9.5 * dt));
+
+      const rawStage = sectionProgress();
+      if (prefersReducedMotion) {
+        smoothRaw = rawStage;
+        smoothStage = Math.round(holdStage(rawStage));
+      } else {
+        smoothRaw = lerp(smoothRaw, rawStage, damp);
+        smoothStage = holdStage(smoothRaw);
+      }
+
+      const stageIdx = Math.min(3, Math.max(0, Math.floor(smoothStage)));
+      const stageFrac = smoothstep(0, 1, smoothStage - stageIdx);
+      const activeChapter = Math.round(smoothStage);
+
+      if (activeChapter !== lastActiveChapter) {
+        if (lastActiveChapter !== -1) {
+          soundFX.playPaperRustle(980, 0.07);
+        }
+        lastActiveChapter = activeChapter;
+        chapterBtns.forEach((btn, i) => btn.classList.toggle('active', i === activeChapter));
+        canvasEl.setAttribute('aria-label', ariaLabels[activeChapter] || ariaLabels[0]);
+      }
+
+      if (!isDragging) {
+        dragEuler.x = lerp(dragEuler.x, 0, damp);
+        dragEuler.y = lerp(dragEuler.y, 0, damp);
+      }
+      rootGroup.rotation.x = dragEuler.x;
+      rootGroup.rotation.y = dragEuler.y;
+
+      const poseA = getPoseForStage(stageIdx, DATA.case.refunded);
+      const poseB = getPoseForStage(stageIdx + 1, DATA.case.refunded);
+      const blended = blendPoses(poseA, poseB, stageFrac);
+
+      camera.position.set(blended.cam.x, blended.cam.y, blended.cam.z);
+      camera.lookAt(0, 0, 0);
+
+      // Home Paystub Dropzone Ingestion Animation Override
+      let ingestOpenBoost = 0;
+      if (ingestCascadeTimer > 0) {
+        ingestCascadeTimer = Math.max(0, ingestCascadeTimer - dt);
+        ingestOpenBoost = Math.sin((ingestCascadeTimer / 1.65) * Math.PI);
+      }
+
+      // 1. Case Folder
+      folderGroup.position.set(blended.folderPos.x, blended.folderPos.y, blended.folderPos.z);
+      folderGroup.rotation.z = blended.folderPos.rz;
+      folderGroup.scale.setScalar(blended.folderPos.scale);
+      folderFrontHinge.rotation.y = Math.min(blended.coverAngle, -ingestOpenBoost * 2.1);
+
+      // 2. Paystub Sheets
+      for (let i = 0; i < sheetCount; i++) {
+        const sheet = sheets[i];
+        const tA = computeSheetTransformForMode(poseA.sheetMode, i, poseA.folderPos);
+        const tB = computeSheetTransformForMode(poseB.sheetMode, i, poseB.folderPos);
+
+        const isHovered = (smoothStage > 0.5 && !DATA.case.refunded && hoveredSheetIndex === i);
+        const isInspected = (inspectedSheetIndex === i && smoothStage > 0.5 && smoothStage < 1.6);
+
+        const targetHoverLift = isHovered ? 0.18 : 0.0;
+        sheet.userData.hoverLift = lerp(sheet.userData.hoverLift, targetHoverLift, damp * 1.4);
+
+        const targetPeel = (isHovered && !prefersReducedMotion) ? 1.0 : 0.0;
+        if (Math.abs(sheet.userData.peelAmount - targetPeel) > 0.005) {
+          sheet.userData.peelAmount = lerp(sheet.userData.peelAmount, targetPeel, damp * 1.5);
+          deformSheetCornerPeel(sheet, sheet.userData.peelAmount);
+        }
+
+        let tx = lerp(tA.x, tB.x, stageFrac);
+        let ty = lerp(tA.y, tB.y, stageFrac);
+        let tz = lerp(tA.z, tB.z, stageFrac) + sheet.userData.hoverLift;
+        let trx = lerp(tA.rx, tB.rx, stageFrac);
+        let try_ = lerp(tA.ry, tB.ry, stageFrac);
+        let trz = lerp(tA.rz, tB.rz, stageFrac);
+        let targetScale = lerp(tA.scale, tB.scale, stageFrac);
+
+        // Cascade slide during Home dropzone ingestion
+        if (ingestOpenBoost > 0.01) {
+          const sheetWave = Math.sin(Math.min(1, Math.max(0, (ingestCascadeTimer * 1.3 - i * 0.08))) * Math.PI);
+          tx += sheetWave * 1.65;
+          ty += sheetWave * (0.35 - i * 0.06);
+          tz += sheetWave * 0.45;
+        }
+
+        if (isInspected) {
+          tx = -0.25;
+          ty = 0.25;
+          tz = 2.0;
+          trz = 0;
+          targetScale = 1.12;
+        }
+
+        sheet.position.set(
+          lerp(sheet.position.x, tx, damp),
+          lerp(sheet.position.y, ty, damp),
+          lerp(sheet.position.z, tz, damp)
+        );
+        sheet.rotation.set(trx, try_, trz);
+        sheet.scale.setScalar(lerp(sheet.scale.x, targetScale, damp));
+      }
+
+      // 3. CHAPTER 01: Straightedge Reading & Perforated Tear-Off into Refund Slip
+      const inChapter1Range = smoothStage > 0.2 && smoothStage < 1.6;
+      const readProg = smoothstep(0.32, 0.88, smoothStage);
+
+      if (inChapter1Range && smoothStage < 1.18) {
+        straightedgeMesh.visible = true;
+        const topSheet = sheets[sheetCount - 1];
+        straightedgeMesh.position.set(
+          topSheet.position.x,
+          topSheet.position.y + lerp(1.75, -0.75, readProg),
+          topSheet.position.z + 0.05
+        );
+      } else {
+        straightedgeMesh.visible = false;
+      }
+
+      if (Math.abs(readProg - lastDrawReadProg) > 0.025) {
+        lastDrawReadProg = readProg;
+        drawPaystubToCanvas(topStubDynamicCanvas, DATA.paystubs[sheetCount - 1], sheetCount - 1, readProg);
+        topStubDynamicTexture.needsUpdate = true;
+      }
+
+      const tearWindow = smoothstep(0.58, 1.08, smoothStage);
+      let landedCount = 0;
+
+      for (let i = 0; i < sheetCount; i++) {
+        const strip = tearStrips[i];
+        const stagger = i * 0.055;
+        const localTear = Math.max(0, Math.min(1, (tearWindow - stagger) / (1 - sheetCount * 0.055)));
+
+        if (localTear > 0.01 && localTear < 0.99 && !prefersReducedMotion) {
+          strip.visible = true;
+          const srcSheet = sheets[i];
+          strip.position.set(
+            lerp(srcSheet.position.x, blended.slipPos.x, localTear),
+            lerp(srcSheet.position.y - 0.15, blended.slipPos.y, localTear),
+            lerp(srcSheet.position.z + 0.03, blended.slipPos.z + 0.05, localTear)
+          );
+          deformTearStripCurl(strip, localTear);
+        } else {
+          strip.visible = false;
+        }
+        if (localTear >= 0.92) landedCount++;
+      }
+
+      if (prefersReducedMotion && smoothStage >= 0.75) {
+        landedCount = sheetCount;
+      }
+
+      if (landedCount !== lastDisplayedSlipCount) {
+        if (landedCount > lastDisplayedSlipCount && lastDisplayedSlipCount >= 0) {
+          soundFX.playPaperRustle(1100 + landedCount * 75, 0.065);
+        }
+        lastDisplayedSlipCount = landedCount;
+        const singleWithheld = DATA.paystubs[0].ss + DATA.paystubs[0].medicare;
+        const currentTotal = landedCount === sheetCount ? DATA.totals.withheld : landedCount * singleWithheld;
+        redrawRefundSlipTexture(currentTotal, call3DState.signed, DATA.case.refunded);
+      }
+
+      if (blended.slipAlpha > 0.05) {
+        refundSlipMesh.visible = true;
+        refundSlipMesh.position.set(blended.slipPos.x, blended.slipPos.y, blended.slipPos.z);
+        refundSlipMesh.rotation.z = blended.slipPos.rz;
+        const slipScale = smoothStage > 1.4 && smoothStage < 2.6 ? 0.72 : 1.0;
+        refundSlipMesh.scale.setScalar(lerp(refundSlipMesh.scale.x, slipScale, damp));
+      } else {
+        refundSlipMesh.visible = false;
+      }
+
+      // 4. CHAPTER 02: THE HEARING (With Gavel Strike Audio Synthesis)
+      const showCourtroom = Math.abs(smoothStage - 2.0) < 0.95;
+      courtroomGroup.visible = showCourtroom;
+
+      if (showCourtroom) {
+        const hearingProg = Math.max(0, Math.min(1, (smoothRaw - 2.0) / 0.72));
+        const steps = getActiveHearingSteps();
+        const stepCount = steps.length;
+        let gavelTargetAngle = 0;
+
+        hearingCardMeshes.forEach((cardMesh, idx) => {
+          const stepStart = idx / stepCount;
+          const stepSpan = 1 / stepCount;
+          const localP = Math.max(0, Math.min(1, (hearingProg - stepStart) / stepSpan));
+
+          const domStep = document.getElementById(`hearing-dom-step-${idx}`);
+          if (domStep) {
+            const isStepReached = hearingProg >= stepStart - 0.02;
+            const isStepCurrent = localP > 0.02 && localP < 0.98;
+            domStep.classList.toggle('active', isStepReached);
+            domStep.classList.toggle('current-focus', isStepCurrent);
+          }
+
+          if (localP <= 0.01) {
+            cardMesh.visible = false;
+            return;
+          }
+          cardMesh.visible = true;
+
+          const stepData = cardMesh.userData.step;
+          const isAdvocate = stepData.speaker === "Advocate";
+          const isJudge = stepData.speaker === "Judge";
+
+          const startX = isJudge ? 0.0 : (isAdvocate ? -2.35 : 2.35);
+          const startY = isJudge ? 2.45 : -0.15;
+          const startZ = isJudge ? 0.25 : 0.15;
+
+          const riseT = smoothstep(0.0, 0.38, localP);
+          const ruleT = smoothstep(0.40, 0.66, localP);
+          const settleT = smoothstep(0.68, 0.98, localP);
+
+          const shouldBeStamped = ruleT > 0.5;
+          if (shouldBeStamped !== cardMesh.userData.stampedState) {
+            cardMesh.userData.stampedState = shouldBeStamped;
+            if (shouldBeStamped && stepData.ruling) {
+              soundFX.playGavelStrike();
+            }
+            drawHearingCardCanvas(cardMesh.userData.canvas, stepData, shouldBeStamped);
+            cardMesh.userData.tex.needsUpdate = true;
+          }
+
+          if (stepData.ruling && localP > 0.36 && localP < 0.66 && !prefersReducedMotion) {
+            const strikeArc = Math.sin(((localP - 0.36) / 0.3) * Math.PI);
+            gavelTargetAngle = -strikeArc * 0.58;
+          }
+
+          let midX = isJudge ? 0.0 : (isAdvocate ? -1.05 : 1.05);
+          let midY = isJudge ? 1.55 : 0.85;
+          let midZ = 0.85;
+
+          let endX = -2.45;
+          let endY = 1.65 + idx * 0.08;
+          let endZ = 0.1 + idx * 0.03;
+
+          if (stepData.ruling === "Struck") {
+            endX = 6.5;
+            endY = 0.6;
+          } else if (isJudge) {
+            endX = 0.0;
+            endY = 1.55;
+            endZ = 0.95;
+          }
+
+          const curX = lerp(lerp(startX, midX, riseT), endX, settleT);
+          const curY = lerp(lerp(startY, midY, riseT), endY, settleT);
+          const curZ = lerp(lerp(startZ, midZ, riseT), endZ, settleT);
+
+          cardMesh.position.set(curX, curY, curZ);
+          cardMesh.scale.setScalar(isJudge ? 0.95 : lerp(0.85, 0.68, settleT));
+        });
+
+        gavelHinge.rotation.z = lerp(gavelHinge.rotation.z, gavelTargetAngle, 0.35);
+      }
+
+      // 5. CHAPTER 03: THE CALL (Switchboard, Patch Cord, Lamps, Tri-fold Letter & Envelope)
+      const showSwitchboard = Math.abs(smoothStage - 3.0) < 0.95;
+      switchboardGroup.visible = showSwitchboard;
+
+      if (showSwitchboard && call3DState.queuedForStage3) {
+        patchCordMesh.visible = true;
+        call3DState.cordPlugged = lerp(call3DState.cordPlugged, 1.0, damp);
+        patchCordMesh.scale.set(1, call3DState.cordPlugged, 1);
+
+        if (DATA.case.state === "called" && (DATA.case.outcome === "stalled" || DATA.case.outcome === "refused")) {
+          if (prefersReducedMotion) {
+            triFoldGroup.visible = false;
+            envelopeGroup.visible = true;
+            envelopeFlapHinge.rotation.x = Math.PI;
+            envelopeGroup.position.set(1.9, -1.5, 0.45);
+          } else {
+            call3DState.letterFeed = Math.min(1, call3DState.letterFeed + dt * 1.2);
+            if (call3DState.letterFeed >= 1) call3DState.fold1 = Math.min(1, call3DState.fold1 + dt * 1.6);
+            if (call3DState.fold1 >= 1) call3DState.fold2 = Math.min(1, call3DState.fold2 + dt * 1.6);
+            if (call3DState.fold2 >= 1) call3DState.intoEnvelope = Math.min(1, call3DState.intoEnvelope + dt * 1.4);
+            if (call3DState.intoEnvelope >= 1) call3DState.flapClose = Math.min(1, call3DState.flapClose + dt * 1.8);
+
+            triFoldGroup.visible = call3DState.intoEnvelope < 0.95;
+            triFoldGroup.position.set(2.0, lerp(0.6, -1.35, call3DState.letterFeed), 0.3);
+            foldTopHinge.rotation.x = lerp(0, Math.PI, call3DState.fold1);
+            foldBottomHinge.rotation.x = lerp(0, -Math.PI, call3DState.fold2);
+
+            envelopeGroup.visible = call3DState.fold2 > 0.5;
+            envelopeGroup.position.set(1.95, lerp(-2.2, -1.5, call3DState.intoEnvelope), 0.4);
+            envelopeFlapHinge.rotation.x = lerp(0, Math.PI, call3DState.flapClose);
+          }
+        } else {
+          triFoldGroup.visible = false;
+          envelopeGroup.visible = false;
+        }
+      } else {
+        patchCordMesh.visible = false;
+        triFoldGroup.visible = false;
+        envelopeGroup.visible = false;
+      }
+
+      // 6. CHAPTER 04: THE MONEY (Bank Card Flip & Closed Stamp on Case Folder)
+      const showMoney = smoothStage > 2.95;
+      bankCardGroup.visible = showMoney;
+
+      if (showMoney) {
+        bankCardGroup.position.set(blended.cardPos.x, blended.cardPos.y, blended.cardPos.z);
+        bankCardGroup.rotation.x = blended.cardPos.rx;
+      }
+
+      if (smoothStage > 3.65 && DATA.case.refunded) {
+        if (prefersReducedMotion) {
+          redrawFolderLabelTexture(true);
+          rubberStampGroup.visible = false;
+        } else {
+          rubberStampGroup.visible = true;
+          stampAnimProgress = Math.min(1, stampAnimProgress + dt * 1.1);
+          const pressCurve = Math.sin(stampAnimProgress * Math.PI);
+          rubberStampGroup.position.set(
+            blended.folderPos.x + 0.25,
+            blended.folderPos.y + 1.15,
+            lerp(3.2, 0.35, pressCurve)
+          );
+          if (stampAnimProgress > 0.5) {
+            if (!stampSoundPlayed) {
+              stampSoundPlayed = true;
+              soundFX.playRubberStamp();
+            }
+            redrawFolderLabelTexture(true);
+          }
+          if (stampAnimProgress >= 1) {
+            rubberStampGroup.visible = false;
+          }
+        }
+      } else {
+        stampAnimProgress = 0;
+        stampSoundPlayed = false;
+        rubberStampGroup.visible = false;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // Boot application
+    initDOMFromData();
+    updateResize();
+    buildSceneObjects().then(() => {
+      updateResize();
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>
