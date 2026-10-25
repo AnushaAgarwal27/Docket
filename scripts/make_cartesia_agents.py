@@ -1,19 +1,20 @@
-"""Create Docket's two Cartesia agents, and print the webhook tools to add by hand.
+"""Everything to paste into the Cartesia dashboard to build Docket's two agents.
 
-    .venv/bin/python -m scripts.make_cartesia_agents            # show what it would do
-    .venv/bin/python -m scripts.make_cartesia_agents --create   # create them and write the ids to .env
+    .venv/bin/python -m scripts.make_cartesia_agents          # the prompts and tools, ready to paste
+    .venv/bin/python -m scripts.make_cartesia_agents --ids    # after creating them: find and save the ids
 
-What this does and does not do, because the split is not obvious:
+Why this prints instead of creating. Cartesia has two kinds of agent:
 
-  The API can create an agent with its name, voice, system prompt and opening line. That is the
-  long, typo-prone part, and it is what this script does. It then writes CARTESIA_AGENT_ID and
-  CARTESIA_STUDENT_AGENT_ID into .env so nothing has to be copied by hand.
+  managed    built in the dashboard from a prompt and webhook tools. This is what Docket needs.
+  code       built from Python you upload (the Line SDK). Needs a deployed source bundle.
 
-  The API has no endpoint for webhook tools — they exist only in the dashboard's agent builder.
-  So the script prints each tool with your own deployment's URL already filled in, in the order the
-  dashboard asks for them.
+`POST /agents` only makes the second kind. It accepts `is_managed` and ignores it, and the agent it
+returns looks fine — `llm_system_prompt` saves, the id is real — right up until you place a call and
+get `404 Failed to get agent deployment info`, because there is no code to deploy. There is no public
+endpoint for managed agents or their webhook tools, so the dashboard is the only way.
 
-Re-running is safe: an agent that already exists by name is updated rather than duplicated.
+That is worth knowing before a demo rather than during one, which is why this script says it out loud
+instead of creating an agent that looks right and cannot answer the phone.
 """
 from __future__ import annotations
 
@@ -147,10 +148,43 @@ def write_env(updates: dict[str, str]) -> None:
     ENV_FILE.write_text(text)
 
 
+def save_ids(key: str) -> None:
+    """After the agents exist in the dashboard, find them by name and write their ids to .env."""
+    try:
+        r = requests.get(f"{API}/agents", headers=headers(key), timeout=25)
+        r.raise_for_status()
+    except requests.RequestException as e:
+        print(f"{RED}could not reach Cartesia: {e}{OFF}")
+        sys.exit(1)
+
+    found: dict[str, str] = {}
+    print(f"\n{BOLD}Agents on your account{OFF}")
+    for summary in (r.json() or {}).get("summaries", []):
+        detail = requests.get(f"{API}/agents/{summary['id']}", headers=headers(key), timeout=25).json()
+        managed = detail.get("is_managed") is True
+        mark = f"{GREEN}managed{OFF}" if managed else f"{RED}code-deployed{OFF}"
+        print(f"  {summary['name']:<26} {summary['id']}  {mark}")
+        if not managed:
+            print(f"    {DIM}this kind cannot take calls without uploaded source code{OFF}")
+            continue
+        for env_key, name, *_ in AGENTS:
+            if summary["name"].strip().lower() == name:
+                found[env_key] = summary["id"]
+
+    if found:
+        write_env(found)
+        print(f"\n  {GREEN}wrote {', '.join(found)} to .env{OFF}")
+    missing = [k for k, name, *_ in AGENTS if k not in found]
+    if missing:
+        print(f"\n  {RED}still missing: {', '.join(missing)}{OFF}")
+        print(f"  {DIM}Name the agents exactly {' and '.join(n for _, n, *_ in AGENTS)} and re-run,")
+        print(f"  or paste the ids into .env yourself.{OFF}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--create", action="store_true",
-                        help="actually create or update the agents and write their ids to .env")
+    parser.add_argument("--ids", action="store_true",
+                        help="find the agents you built in the dashboard and save their ids to .env")
     args = parser.parse_args()
 
     key = os.environ.get("CARTESIA_API_KEY", "")
@@ -159,59 +193,27 @@ def main() -> None:
         sys.exit(1)
     base = site_url()
 
-    if not args.create:
-        print(f"\n{DIM}Dry run. Nothing has been created. Add --create to go ahead.{OFF}")
+    if args.ids:
+        save_ids(key)
+        return
 
-    created: dict[str, str] = {}
-    if args.create:
-        try:
-            have = existing(key)
-        except requests.RequestException as e:
-            print(f"{RED}could not reach Cartesia: {e}{OFF}")
-            sys.exit(1)
+    print(f"\n{BOLD}Build these two in the dashboard{OFF}")
+    print(f"  {DIM}Agents -> New agent -> start from a blank/managed agent (not a code template).")
+    print(f"  Turn on the End call system tool. Then paste the two blocks below.{OFF}")
+    for _env_key, name, voice, intro, prompt, _tools in AGENTS:
+        print(f"\n  {BOLD}{name}{OFF}  {DIM}suggested voice: {voice}{OFF}")
+        print(f"\n  {DIM}--- opening message ---{OFF}\n{intro}")
+        print(f"\n  {DIM}--- system prompt ---{OFF}\n{prompt}")
 
-        for env_key, name, voice, intro, prompt, _tools in AGENTS:
-            # POST accepts the prompt fields and silently drops them — only PATCH stores them. So
-            # create bare, then patch, and read the agent back to prove the prompt actually landed.
-            if name in have:
-                agent_id, action = have[name], "updated"
-            else:
-                r = requests.post(f"{API}/agents", json={"name": name}, headers=headers(key), timeout=30)
-                if r.status_code >= 400:
-                    print(f"  {RED}{name}: {r.status_code} {r.text[:200]}{OFF}")
-                    continue
-                agent_id, action = (r.json() or {}).get("id", ""), "created"
-
-            body = {"llm_system_prompt": prompt, "llm_introduce": intro}
-            vid = voice_id(key, voice)
-            if vid:
-                body["tts_voice"] = vid
-            r = requests.patch(f"{API}/agents/{agent_id}", json=body, headers=headers(key), timeout=30)
-            if r.status_code >= 400:
-                print(f"  {RED}{name}: {r.status_code} {r.text[:200]}{OFF}")
-                continue
-
-            back = requests.get(f"{API}/agents/{agent_id}", headers=headers(key), timeout=25).json()
-            ok = (back.get("llm_system_prompt") or "").strip() == prompt.strip()
-            created[env_key] = agent_id
-            print(f"  {GREEN if ok else RED}{action}{OFF}  {name:<24} {agent_id}  "
-                  f"{DIM}voice: {voice}, prompt: {len(back.get('llm_system_prompt') or '')} chars"
-                  f"{'' if ok else ' — DID NOT SAVE'}{OFF}")
-
-        if created:
-            write_env(created)
-            print(f"\n  {GREEN}wrote {', '.join(created)} to .env{OFF}")
-
-    print(f"\n{BOLD}Now add the webhook tools in the dashboard{OFF}")
-    print(f"  {DIM}The API has no endpoint for these, so this part is by hand.")
-    print(f"  Agents -> pick the agent -> Tools -> Add tool -> Webhook.")
+    print(f"\n{BOLD}Then add the webhook tools{OFF}")
+    print(f"  {DIM}Agents -> pick the agent -> Tools -> Add tool -> Webhook.")
     print(f"  For every one: method POST, auth Bearer, execution immediate, timeout 10s,")
     print(f"  and the same token.{OFF}")
     token = os.environ.get("CARTESIA_TOOL_TOKEN", "")
     print(f"\n  Bearer token: {token or f'{RED}not set — run scripts.check_voice{OFF}'}")
 
     for env_key, name, _voice, _intro, _prompt, tools in AGENTS:
-        agent_id = created.get(env_key) or os.environ.get(env_key, "")
+        agent_id = os.environ.get(env_key, "")
         print(f"\n  {BOLD}{name}{OFF}  {DIM}{agent_id or '(not created yet)'}{OFF}")
         for tool_name, path, pre_speech, description, params in tools:
             print(f"\n    {BOLD}{tool_name}{OFF}")
@@ -221,10 +223,11 @@ def main() -> None:
             print(f"      Pre-tool speech  {pre_speech}")
 
     print(f"\n{BOLD}The one thing only you can do{OFF}")
-    print("  Buy a phone number: Agents -> Phone Numbers -> Buy. Then put its id in .env as")
-    print("  CARTESIA_FROM_NUMBER_ID, and assign it to the student line so inbound calls reach it.")
+    print("  Assign your number to the student line so inbound calls reach it:")
+    print("  Agents -> Phone Numbers -> pick the number -> assign agent.")
     print(f"  {DIM}Both agents can share one number: the payroll caller only dials out.{OFF}")
-    print(f"\n  {DIM}Then re-run: .venv/bin/python -m scripts.check_voice --probe{OFF}\n")
+    print(f"\n  Then:  .venv/bin/python -m scripts.make_cartesia_agents --ids")
+    print(f"         .venv/bin/python -m scripts.check_voice --probe\n")
 
 
 if __name__ == "__main__":
