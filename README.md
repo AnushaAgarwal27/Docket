@@ -8,6 +8,7 @@
 > Ask Claude and you get a confident answer. Ask Docket and you get the right one, with the clause that proves it, and we follow up until the money is back.
 
 Built at Cal Hacks 13.0.
+https://docket-game.vercel.app/
 
 ---
 
